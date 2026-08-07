@@ -1,0 +1,127 @@
+name: emuladordcp26
+services:
+  database:
+    container_name: emuladordcp26-database
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fc26}
+      POSTGRES_USER: ${POSTGRES_USER:-fc26}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fc26_local_change_me}
+    ports:
+      - "${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fc26} -d ${POSTGRES_DB:-fc26}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [internal]
+
+  backend:
+    container_name: emuladordcp26-backend
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://fc26:fc26_local_change_me@database:5432/fc26}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
+      ADB_ENABLED: ${ADB_ENABLED:-true}
+      ADB_DEFAULT_ADDRESS: ${ADB_DEFAULT_ADDRESS:-host.docker.internal:5555}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data:/app/data
+      - ./backups:/app/backups
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    networks: [internal]
+
+  frontend:
+    container_name: emuladordcp26-frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+
+  frontend-test:
+    build:
+      context: ./frontend
+      target: build
+    profiles: [test]
+    command: npm test -- --run
+    networks: [internal]
+
+  frontend-e2e:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.e2e
+    profiles: [test]
+    environment:
+      PLAYWRIGHT_BASE_URL: http://nginx
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks: [internal]
+
+  nginx:
+    container_name: emuladordcp26-nginx
+    image: nginx:1.27-alpine
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+
+  ollama:
+    container_name: emuladordcp26-ollama
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+
+volumes:
+  postgres_data:
+    name: emuladordcp26_postgres_data
+  ollama_data:
+    name: emuladordcp26_ollama_data
+
+networks:
+  internal:
+    name: emuladordcp26_internal

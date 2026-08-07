@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+node_modules/
+dist/
+.vite/
+backups/*
+!backups/.gitkeep
+data/uploads/*
+!data/uploads/.gitkeep
+*.log
+test_fc26.db
+.DS_Store

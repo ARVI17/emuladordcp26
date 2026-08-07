@@ -1,0 +1,12 @@
+export type Player = { id:number; name:string; rating:number; position:string; league:string; club:string; nationality:string; card_type:string; rare:boolean; special:boolean; tradable:boolean; price:number; chemistry:number; protected:boolean; starter:boolean; squad_role:string; usefulness:number; duplicate_untradeable:boolean; deleted:boolean; created_at:string }
+export type PlayerInput = Omit<Player, 'id'|'deleted'|'created_at'>
+export type Segment = { id:number; name:string; requirements:Record<string, unknown>; completed:boolean }
+export type Challenge = { id:number; name:string; description:string; reward:string; completed:boolean; expires_at:string|null; segments:Segment[] }
+export type Objective = { id:number; name:string; description:string; category:string; progress:number; target:number; completed:boolean; expires_at:string|null }
+export type Squad = { id:number; name:string; formation:string; primary:boolean; protected:boolean; rating:number; chemistry:number; players:{slot:string;player:Player}[] }
+export type Dashboard = { profile:{id:number;name:string;coins:number;platform:string;max_budget:number;risk_level:string;preferences:Record<string,unknown>}; counts:{players:number;protected:number;duplicates:number;pending_challenges:number}; objectives:Objective[]; alerts:{level:string;message:string}[] }
+export type Solution = { player_ids:number[]; players:Player[]; total_cost:number; rating:number; chemistry:number; valid:boolean; violations:string[]; uses_protected:boolean; duplicate_count:number }
+export type EmulatorDevice = { serial:string; state:string; details:string }
+export type EmulatorStatus = { enabled:boolean; available:boolean; devices:EmulatorDevice[]; config:{address?:string;serial?:string;calibration?:EmulatorCalibration|null}; message:string|null }
+export type EmulatorCalibration = { screen_width:number;screen_height:number;open_search_x:number;open_search_y:number;search_field_x:number;search_field_y:number;first_result_x:number;first_result_y:number;add_player_x:number;add_player_y:number;wait_ms:number }
+export type AutomationPlan = { id:number;name:string;plan_type:string;status:string;device_serial:string|null;segment_id:number|null;player_ids:number[];solution_snapshot:{players:{id:number;name:string;rating:number;position:string;duplicate:boolean}[];validated:boolean;delivery_requires_manual_confirmation:boolean};steps:{action:string;label:string}[];progress_step:number;last_error:string|null;confirmation_phrase:string|null;final_submission_automated:boolean;created_at:string }
