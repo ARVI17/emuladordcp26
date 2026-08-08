@@ -4,8 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Asistente FC 26"
     database_url: str = "postgresql+psycopg://fc26:fc26_local_change_me@database:5432/fc26"
+    database_pool_size: int = 3
+    database_max_overflow: int = 2
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "qwen2.5:3b"
+    ollama_keep_alive: str = "2m"
     cors_origins: str = "http://localhost:8080,http://127.0.0.1:8080"
     max_upload_mb: int = 10
     adb_enabled: bool = True

@@ -13,12 +13,12 @@ La aplicación implementa:
 - desafíos DCP con solver CP-SAT, simulación, confirmación y restauración;
 - objetivos/evoluciones y perfil local;
 - historial y chat de solo consulta con Ollama;
-- control ADB local asistido: conexión TCP, captura/OCR, toques, deslizamientos, calibración y planes que preparan una combinación DCP;
+- control ADB local asistido: conexión TCP, captura/OCR, lectura revisable del club/requisitos DCP, toques, calibración y planes que preparan una combinación;
 - auditoría de mutaciones relevantes;
 - respaldo/restauración de PostgreSQL mediante scripts de PowerShell;
 - SPA/PWA mobile-first con tema claro/oscuro.
 
-La integración ADB está implementada, pero el proyecto no instala ni inicia un emulador Android: el usuario debe aportar un teléfono/emulador accesible por TCP e iniciar sesión por su cuenta. No existe conexión autenticada a una API de EA/FC Companion, sincronización automática del club, compras, ventas ni entrega final automatizada. En el entorno actual `/api/emulator/status` informa `enabled=true`, `available=false`, lista de dispositivos vacía y calibración nula porque no hay ningún dispositivo/emulador conectado. Tampoco hay precios de mercado externos.
+La integración ADB está implementada, pero el proyecto no instala ni inicia un emulador Android: el usuario debe aportar un teléfono/emulador accesible por TCP e iniciar sesión por su cuenta. La sincronización es visual y revisable, no una API oficial de EA: no existe conexión autenticada, sincronización silenciosa, compra, venta ni entrega final automatizada. En el entorno actual `/api/emulator/status` informa `enabled=true`, `available=false` porque no hay dispositivo conectado. Tampoco hay precios de mercado externos.
 
 ## Arquitectura en ejecución
 
@@ -55,8 +55,19 @@ Solo Nginx y PostgreSQL publican puertos en el host. Backend, frontend y Ollama 
 | `POSTGRES_USER` | `fc26` | contenedor PostgreSQL/scripts |
 | `POSTGRES_PASSWORD` | `fc26_local_change_me` | PostgreSQL y URL predeterminada |
 | `DATABASE_URL` | PostgreSQL en `database:5432/fc26` | SQLAlchemy/Alembic |
+| `DATABASE_POOL_SIZE` / `DATABASE_MAX_OVERFLOW` | `3` / `2` | máximo normal y excedente del pool SQLAlchemy |
+| `POSTGRES_SHARED_BUFFERS` | `64MB` | memoria compartida de PostgreSQL |
+| `POSTGRES_MAX_CONNECTIONS` | `30` | tope de sesiones PostgreSQL |
+| `POSTGRES_WORK_MEM` / `POSTGRES_MAINTENANCE_WORK_MEM` | `2MB` / `32MB` | memoria por operación y mantenimiento |
 | `OLLAMA_URL` | `http://ollama:11434` | servicio Ollama del backend |
 | `OLLAMA_MODEL` | `qwen2.5:3b` | generación y estado de IA |
+| `OLLAMA_KEEP_ALIVE` | `2m` | residencia equilibrada del modelo en Ollama y petición del backend |
+| `OLLAMA_MAX_LOADED_MODELS` | `1` | máximo de modelos residentes |
+| `OLLAMA_NUM_PARALLEL` | `1` | concurrencia de inferencia por modelo |
+| `OLLAMA_CONTEXT_LENGTH` | `4096` | límite predeterminado de contexto |
+| `OLLAMA_FLASH_ATTENTION` | `1` | reducción de memoria de contexto cuando el backend GPU lo admite |
+| `OLLAMA_NO_CLOUD` | `1` | desactiva funciones remotas de Ollama y mantiene inferencia local |
+| `*_MEMORY_LIMIT` | 64 MB–3 GB según servicio | límites defensivos de RAM en Compose |
 | `CORS_ORIGINS` | localhost/127.0.0.1 en 8080 | middleware CORS |
 | `MAX_UPLOAD_MB` | `10` | importaciones y OCR |
 | `ADB_ENABLED` | `true` | habilita/deshabilita las órdenes del puente ADB |
@@ -75,7 +86,7 @@ Nginx admite hasta `12m`; el backend aplica además `MAX_UPLOAD_MB` (10 MB por d
 - `backend/app/core/config.py`: carga configuración de entorno con `pydantic-settings` y convierte `CORS_ORIGINS` en lista.
 - `backend/app/db/session.py`: crea el engine y `SessionLocal`; habilita `check_same_thread=False` solo para SQLite de pruebas.
 - `backend/app/api/routes.py`: contiene las operaciones generales, serializadores explícitos y límites de transacción.
-- `backend/app/api/emulator.py`: router con prefijo `/emulator`; coordina ADB, configuración, OCR y persistencia/ejecución en segundo plano de planes.
+- `backend/app/api/emulator.py`: router con prefijo `/emulator`; coordina ADB, configuración, OCR, sesiones de inventario y ejecución de planes.
 
 ### Módulos de dominio y servicios
 
@@ -85,7 +96,7 @@ Nginx admite hasta `12m`; el backend aplica además `MAX_UPLOAD_MB` (10 MB por d
 | `schemas/api.py` | Cuerpos Pydantic de entrada; no define modelos completos para todas las respuestas |
 | `optimizers/sbc.py` | Candidatos, restricciones CP-SAT, función de coste, soluciones alternativas y revalidación |
 | `services/rating.py` | Media `floor_average`, `round_half_up` o `ceiling` y suma mínima equivalente |
-| `services/import_export.py` | Lectura/escritura pandas, validación básica de columnas y OCR OpenCV/Tesseract |
+| `services/import_export.py` | CSV con biblioteca estándar, XLSX con pandas diferido, OCR OpenCV/Tesseract diferido, lectura estructurada y acotada de accesibilidad para inventario, y extracción heurística de requisitos DCP |
 | `services/ollama.py` | `/api/tags`, `/api/generate` y respuesta degradada ante cualquier fallo |
 | `services/adb.py` | cliente `subprocess` para ADB, validación de direcciones/seriales, captura/tamaño, entrada restringida y pasos de preparación DCP |
 | `services/audit.py` | Agrega `AuditLog` a la sesión; la ruta llamante hace commit |
@@ -122,7 +133,7 @@ Los valores de `AppSetting["optimizer"]` creados por el seed no alimentan todav�
 
 ## API HTTP
 
-El OpenAPI actual contiene 47 operaciones, incluidas 13 bajo `/emulator`. Todos los paths de esta sección se consumen externamente como `/api<path>`, salvo el acceso cómodo `/health`, que Nginx también reenvía directamente. Swagger está en `/api/docs`.
+El OpenAPI actual contiene 54 operaciones, incluidas 20 bajo `/emulator`. Todos los paths de esta sección se consumen externamente como `/api<path>`, salvo el acceso cómodo `/health`, que Nginx también reenvía directamente. Swagger está en `/api/docs`.
 
 ### Salud y resumen
 
@@ -188,12 +199,21 @@ Una evolución es un `Objective` con `category="Evolución"`; no hay tabla o mot
 | --- | --- | --- |
 | `GET /emulator/status` | — | indica habilitación/disponibilidad, lista `adb devices -l`, configuración y mensaje degradado; no falla si no hay dispositivo |
 | `POST /emulator/connect` | `EmulatorConnectRequest {address}` | ejecuta `adb connect`, guarda address/serial y audita `connect` |
+| `POST /emulator/pair` | `EmulatorPairRequest {address,pairing_code}` | ejecuta `adb pair`; valida seis dígitos y audita solo dirección/que el código no se guardó |
 | `GET /emulator/screenshot` | — | devuelve PNG en memoria con `Cache-Control: no-store` |
 | `POST /emulator/inspect` | — | captura, OCR y tamaño de pantalla; devuelve `source="ADB"`, `saved=false` |
+| `POST /emulator/dcp/inspect` | — | extrae requisitos frecuentes y devuelve un borrador revisable; no crea ni ejecuta el DCP |
 | `POST /emulator/tap` | `EmulatorTapRequest {x,y}` | envía toque manual y audita `tap` |
 | `POST /emulator/swipe` | `EmulatorSwipeRequest {x1,y1,x2,y2,duration_ms}` | envía deslizamiento manual y audita `swipe` |
 | `GET /emulator/calibration` | — | devuelve calibración guardada o `null` |
 | `PUT /emulator/calibration` | `EmulatorCalibration` | valida resolución/coordenadas, guarda en `AppSetting["emulator"]` y audita `calibrate` |
+| `GET /emulator/scans` | query `limit` 1–100 | sesiones recientes con candidatos/progreso, nunca imágenes |
+| `POST /emulator/scans` | — | exige dispositivo listo y crea una sesión ligada a serial/resolución; 201 |
+| `POST /emulator/scans/{scan_id}/continue` | — | después del límite crea otro lote ligado a la huella de la última página, sin copiar candidatos |
+| `POST /emulator/scans/{scan_id}/capture` | — | captura temporal; prioriza filas de accesibilidad y usa OCR como respaldo, rechaza la misma página y acumula candidatos revisables |
+| `POST /emulator/scans/{scan_id}/advance` | — | valida pantalla/lista/botón, desplaza, pulsa únicamente `Siguiente`, verifica que cambió la página y añade hasta 20 filas estructuradas |
+| `POST /emulator/scans/{scan_id}/import` | `InventoryScanImportRequest` | exige frase y `candidate_ids`; importa hasta 500 revisados, retira solo esos candidatos y opcionalmente archiva nombres exactos de la demo |
+| `POST /emulator/scans/{scan_id}/cancel` | — | cierra una sesión no importada |
 | `GET /emulator/plans` | query `limit` 1–100 | últimos planes, más recientes primero |
 | `POST /emulator/plans` | `AutomationPlanCreate {segment_id,player_ids}` | revalida combinación, rechaza protegidos y crea plan `draft` con snapshot; 201 |
 | `POST /emulator/plans/{plan_id}/prepare` | — | exige calibración, revalida, copia calibración al snapshot, genera pasos, fija dispositivo y cambia a `prepared` |
@@ -211,6 +231,8 @@ Los cuerpos aplican estos límites:
 `plan_data` expone `confirmation_phrase` únicamente en estado `prepared` y siempre devuelve `final_submission_automated=false`. Las operaciones auditadas son conexión, toques/deslizamientos manuales, calibración y creación/preparación/aprobación/cancelación de planes. Cada paso terminado agrega `execute_step`; un fallo agrega `execute_failed`, además de estado/error. La ejecución no crea una `Submission` y no altera `Player.deleted` ni `Segment.completed`.
 
 `emulator_config` y `save_emulator_config` copian el diccionario JSON para que SQLAlchemy detecte de forma segura los cambios de address/serial/calibración. Al ejecutar se rechaza otro `AutomationPlan` `queued` o `running` con el mismo `device_serial`. El serial debe aparecer en `adb devices` con estado `device`, y `screen_size` debe coincidir con la calibración guardada tanto antes de encolar como al empezar la tarea de fondo.
+
+`InventoryScan` limita 50 páginas, 1000 candidatos y 500 jugadores por solicitud de importación. La lectura estructurada valida el título `Futb. de Mi Club`, clases/estado/límites del botón y serial/resolución; el XML temporal se limita a 2 MB, se elimina del dispositivo y nunca se persiste o devuelve. Guarda SHA-256 de la imagen o de la firma estructurada para evitar páginas idénticas y no persiste PNG ni `raw_text`. `IMPORTAR <id>` agrega únicamente los `candidate_ids` seleccionados y deja el resto en `review` para otro lote; `REEMPLAZAR DEMO <id>` además marca `deleted=true` únicamente para los 132 nombres deterministas del seed.
 
 ### IA, OCR, perfil, settings y auditoría
 
@@ -230,7 +252,7 @@ El chat resume conteo total, duplicados, protegidos y hasta 10 nombres de DCP pe
 
 ## Persistencia
 
-Head de Alembic: `0003` (`0001` crea el esquema inicial, `0002` agrega historial de chat y `0003` crea `automation_plans` con índices de estado y segmento).
+Head de Alembic: `0004` (`0001` crea el esquema inicial, `0002` agrega chat, `0003` crea `automation_plans` y `0004` crea `inventory_scans`).
 
 | Modelo / tabla | Campos y relaciones relevantes |
 | --- | --- |
@@ -246,6 +268,7 @@ Head de Alembic: `0003` (`0001` crea el esquema inicial, `0002` agrega historial
 | `AppSetting` / `app_settings` | clave primaria string y valor JSON |
 | `ChatMessage` / `chat_messages` | rol, contenido, metadata JSON, fecha |
 | `AutomationPlan` / `automation_plans` | nombre/tipo/estado, serial, FK opcional a segmento, IDs, snapshot y pasos JSON, progreso/error, aprobación/ejecución/creación |
+| `InventoryScan` / `inventory_scans` | estado, serial/resolución, páginas/hashes/candidatos JSON, IDs y conteo importados, error y fechas |
 
 Relaciones principales:
 
@@ -280,7 +303,7 @@ La presencia de cualquier perfil detiene todo el seed.
 - `main.tsx`: crea `QueryClient`, registra el service worker y monta `App`.
 - `App.tsx`: navegación, páginas, formularios y mutaciones. No hay React Router; la página activa vive en estado.
 - `api/client.ts`: `API_URL`, wrapper `fetch`, `ApiError`, formato monetario `es-CO` y fechas cortas.
-- `types/index.ts`: tipos de dominio y contratos `EmulatorDevice`, `EmulatorStatus`, `EmulatorCalibration` y `AutomationPlan`.
+- `types/index.ts`: tipos de dominio y contratos de dispositivo, calibración, planes, `InventoryScan` y `DcpInspection`.
 - `styles.css`: layout, componentes, temas y adaptación móvil.
 - `vite.config.ts`: React, Vitest y PWA `autoUpdate` con manifiesto e icono SVG.
 
@@ -297,12 +320,12 @@ TanStack Query usa `staleTime=15s`, un reintento en consultas y cero reintentos 
 | Objetivos | `/objectives` | crear, sumar progreso, completar |
 | Duplicados | `/duplicates`, `/challenges` | marcar duplicado utilizado |
 | IA | `/ai/status` cada 30s, `/ai/history` | enviar chat |
-| Emulador | `/emulator/status` cada 5s, `/emulator/plans` cada 2,5s | conectar, capturar, OCR, tocar captura, deslizar, calibrar, preparar/ejecutar/cancelar planes |
+| Emulador | estado/lecturas cada 5s, planes cada 2,5s | conectar, capturar, calibrar por clic, leer DCP/club, revisar/importar y preparar/ejecutar/cancelar planes |
 | Ajustes | `/profile` | editar perfil, cambiar tema local, OCR preview, restaurar submission |
 
 La UI de creación de DCP solo expone `squad_size=11`, `min_rating`, `min_chemistry` y `min_rare`. Los requisitos avanzados solo están accesibles por API. Cada solución ofrece **Preparar en emulador**, que crea un plan pero no lo ejecuta. La UI de OCR muestra el candidato, pero no lo transfiere automáticamente al formulario de Club.
 
-La pantalla **Emulador** parte de una calibración 1080×2400, permite tocar directamente la captura escalando el clic a sus dimensiones naturales y ofrece deslizamientos verticales calculados con la calibración. La calibración guardada por backend reemplaza esos valores iniciales. Para un plan `prepared`, el botón de ejecución permanece deshabilitado hasta que la entrada coincida exactamente en la UI con `PREPARAR <id>`.
+La pantalla activa `CompanionPage` parte de una calibración 1080×2400. Un clic normal toca el dispositivo, pero seleccionar un objetivo de calibración convierte el siguiente clic en medición local sin enviar pulsación. También acumula sesiones de inventario y crea borradores DCP desde OCR. Para un plan `prepared`, la ejecución permanece deshabilitada hasta que la entrada coincida con `PREPARAR <id>`.
 
 ## Flujos de datos
 
@@ -402,6 +425,21 @@ Usuario revisa y escribe la frase exacta
 
 `build_dcp_steps` solo abre búsqueda, activa el campo, escribe un nombre saneado, selecciona el primer resultado y agrega la carta. Para 11 jugadores genera 99 pasos. No comprueba visualmente que el primer resultado sea la carta correcta y no genera ningún toque de **Enviar/Entregar DCP**. `run_step` admite internamente `tap`, `swipe`, `text`, `keyevent` de una lista reducida y `wait`, pero los planes DCP generados actualmente solo contienen `tap`, `text` y `wait`.
 
+### Lectura visual del inventario
+
+```text
+Usuario abre Mi club e inicia InventoryScan
+  -> fija serial + resolución
+  -> lee jerarquía temporal acotada -> nombre/media/posición de hasta 20 filas
+  -> si no existe esa estructura: captura PNG en memoria -> SHA-256 -> OCR conservador
+  -> descarta XML/PNG y persiste solo firma/candidatos/progreso
+  -> “Avanzar y leer siguiente” valida pantalla + botón + cambio de página
+  -> al llegar a 50 páginas/1000 candidatos puede crear un lote de continuación
+  -> usuario corrige/selecciona
+  -> frase IMPORTAR <id> o REEMPLAZAR DEMO <id>
+  -> crea Player + AuditLog; opcionalmente archiva solo nombres demo
+```
+
 Estados posibles:
 
 ```text
@@ -438,13 +476,13 @@ La respuesta degradada también se guarda en el historial.
 
 ## Pruebas existentes
 
-### Backend: 20 casos Pytest
+### Backend: 30 casos Pytest
 
 `backend/tests/conftest.py` fija SQLite temporal antes de importar la aplicación, reconstruye todas las tablas y ejecuta el seed por caso.
 
 - `test_api.py`: health/seed/dashboard, CRUD/protección, plantillas, objetivos, CSV y degradación de Ollama/historial.
 - `test_optimizer.py`: solución válida, caso imposible, simulación/confirmación/restauración, rechazo de protegidos y bonificación de duplicados.
-- `test_emulator.py`: 7 casos para degradación sin dispositivo, dirección/puerto inseguros, creación/calibración/preparación/frase/cancelación, revalidación al ejecutar, resolución y auditoría de los 99 pasos, rechazo de protegidos y ausencia de submit final.
+- `test_emulator.py`: 17 casos para degradación, validación/emparejamiento ADB sin fuga de código, planes/frases/auditoría, ausencia de submit final, sesión de inventario, accesibilidad temporal acotada, avance validado, continuación limitada, importación parcial por IDs, captura repetida, reemplazo de demo y extractores revisables.
 - `test_rating.py`: tres estrategias y suma mínima por estrategia.
 
 ### Frontend
@@ -455,7 +493,7 @@ La respuesta degradada también se guarda en el historial.
 
 ### Cobertura que todavía no existe
 
-No hay pruebas directas para XLSX, OCR real, settings/audit completos, restauración de dump, PWA offline, múltiples tamaños de pantalla, Ollama disponible ni ejecución ADB contra un dispositivo real. Los 7 casos ADB verifican la degradación y el flujo seguro, y simulan el bridge para completar/auditar pasos; no demuestran compatibilidad con una interfaz concreta del emulador.
+No hay pruebas directas para XLSX, OCR sobre una pantalla real de Companion, settings/audit completos, restauración de dump, PWA offline, múltiples tamaños de pantalla, Ollama disponible ni ejecución ADB contra un dispositivo real. Las pruebas simulan el bridge y validan seguridad/contratos, pero no demuestran compatibilidad visual con una versión concreta de Companion.
 
 ## Archivos operativos y datos generados
 

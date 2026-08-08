@@ -1,6 +1,5 @@
 from collections import Counter
 from dataclasses import dataclass
-from ortools.sat.python import cp_model
 from app.models.entities import Player
 from app.services.rating import calculate_rating, minimum_rating_sum
 
@@ -55,6 +54,8 @@ def validate_solution(players: list[Player], requirements: dict) -> list[str]:
     return errors
 
 def solve(players: list[Player], requirements: dict, allow_protected_ids: set[int] | None = None, exclude_ids: set[int] | None = None, max_solutions: int = 3) -> list[Solution]:
+    from ortools.sat.python import cp_model
+
     allow_protected_ids = allow_protected_ids or set()
     excluded = set(requirements.get("excluded_player_ids", [])) | (exclude_ids or set())
     candidates = [p for p in players if not p.deleted and p.id not in excluded and (not p.protected or p.id in allow_protected_ids)]

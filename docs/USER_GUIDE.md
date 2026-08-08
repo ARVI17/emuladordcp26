@@ -29,6 +29,16 @@ La automatización es asistida: coloca jugadores, pero nunca pulsa el botón de 
 
 La calibración depende de la resolución, escala, orientación e interfaz visibles. Repítela si cualquiera cambia. **Inspeccionar OCR** ayuda a confirmar la pantalla, pero no garantiza que el dispositivo esté en el lugar correcto. Los estados del plan son `draft`, `prepared`, `running`, `completed`, `failed` y `cancelled`; `completed` significa que acabaron los pasos de preparación, no que se entregó el DCP.
 
+## Sincronizar el club mostrado en Companion
+
+En **Emulador**, conecta el dispositivo y abre manualmente **Mi club → Futbolistas**. Pulsa **Nueva lectura** y después **Leer página actual**. En Companion la jerarquía de accesibilidad permite leer nombre, media y posición de hasta 20 filas, incluso si algunas quedan fuera del área visible; si no está disponible, se usa OCR conservador. **Avanzar y leer siguiente** desplaza la lista, valida el botón, pulsa únicamente `Siguiente` y comprueba que los jugadores cambiaron. Una página idéntica no se duplica.
+
+En teléfonos Android modernos, activa **Opciones de desarrollador > Depuración inalámbrica > Emparejar dispositivo con código**. Introduce el IP:puerto de emparejamiento y los seis dígitos en el panel; el código no se guarda. Luego copia a **Conectar** el IP:puerto de conexión que muestra Android, que normalmente es diferente.
+
+La importación normal exige `IMPORTAR <id>`. Cada solicitud acepta hasta 500 cartas y conserva sus `candidate_id`; si quedan candidatos, la lectura continúa en `review` para otro grupo. La opción de reemplazo archiva exclusivamente los nombres exactos de las 132 cartas demostrativas y exige `REEMPLAZAR DEMO <id>`; no borra físicamente cartas ni toca entradas manuales con otros nombres. Las imágenes y el XML de accesibilidad nunca se guardan. Una sesión admite hasta 50 páginas y 1000 candidatos; **Continuar en un lote nuevo** evita repetir la página límite. La revisión se pagina de 20 en 20 para no crear miles de controles DOM y reducir RAM, y las cartas empiezan desmarcadas. Companion no expone de forma textual y fiable liga, club, nacionalidad, tipo, transferibilidad o precio: corrige esos campos y selecciona solo las cartas comprobadas antes de importar.
+
+Para leer un segmento, muéstralo en Companion y pulsa **Leer requisitos DCP**. La aplicación intenta reconocer tamaño, media, química, raros y otros conteos. El resultado es un borrador: revisa sus requisitos en DCP antes de optimizar.
+
 ## Objetivos, IA y Ajustes
 
 Objetivos admite alta, progreso incremental y finalización. Las evoluciones son objetivos con categoría propia. IA conserva el historial local y se degrada con un mensaje claro si Ollama no responde. Ajustes permite editar perfil, presupuesto, plataforma, nivel de riesgo, tema, revisión OCR y restauración de entregas.

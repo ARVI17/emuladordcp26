@@ -2,6 +2,8 @@
 
 - La fórmula de media predeterminada y la química 0–3 son aproximaciones configurables, no reglas oficiales garantizadas de EA FC 26.
 - El OCR depende de calidad, idioma, recorte y diseño de la captura; solo propone campos y exige revisión.
+- La lectura visual no es una sincronización oficial con la cuenta: puede asociar mal nombres, medias o posiciones y no conoce liga/club/nacionalidad si no son legibles. Todos los campos deben revisarse.
+- El analizador de requisitos DCP reconoce patrones frecuentes, no todas las reglas ni todos los idiomas/diseños de Companion.
 - No se incluyen precios de mercado en tiempo real ni fuentes externas; los valores se registran/importan manualmente.
 - La recomendación automática de plantilla busca el mejor rating por puesto para 4-3-3 y no modela aún tácticas o estilos de juego avanzados.
 - El formulario visual de creación de DCP expone los requisitos más usados; los requisitos avanzados están disponibles en la API documentada.

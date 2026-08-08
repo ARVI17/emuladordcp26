@@ -110,6 +110,12 @@ class EmulatorConnectRequest(BaseModel):
             raise ValueError("El puerto ADB debe estar entre 1 y 65535")
         return value
 
+class EmulatorPairRequest(EmulatorConnectRequest):
+    pairing_code: str = Field(pattern=r"^[0-9]{6}$")
+
+class EmulatorSelectRequest(BaseModel):
+    serial: str = Field(min_length=1, max_length=120, pattern=r"^[a-zA-Z0-9._:-]+$")
+
 class EmulatorTapRequest(BaseModel):
     x: int = Field(ge=0, le=10000)
     y: int = Field(ge=0, le=10000)
@@ -148,3 +154,17 @@ class AutomationPlanCreate(BaseModel):
 
 class AutomationExecuteRequest(BaseModel):
     confirmation: str = Field(min_length=8, max_length=40)
+
+class InventoryScanImportRequest(BaseModel):
+    players: list[PlayerCreate] = Field(min_length=1, max_length=500)
+    candidate_ids: list[int] = Field(min_length=1, max_length=500)
+    confirmation: str = Field(min_length=8, max_length=80)
+    archive_demo: bool = False
+
+    @model_validator(mode="after")
+    def candidate_ids_match_players(self):
+        if len(self.candidate_ids) != len(self.players):
+            raise ValueError("Cada jugador debe conservar su candidate_id")
+        if len(set(self.candidate_ids)) != len(self.candidate_ids):
+            raise ValueError("Los candidate_id no pueden repetirse")
+        return self
