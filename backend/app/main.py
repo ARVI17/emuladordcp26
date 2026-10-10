@@ -1,14 +1,25 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.routes import router
 from app.api.emulator import router as emulator_router
+from app.api.emulator import recover_interrupted_automation
+from app.api.analysis import router as analysis_router
+from app.api.fc27 import router as fc27_router
 from app.core.config import settings
+from app.services.locks import ResourceBusy
+from starlette.concurrency import run_in_threadpool
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-app = FastAPI(title=settings.app_name, version="1.0.0", docs_url="/docs", redoc_url=None, root_path="/api")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await run_in_threadpool(recover_interrupted_automation)
+    yield
+
+app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan, docs_url="/docs", redoc_url=None, root_path="/api")
 app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"], allow_headers=["Content-Type"])
 
 @app.exception_handler(RequestValidationError)
@@ -20,5 +31,11 @@ async def unexpected_error(request: Request, exc: Exception):
     logging.getLogger("api").exception("Error no controlado en %s", request.url.path)
     return JSONResponse(status_code=500, content={"detail": "Ocurrió un error interno. Revisa los registros locales."})
 
+@app.exception_handler(ResourceBusy)
+async def busy_resource(_: Request, exc: ResourceBusy):
+    return JSONResponse(status_code=409, content={"detail": "Otra operación utiliza este recurso. Espera a que termine y vuelve a intentarlo."})
+
 app.include_router(router)
 app.include_router(emulator_router)
+app.include_router(analysis_router)
+app.include_router(fc27_router)

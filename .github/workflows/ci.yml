@@ -1,0 +1,114 @@
+name: FC27 verification
+on:
+  push:
+    branches: [main, 'agent/**']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: fc27-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fc27_test
+          POSTGRES_USER: fc27_test
+          POSTGRES_PASSWORD: fc27_test_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U fc27_test -d fc27_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+        working-directory: backend
+      - name: Upgrade an existing FC26 database with data
+        shell: bash
+        env:
+          DATABASE_URL: postgresql+psycopg://fc27_test:fc27_test_only@localhost:5432/fc27_test
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/fc26-before-upgrade" a7e3e176d6900d18e9a2d36d8c43098eb06614ed
+          cd "$RUNNER_TEMP/fc26-before-upgrade/backend"
+          alembic upgrade head
+          python -m app.db.seed
+          cd "$GITHUB_WORKSPACE/backend"
+          alembic upgrade head
+          alembic current
+          alembic check
+          python -c "from sqlalchemy import select,func; from app.db.session import SessionLocal; from app.models.entities import Player,Profile; db=SessionLocal(); assert db.scalar(select(func.count()).select_from(Player).where(Player.game_version=='FC26'))==132; assert db.scalar(select(Profile.game_version))=='FC27'"
+      - name: API, solvers, Gallery, imports, ADB and PostgreSQL concurrency
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://fc27_test:fc27_test_only@localhost:5432/fc27_test
+          PYTHONPATH: .
+        run: pytest -q
+      - name: Compose configuration
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.gpu.yml config --quiet
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm test -- --run
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: frontend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+        working-directory: backend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Real API and desktop/mobile flows on a disposable database
+        shell: bash
+        env:
+          DATABASE_URL: sqlite+pysqlite:////tmp/fc27-e2e.db
+          SEED_DEMO: 'true'
+          ADB_ENABLED: 'false'
+          PLAYWRIGHT_DISPOSABLE_DB: '1'
+        run: |
+          cd backend
+          alembic upgrade head
+          python -m app.db.bootstrap
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/fc27-api.log" 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8000/health
+          cd ../frontend
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fc27-browser-verification
+          path: |
+            frontend/test-results
+            ${{ runner.temp }}/fc27-api.log
+          retention-days: 7

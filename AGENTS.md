@@ -4,9 +4,9 @@ Este archivo es la entrada rápida para cualquier agente que trabaje en `emulado
 
 ## Propósito y estado real
 
-`emuladordcp26` es una aplicación local y no oficial para administrar un club ficticio, importar inventario, revisar OCR, organizar plantillas y objetivos, simular/confirmar/restaurar DCP y preparar combinaciones mediante pulsaciones ADB asistidas. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
+`emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. También prepara combinaciones tradicionales mediante pulsaciones ADB asistidas. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
 
-El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, enviar toques y deslizamientos manuales, y ejecutar un plan revisable que busca y agrega los jugadores de una solución DCP. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
+El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, proponer inventario/requisitos, enviar toques y deslizamientos manuales, y ejecutar un plan revisable que busca y agrega los jugadores de una solución DCP. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
 
 ## Inicio rápido
 
@@ -29,6 +29,10 @@ Ollama arranca como servicio normal de Compose, pero una instalación nueva nece
 ```powershell
 docker compose exec ollama ollama pull qwen2.5:3b
 ```
+
+Compose limita RAM por servicio. La GPU NVIDIA es opcional y se activa con `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d`. El modelo se descarga tras el periodo equilibrado de `OLLAMA_KEEP_ALIVE`; verifica la aceleración después de una consulta con `docker compose exec ollama ollama ps`. Los límites se pueden ajustar mediante las variables `*_MEMORY_LIMIT` de `.env.example` sin editar Compose.
+
+La configuración WSL2/Android depende del equipo del usuario; no supongas límites de RAM ni GPU disponibles. Los cambios persistentes de resolución/densidad/paquetes Android solo se aplican cuando se solicita `-OptimizeDevice`.
 
 La ausencia del modelo o una caída de Ollama no debe bloquear inventario, DCP, objetivos ni el resto de la aplicación.
 
@@ -81,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File scripts/check-emulator.ps1 -Connect -Ad
 
 Recursos dedicados: red `emuladordcp26_internal`, volumen `emuladordcp26_postgres_data` y volumen `emuladordcp26_ollama_data`. No reutilices nombres, redes o volúmenes de otros proyectos. El backend usa `extra_hosts: host.docker.internal:host-gateway` para alcanzar por TCP un ADB ejecutado en el host; `ADB_ENABLED` y `ADB_DEFAULT_ADDRESS` controlan esa integración.
 
-El entrypoint del backend ejecuta `alembic upgrade head`, luego el seed si `SEED_DEMO=true`, y finalmente Uvicorn. El seed se detiene si ya existe un perfil, por lo que no duplica la demo.
+El entrypoint ejecuta `alembic upgrade head`, `app.db.bootstrap` y Uvicorn. Por defecto `SEED_DEMO=false`: bootstrap crea perfil vacío y clave privada HMAC. La demo explícita solo se carga antes del primer perfil. La migración `0005` conserva datos anteriores como FC26 y activa FC27; no renombres volúmenes para cambiar de edición.
 
 ## Mapa de código
 
@@ -89,8 +93,10 @@ El entrypoint del backend ejecuta `alembic upgrade head`, luego el seed si `SEED
 - `nginx/nginx.conf`: proxy público, límite de carga y cabeceras de seguridad.
 - `backend/app/main.py`: creación de FastAPI, CORS y manejadores globales de error.
 - `backend/app/api/routes.py`: rutas generales y orquestación de sus transacciones.
-- `backend/app/api/emulator.py`: estado/conexión ADB, captura/OCR, toques, deslizamientos, calibración y ciclo de planes.
-- `backend/app/models/entities.py`: 12 modelos SQLAlchemy, incluido `AutomationPlan`.
+- `backend/app/api/analysis.py`, `api/fc27.py`: análisis, Galería, evoluciones y contenido.
+- `backend/app/services/locks.py`: reservas de inventario/dispositivo y bloqueo asesor PostgreSQL.
+- `backend/app/api/emulator.py`: estado/conexión ADB, captura/OCR, lectura de inventario/requisitos, toques, calibración y ciclo de planes.
+- `backend/app/models/entities.py`: entidades multiedición, Galería, evoluciones, propiedad de consumo, `AutomationPlan` e `InventoryScan`.
 - `backend/app/schemas/api.py`: entradas Pydantic y sus límites.
 - `backend/app/optimizers/sbc.py`: modelo CP-SAT, función de coste y validación final de DCP.
 - `backend/app/services/rating.py`: aproximaciones de media.
@@ -100,8 +106,8 @@ El entrypoint del backend ejecuta `alembic upgrade head`, luego el seed si `SEED
 - `backend/app/services/audit.py`: creación de eventos de auditoría dentro de la transacción llamante.
 - `backend/app/db/session.py`: engine y sesiones.
 - `backend/app/db/seed.py`: demo idempotente.
-- `backend/alembic/versions/`: esquema reproducible; head actual `0003` (`automation_plans`).
-- `frontend/src/App.tsx`: todas las vistas y mutaciones de la SPA.
+- `backend/alembic/versions/`: esquema reproducible; head actual `0005` (`fc27_club`).
+- `frontend/src/App.tsx`: navegación/edición; vistas en `pages/`, componentes en `components/` y utilidades en `lib/`.
 - `frontend/src/api/client.ts`: prefijo `/api`, errores y formatos locales.
 - `frontend/src/types/index.ts`: contratos TypeScript consumidos por la UI.
 - `frontend/src/styles.css`: sistema visual mobile-first y temas.
@@ -116,11 +122,11 @@ Consulta el inventario detallado de rutas, entidades, pantallas y flujos en [`do
 Estas reglas forman parte del alcance actual y no deben relajarse incidentalmente:
 
 1. No solicitar, almacenar ni registrar credenciales, cookies, tokens, OAuth o códigos de EA/FC Companion.
-2. No afirmar conexión API con el club real. ADB controla visualmente el dispositivo del propietario, pero no hay API autenticada, scraping autenticado ni sincronización automática de la cuenta.
+2. No afirmar conexión API con el club real. ADB lee/controla visualmente el dispositivo del propietario y puede acumular candidatos revisables, pero no hay API autenticada, scraping autenticado ni sincronización oficial de la cuenta.
 3. La automatización asistida puede capturar, inspeccionar, tocar, deslizar y preparar una combinación ya validada. No debe añadir compras, ventas, partidos, login ni la pulsación final de entrega como efecto secundario de una consulta, cálculo o plan.
 4. Optimizar un DCP es una simulación sin escrituras. Confirmar debe volver a validar contra el estado actual, requerir una acción explícita del usuario, rechazar cartas protegidas y guardar un snapshot restaurable.
 5. Las cartas consumidas o eliminadas usan `Player.deleted`; no convertir estos flujos en borrado físico sin migración, respaldo y autorización clara.
-6. Las capturas OCR se procesan en memoria y siempre exigen revisión. No persistir la imagen ni crear cartas automáticamente.
+6. Las capturas OCR se procesan en memoria y siempre exigen revisión. No persistir la imagen ni crear cartas automáticamente. `InventoryScan` puede conservar hashes, candidatos y progreso, nunca bytes de imagen ni texto de credenciales.
 7. La importación CSV/XLSX primero presenta una vista previa; solo `confirm=true` escribe. Mantener validación de extensión, esquema, tamaño y rangos.
 8. No exponer el stack directamente a Internet: no tiene autenticación multiusuario. Una publicación exige primero TLS, autenticación, secretos seguros y firewall.
 9. No devolver trazas o detalles internos al cliente. Registrar el error localmente y conservar respuestas públicas genéricas.
@@ -129,6 +135,9 @@ Estas reglas forman parte del alcance actual y no deben relajarse incidentalment
 12. La media y la química son aproximaciones locales. No presentarlas como fórmula oficial garantizada de EA.
 13. Un plan ADB exige calibración y la frase exacta `PREPARAR <id>` antes de ejecutarse. Justo antes de encolarlo vuelve a validar jugadores/requisitos, presencia del serial, resolución y ausencia de otro plan `queued`/`running` para ese dispositivo. Debe conservar `final_submission_automated=false`, poder cancelarse antes de terminar y generar únicamente pasos previos a la entrega irreversible.
 14. Las coordenadas son absolutas para una resolución/pantalla concretas. Un cambio de resolución, orientación, escala o interfaz obliga a recalibrar y revisar manualmente.
+15. Una lectura de inventario exige dispositivo/resolución estables, ignora hashes repetidos y limita 50 pantallas/1000 candidatos. Importar hasta 500 cartas exige `IMPORTAR <id>`; archivar solo nombres demo exige `REEMPLAZAR DEMO <id>`.
+16. Los requisitos detectados por OCR son un borrador local. Nunca tratarlos como restricciones verificadas hasta revisión humana.
+17. `POST /emulator/pair` acepta únicamente código temporal ADB de seis dígitos. Puede usarlo como argumento de proceso, pero nunca persistirlo, devolverlo, incluirlo en errores propios ni auditarlo.
 
 Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`, `completed`, `failed` y `cancelled`. `completed` significa únicamente que terminó la colocación prevista; nunca significa que el DCP fue entregado. Las rutas de conexión, toque/deslizamiento manual, calibración y cambios de plan relevantes se auditan; cada paso ejecutado crea un `AuditLog` `execute_step`, y un error crea `execute_failed` además de persistir `last_error`.
 
@@ -154,8 +163,20 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 - `AppSetting.value` es JSON mutable: conserva las copias `dict(...)` al leer/guardar la configuración de emulador o asigna un objeto nuevo, para que SQLAlchemy detecte y persista la calibración.
 - Conserva las validaciones de dirección/serial ADB, coordenadas dentro de la pantalla, texto saneado, teclas permitidas, timeout y tamaño PNG. No expongas una ruta genérica para ejecutar comandos ADB arbitrarios.
 - `build_dcp_steps` no debe generar etiquetas ni coordenadas de enviar/entregar; cualquier extensión requiere una prueba que demuestre que sigue deteniéndose antes del submit final.
+- Las rutas de `InventoryScan` no deben persistir PNG/texto OCR completo. Conserva el rechazo de capturas repetidas, los topes, las frases diferenciadas y la selección explícita de jugadores.
 - Los coeficientes efectivos del optimizador están codificados en `_cost`; el registro `app_settings.optimizer` aún es informativo y no reconfigura el solver. No documentes lo contrario sin conectar ambas capas.
 - Los endpoints no llevan `/api` en `routes.py`. Nginx añade ese prefijo externamente y FastAPI usa `root_path="/api"`; `TestClient` llama rutas como `/health` y `/players`.
+
+### FC27, identidad y consumos
+
+- `Profile.game_version` es la edición activa. No conviertas datos FC26 en FC27 por cambiar el texto de la UI; toda mutación valida edición.
+- Las reservas `resource_locks` y la recarga dentro de la reserva son obligatorias para mutaciones de inventario. Las garantías entre procesos requieren PostgreSQL.
+- La protección efectiva une candado manual y pertenencia a cualquier equipo protegido. Desproteger un equipo no modifica `Player.protected`.
+- Cada consumo tiene propietario `consumed_by_submission_id`. Restaurar valida todos los propietarios antes de tocar cartas; un snapshot ambiguo se rechaza.
+- Galería es historial local: no elimina adquisiciones al consumir cartas, ignora cesiones y utiliza la carta base de evoluciones. Nunca inventar puntos/umbrales ni recompensas de EA.
+- Las evoluciones son simulaciones sobre copia y exigen requisitos revisados. Los topes no deben reducir atributos/roles ya superiores.
+- Paquetes de contenido requieren vista previa/hash, validación y recibo por hash. Noticias públicas no alteran requisitos automáticamente.
+- Pruebas destructivas de tablas usan exclusivamente `TEST_DATABASE_URL` apuntando a datos desechables; nunca heredes `DATABASE_URL` de una instalación habitual.
 
 ### Frontend
 
@@ -165,7 +186,7 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 - Actualiza `frontend/src/types/index.ts` cuando cambie una respuesta y mantén validación Zod/Pydantic coherente.
 - Conserva navegación y controles utilizables en ancho móvil; el E2E usa emulación iPhone 13.
 - El tema sí se persiste en `localStorage`; los datos del dominio pertenecen a PostgreSQL.
-- La pantalla `Emulador` consulta estado cada 5 s y planes cada 2,5 s; conserva estas actualizaciones o proporciona un reemplazo explícito para reflejar progreso/cancelación.
+- La pantalla activa `CompanionPage` consulta estado/lecturas cada 5 s y planes cada 2,5 s; conserva estas actualizaciones o proporciona un reemplazo explícito para reflejar progreso/cancelación.
 
 ### Docker, secretos y archivos
 
@@ -177,7 +198,7 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 
 ## Pruebas según el cambio
 
-Suite registrada en este estado: **20 Pytest, 2 Vitest y 2 Playwright**.
+Consulta `docs/TESTING.md` y CI para resultados de la revisión actual. La suite FC27 amplía backend, importaciones, Galería/evoluciones, protección, concurrencia y flujos frontend; distingue pruebas SQLite, PostgreSQL, navegador y hardware.
 
 | Cambio | Verificación mínima |
 | --- | --- |
@@ -186,8 +207,9 @@ Suite registrada en este estado: **20 Pytest, 2 Vitest y 2 Playwright**.
 | Modelo o migración | Pytest, `alembic upgrade head`, `alembic current` y `alembic check` con PostgreSQL |
 | Optimizador/requisitos | `test_optimizer.py` más un caso imposible y uno válido; confirmar que simular no muta |
 | ADB/planes/calibración | `test_emulator.py`, OpenAPI y degradación sin dispositivo; con hardware, inspección manual y comprobación de que no existe submit final |
+| Lectura de inventario/requisitos | Pytest de escaneo/revisión/importación y extractores; con hardware, contraste manual contra cartas visibles |
 | Frontend o tipos | Vitest y `npm run build` mediante imagen/servicio |
-| Navegación/layout/PWA | 2 casos Playwright iPhone y revisión manual a ~390 px, incluida la pantalla Emulador |
+| Navegación/layout/PWA | Suite Playwright iPhone y revisión manual a ~390 px, incluidas Galería/Análisis/Emulador |
 | Nginx/Docker | `docker compose config --quiet`, reconstrucción, `docker compose ps` y checks HTTP externos |
 | Backup/restore | Probar con datos desechables y confirmar la copia previa; nunca usar primero datos únicos |
 

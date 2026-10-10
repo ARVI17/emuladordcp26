@@ -16,7 +16,15 @@ async def chat(message: str, context: str) -> dict:
     prompt = "Eres un asistente local de FC. Distingue DATOS, RECOMENDACIÓN, SUPOSICIONES y FALTANTES. No afirmes datos no presentes.\n" + context + "\nPregunta: " + message
     try:
         async with httpx.AsyncClient(timeout=45) as client:
-            response = await client.post(f"{settings.ollama_url}/api/generate", json={"model": settings.ollama_model, "prompt": prompt, "stream": False})
+            response = await client.post(
+                f"{settings.ollama_url}/api/generate",
+                json={
+                    "model": settings.ollama_model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "keep_alive": settings.ollama_keep_alive,
+                },
+            )
             response.raise_for_status()
             return {"available": True, "answer": response.json().get("response", ""), "sections": {"source": "Ollama local"}}
     except Exception:

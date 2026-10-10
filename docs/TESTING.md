@@ -1,35 +1,155 @@
-# Pruebas
+# Pruebas y estado de verificación
 
-## Backend
+Esta página distingue pruebas ejecutadas de verificaciones pendientes. La [CI del 10 de octubre de 2026 UTC](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) terminó correctamente sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e). Los resultados usan datos desechables; no describen una ejecución de producción ni garantizan comportamiento en un dispositivo Companion real.
 
-Pytest crea una base SQLite temporal limpia por caso y carga el seed. Sus 20 casos comprueban health, seed, panel, CRUD/protección/eliminación, plantillas, objetivos, importación/exportación, degradación sin Ollama, DCP válido e imposible, exclusión de protegidos, duplicados, simulación, confirmación/restauración y planes ADB seguros.
+## Estado registrado
+
+| Comprobación | Resultado |
+| --- | --- |
+| Pytest local con dependencias actualizadas y SQLite aislada | **109 correctos, 2 casos PostgreSQL omitidos** |
+| Pytest en PostgreSQL 16 de CI | **111 correctos**, incluidos los dos casos de bloqueo entre procesos; [job backend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119429998) |
+| Migración PostgreSQL desde PR1 | Actualización a `0005`, conservación de **132 cartas FC26**, perfil FC27 y `alembic check` correctos |
+| Vitest frontend | **24 correctos en 10 archivos**; [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) |
+| TypeScript, Vite y PWA | Build correcto en CI |
+| Auditoría npm de producción | **0 vulnerabilidades reportadas** en esa ejecución; alcance y desarrollo en [SECURITY.md](SECURITY.md) |
+| Playwright Chromium contra Vite y API real | **6/6 correctos**, viewport móvil de **390 × 664 px CSS** y escritorio de **1280 × 900 px**; pantalla móvil emulada de 390 × 844 px, DPR 3 |
+| Revisión visual de plantillas y Galería | Cuatro capturas revisadas, móvil/escritorio, sin desbordamiento horizontal ni defectos materiales observados en esas vistas; [artefacto](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) |
+| Comprobación HTTP local complementaria | **26 comprobaciones correctas**, con 223 cartas ficticias |
+| Compilación de módulos Python modificados | Correcta |
+| Whitespace/diff de los cambios verificados | `git diff --check` correcto |
+| Configuración Compose base y GPU | Ambas válidas en CI mediante `docker compose config --quiet` |
+| Build y arranque del stack Docker completo, incluido Nginx | Pendientes |
+| Backup/restauración PowerShell real, Safari y Companion FC27 con hardware o club EA real | Pendientes |
+
+Pytest terminó con un aviso de deprecación por el uso de httpx en TestClient con la versión de Starlette instalada. El resultado PostgreSQL fue `111 passed, 1 warning`; la diferencia respecto a SQLite corresponde a los dos casos de integración que allí se omiten.
+
+## Backend y aislamiento de datos
+
+[conftest.py](../backend/tests/conftest.py) reconstruye las tablas y carga la demo por caso. Usa exclusivamente `TEST_DATABASE_URL`, con `sqlite+pysqlite:///./test_fc26.db` como valor predeterminado; el nombre histórico del archivo no cambia la edición de las pruebas. Ignora un `DATABASE_URL` general para impedir que una configuración habitual seleccione accidentalmente la base del usuario.
+
+**La suite borra tablas de la base que indique `TEST_DATABASE_URL`. Esa variable debe apuntar siempre a datos desechables.** Para ejecuciones concurrentes, cada proceso o agente necesita un archivo o una base diferente.
+
+Desde `backend`, con las dependencias de [requirements.txt](../backend/requirements.txt) instaladas:
+
+```bash
+TEST_DATABASE_URL=sqlite+pysqlite:////tmp/fc27-backend-test.db python -m pytest -q
+```
+
+Alternativa desde la raíz del proyecto:
 
 ```bash
 docker compose run --rm --no-deps backend pytest -q
 ```
 
-Para comprobar migraciones PostgreSQL con el stack activo:
+El entrypoint detecta el comando explícito y ejecuta pytest directamente. No necesita migrar la base habitual para arrancar esta suite SQLite.
+
+### Qué comprueba
+
+| Área | Casos relevantes | Fuente |
+| --- | --- | --- |
+| API y arranque | Health, demo, perfil/panel sin demo, CRUD, actualizaciones inválidas, objetivos, aislamiento por edición | [test_api.py](../backend/tests/test_api.py), [test_fc27.py](../backend/tests/test_fc27.py) |
+| Selección DCP | Combinaciones válidas/imposibles, protegidos, duplicados, coherencia de media y validador | [test_optimizer.py](../backend/tests/test_optimizer.py), [test_rating.py](../backend/tests/test_rating.py) |
+| Análisis | Cinco formaciones, posiciones alternativas, atributos, fijados/excluidos, identidad, huecos y cero escrituras | [test_squad_analysis.py](../backend/tests/test_squad_analysis.py) |
+| Consumo/restauración | Doble confirmación concurrente, propietario único, validación completa antes de restaurar, protección manual/plantillas | [test_squad_analysis.py](../backend/tests/test_squad_analysis.py) |
+| Puntos DCP | Entregas parciales, progreso derivado, restauración de un lote, presupuesto acumulado, rechazo de puntos desconocidos | [test_squad_analysis.py](../backend/tests/test_squad_analysis.py) |
+| Galería y evoluciones | Historial, conciliación de versiones/puntos, datos revisados, reglas, ramas y proyecciones sin mutaciones | [test_fc27.py](../backend/tests/test_fc27.py) |
+| Importación | Rango y tipo por fila, metadatos, fórmulas de hoja de cálculo, archivo/edición vinculados y repetición idempotente | [test_import_export_safety.py](../backend/tests/test_import_export_safety.py), [test_squad_analysis.py](../backend/tests/test_squad_analysis.py) |
+| ADB y OCR | Degradación sin dispositivo, emparejamiento, revisión por candidatos, firmas, límites, planes, exclusión, cancelación y snapshots | [test_emulator.py](../backend/tests/test_emulator.py), [test_emulator_safety.py](../backend/tests/test_emulator_safety.py) |
+
+Las pruebas que simulan un dispositivo comprueban contratos y decisiones del programa. No sustituyen la comprobación de OCR, coordenadas y resultados de búsqueda en una versión real de Companion.
+
+## PostgreSQL, migraciones y CI
+
+El head de Alembic es [0005](../backend/alembic/versions/0005_fc27_club.py). La migración añade metadatos/entidades FC27 y preserva los datos anteriores como FC26, incluyendo la asignación de propietario de consumo cuando existe uno inequívoco.
+
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) prepara PostgreSQL 16 en una base de CI desechable. El [job backend del 10 de octubre](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119429998) ejecutó correctamente esta secuencia:
+
+1. Crear una base con el código anterior de PR1 y cargar sus datos FC26.
+2. Aplicar la migración actual, consultar `alembic current` y ejecutar `alembic check`.
+3. Verificar que se conservan 132 jugadores FC26 y que el perfil selecciona FC27.
+4. Ejecutar la suite con `TEST_DATABASE_URL` PostgreSQL, incluidos los dos casos entre procesos.
+5. Validar las configuraciones Compose base y con GPU.
+
+[test_postgres_integration.py](../backend/tests/test_postgres_integration.py) comprueba que una reserva asesora sigue vigente después de un commit y excluye a otro proceso. Cubre las claves `inventory` y dispositivo; después de liberar la reserva, otro proceso debe poder adquirirla. Estos casos se omiten expresamente cuando no se configura PostgreSQL de prueba.
+
+El log confirma `0005 (head)`, `No new upgrade operations detected.` y `111 passed, 1 warning in 39.58s`. Los dos casos entre procesos se ejecutaron con PostgreSQL y pasaron. Las comprobaciones de Compose validan la configuración base y la variante GPU; no construyen ni arrancan todas las imágenes de la aplicación.
+
+Para inspeccionar el estado de una instalación ya iniciada, sin ejecutar la suite destructiva contra ella:
 
 ```bash
 docker compose exec backend alembic current
-docker compose exec database psql -U fc26 -d fc26 -c "select count(*) from players;"
+docker compose exec backend alembic check
 ```
 
-El head actual es `0003`. Para una migración limpia usa una base temporal separada, ejecuta `alembic upgrade head`, comprueba sus tablas y elimina solamente esa base de prueba.
+Una migración limpia o un ensayo de actualización debe realizarse en una base o un respaldo restaurado de pruebas, separado del inventario real.
 
 ## Frontend
 
-Vitest prueba utilidades de presentación y la compilación TypeScript ocurre durante la imagen. Playwright define un proyecto iPhone 13 para navegación esencial.
+[frontend/package.json](../frontend/package.json) define Vitest, compilación y dependencias. El [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) instaló con `npm ci`, superó 24 pruebas en 10 archivos y compiló TypeScript, Vite y PWA. Se puede repetir la parte de pruebas y build con:
 
 ```bash
-docker compose run --rm frontend-test
-docker compose run --rm frontend-e2e
+cd frontend
+npm test -- --run
+npm run build
 ```
 
-El servicio `frontend-e2e` incluye Playwright y prueba la SPA contra Nginx en la red interna con emulación de iPhone 13. Actualmente hay 2 casos Vitest y 2 casos Playwright, incluido el límite de entrega manual de la pantalla Emulador.
+También se puede usar `docker compose run --rm frontend-test`. La auditoría `npm audit --omit=dev --audit-level=high` del job terminó con `found 0 vulnerabilities`. Ese resultado corresponde a las dependencias de producción de esta revisión y fecha; no afirma ausencia de avisos en el árbol de desarrollo. Consulte [SECURITY.md](SECURITY.md).
 
-## Verificación manual mínima
+## E2E ejecutado y revisión manual pendiente
 
-Confirma que `/health`, `/api/dashboard`, `/api/docs` y `/` respondan 200; crea una carta, protégela, simula un DCP, comprueba que la simulación no reduzca inventario, confirma otra solución y restaura su ID. Prueba la interfaz a 390 px de ancho y ambos temas.
+En la [CI verificada](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117), Playwright ejecutó tres escenarios en Chromium para móvil y escritorio: **6/6 correctos en 11,8 segundos**. El perfil `iPhone 13` de Playwright 1.62.1 utiliza un **viewport de 390 × 664 píxeles CSS**, pantalla emulada de **390 × 844 píxeles** y DPR 3; el viewport de escritorio es **1280 × 900 píxeles**. Usó una API FastAPI real con SQLite desechable, ADB desactivado y Vite redirigiendo `/api` a Uvicorn. El build de producción se comprobó por separado; estos recorridos no atravesaron los contenedores ni el Nginx del despliegue Docker.
 
-Para ADB, verifica primero `/api/emulator/status` sin dispositivo: debe degradarse sin afectar el resto. Con un dispositivo desechable, calibra, prepara un plan, prueba una frase incorrecta, ejecuta/cancela y confirma visualmente que ningún paso pulse la entrega final. No hagas esta prueba sobre una plantilla o cuenta con elementos que no puedas recuperar.
+El recorrido FC27 crea once cartas propias a partir de las posiciones de `/squads/formations`, propone y guarda un equipo y registra su Galería. Requiere `PLAYWRIGHT_DISPOSABLE_DB=1` y una base exclusiva de pruebas; sin esa variable se omite ese recorrido con escrituras. Los otros dos escenarios no dependen de su orden. La emulación móvil Chromium no comprueba Safari ni un teléfono real.
+
+El artefacto [fc27-browser-verification, ID 11657254992](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) contiene las capturas de plantillas/Galería y el registro de API. Se revisaron las cuatro capturas, dos vistas en móvil y escritorio, sin desbordamiento horizontal ni defectos materiales observados. Esta revisión visual se limita a esas capturas; el pase de hardware sigue pendiente. El workflow establece una retención de siete días para ese artefacto.
+
+El servicio Docker `frontend-e2e` permite probar contra Nginx mediante Playwright, pero esa variante aún no se ha ejecutado en esta verificación.
+
+Con un stack de pruebas accesible:
+
+```bash
+docker compose run --rm -e PLAYWRIGHT_DISPOSABLE_DB=1 frontend-e2e
+```
+
+Para CI o desarrollo sin Docker, inicia la API en `127.0.0.1:8000` con una SQLite desechable y la demo explícita. Desde `backend`, en una terminal con las dependencias instaladas:
+
+```bash
+export DATABASE_URL=sqlite:////tmp/fc27-e2e.db
+export ADB_ENABLED=false
+export SEED_DEMO=true
+alembic upgrade head
+python -m app.db.bootstrap
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+En otra terminal, desde la raíz, Playwright inicia Vite en el puerto 5173 y este redirige `/api` al puerto 8000:
+
+```bash
+cd frontend
+npm ci
+npx playwright install --with-deps chromium
+PLAYWRIGHT_DISPOSABLE_DB=1 npm run test:e2e
+```
+
+Si Vite ya está iniciado, configura también `PLAYWRIGHT_BASE_URL=http://127.0.0.1:5173`; con una URL externa, Playwright no inicia su propio servidor. En entornos que aíslan la red de cada ejecución, API, Vite y las pruebas deben ser procesos de una misma ejecución permitida.
+
+La descarga de Chromium estuvo bloqueada en el entorno local antes de abrir páginas; esa limitación local no impidió el pase posterior de los seis recorridos en CI. Las cuatro capturas revisadas son evidencia de esas pantallas y resoluciones, no de todos los flujos ni de Safari. El pase manual ampliado y la repetición sobre el stack Docker completo deben comprobar, con datos desechables:
+
+1. Arranque con `SEED_DEMO=false`, respuestas de `/health`, `/api/dashboard`, `/api/docs` y navegación en móvil.
+2. Cambio FC26/FC27 conservando datos y cachés coherentes.
+3. Importación con revisión; rechazo al cambiar archivo/edición y repetición sin duplicados.
+4. Análisis con posiciones alternativas, fijados/excluidos, banquillo y huecos; guardar una recomendación.
+5. Protección manual y por dos plantillas; rechazo del consumo mientras exista alguna protección.
+6. Simulación tradicional sin cambios de inventario; confirmación local y restauración desde historial.
+7. Dos lotes score, progreso parcial/completo y restauración de solo uno.
+8. Galería antes y después de consumir una carta; puntos desconocidos y corrección de una versión.
+9. Vista previa e importación de contenido; evolución válida, incompatible y con datos ausentes.
+10. Temas y controles a aproximadamente 390 px, errores visibles, acciones en curso y prevención de confirmaciones dobles.
+
+### Dispositivo ADB
+
+Primero compruebe que `/api/emulator/status` degrada sin dispositivo y el resto de la aplicación sigue disponible. Con un dispositivo de prueba, revise pantalla/resolución, calibre, capture, corrija candidatos y confirme únicamente la importación local seleccionada.
+
+Para un plan tradicional, compruebe frase incorrecta, cambios de carta/calibración, preparación, ejecución y cancelación. Inspeccione que ningún paso incluya la pulsación final de entrega. Los score deben rechazarse antes de generar preparación automática. La preparación puede cambiar la selección visible en el dispositivo; use datos y una pantalla que permitan revisar esos efectos.
+
+Siguen pendientes el build/arranque del stack Docker completo, el E2E a través de su Nginx, backup/restauración reales mediante PowerShell, Safari y un teléfono/emulador con Companion y un club EA real. Esos resultados deben añadirse cuando se ejecuten, indicando versión de Companion, resolución, entorno y cualquier fallo observado. Los datos de las comprobaciones registradas son ficticios y no demuestran una sincronización ni una entrega real en EA.

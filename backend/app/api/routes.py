@@ -1,297 +1,760 @@
-import io
+import base64
+import hashlib
+import hmac
+import json
+import re
+import secrets
+import time
+from collections import Counter
+from dataclasses import asdict
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import Response
+from pydantic import ValidationError
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
+from starlette.concurrency import run_in_threadpool
+
+from app.api.analysis import SquadRecommendationRequest
 from app.core.config import settings
 from app.db.session import get_db
 from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission
 from app.optimizers.sbc import solve, validate_solution
 from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
+from app.schemas.requirements import normalize_requirements
 from app.services.audit import record
+from app.services.editions import current_version, ensure_profile
+from app.services.gallery import record_player
 from app.services.import_export import export_players, ocr_image, parse_import
+from app.services.locks import resource_locks
 from app.services.ollama import chat, status
 from app.services.rating import calculate_rating
+from app.services.squad_analysis import FORMATIONS, athlete_keys, effective_protected_ids, formation_slots, player_positions, recommend_owned_squad, serialize_player
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
 
-def player_data(p: Player) -> dict:
-    return {key: getattr(p, key) for key in ("id", "name", "rating", "position", "league", "club", "nationality", "card_type", "rare", "special", "tradable", "price", "chemistry", "protected", "starter", "squad_role", "usefulness", "duplicate_untradeable", "deleted", "created_at")}
 
-def objective_data(o: Objective) -> dict:
-    return {key: getattr(o, key) for key in ("id", "name", "description", "category", "progress", "target", "completed", "expires_at")}
+def version_for(db: Session, version: str | None = None) -> str:
+    if version is not None and not re.fullmatch(r"FC[2-9][0-9]", version):
+        raise HTTPException(422, "Edición no reconocida")
+    return version or current_version(db)
 
-def segment_data(s: Segment) -> dict:
-    return {"id": s.id, "name": s.name, "requirements": s.requirements, "completed": s.completed}
 
-def challenge_data(c: Challenge) -> dict:
-    return {"id": c.id, "name": c.name, "description": c.description, "reward": c.reward, "completed": c.completed, "expires_at": c.expires_at, "segments": [segment_data(s) for s in c.segments]}
+def payload_version(payload, db: Session) -> str:
+    version = current_version(db)
+    if "game_version" in payload.model_fields_set and payload.game_version != version:
+        raise HTTPException(422, "Selecciona esa edición en tu perfil antes de modificar su inventario")
+    return version
 
-def squad_data(s: Squad) -> dict:
-    entries = [{"slot": entry.slot, "player": player_data(entry.player)} for entry in s.players]
-    return {"id": s.id, "name": s.name, "formation": s.formation, "primary": s.primary, "protected": s.protected, "players": entries, "rating": calculate_rating([e.player.rating for e in s.players]), "chemistry": sum(e.player.chemistry for e in s.players)}
+
+def player_data(player: Player, protected_ids: set[int] | None = None) -> dict:
+    return serialize_player(player, protected_ids)
+
+
+def objective_data(objective: Objective) -> dict:
+    return {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "progress", "target", "completed", "expires_at")}
+
+
+def score_progress(db: Session, segment: Segment) -> int:
+    return int(db.scalar(select(func.coalesce(func.sum(Submission.score_contribution), 0)).where(Submission.segment_id == segment.id, Submission.status == "confirmed")) or 0)
+
+
+def requirements_for_batch(db: Session, segment: Segment) -> dict:
+    """Apply a score segment's player and value rules to its remaining work."""
+    requirements = validated_requirements(segment.requirements)
+    if requirements["kind"] != "score":
+        return requirements
+    active = db.scalars(select(Submission).where(Submission.segment_id == segment.id, Submission.status == "confirmed")).all()
+    delivered = {player_id for row in active for player_id in row.snapshot.get("player_ids", [])}
+    if "required_player_ids" in requirements:
+        requirements["required_player_ids"] = [player_id for player_id in requirements["required_player_ids"] if player_id not in delivered]
+    if "max_total_value" in requirements:
+        requirements["max_total_value"] -= sum(row.total_cost for row in active)
+        if requirements["max_total_value"] < 0:
+            raise HTTPException(409, "Las entregas activas ya exceden el valor máximo de este segmento")
+    return requirements
+
+
+def segment_data(segment: Segment, db: Session | None = None) -> dict:
+    score = score_progress(db, segment) if db is not None and segment.requirements.get("kind") == "score" else 0
+    target = segment.requirements.get("target_score", 0)
+    return {"id": segment.id, "name": segment.name, "requirements": segment.requirements, "completed": segment.completed, "current_score": score, "target_score": target, "remaining_score": max(0, target - score)}
+
+
+def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
+    return {"id": challenge.id, "game_version": challenge.game_version, "name": challenge.name, "description": challenge.description, "reward": challenge.reward, "completed": challenge.completed, "expires_at": challenge.expires_at, "segments": [segment_data(segment, db) for segment in challenge.segments]}
+
+
+def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
+    active = [entry for entry in squad.players if not entry.player.deleted and entry.player.game_version == squad.game_version]
+    entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": True,
+                "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
+    starters = [entry for entry in active if not entry.slot.startswith("BENCH-")]
+    expected = formation_slots(squad.formation) if squad.formation in FORMATIONS else []
+    # Older saved squads numbered all slots globally (DFC-3, MC-7...). Count
+    # positions rather than treating a legacy suffix as a missing footballer.
+    present = Counter(entry.slot.rsplit("-", 1)[0] for entry in starters
+                      if entry.slot.rsplit("-", 1)[0] in player_positions(entry.player))
+    missing = []
+    for slot in expected:
+        if present[slot["position"]]:
+            present[slot["position"]] -= 1
+        else:
+            missing.append(slot)
+    return {
+        "id": squad.id, "game_version": squad.game_version, "name": squad.name, "formation": squad.formation,
+        "primary": squad.primary, "protected": squad.protected, "players": entries,
+        "rating": calculate_rating([entry.player.rating for entry in starters]),
+        "chemistry": sum(entry.player.chemistry for entry in starters), "chemistry_approximate": True,
+        "complete": len(starters) == 11 and len(expected) == 11 and not missing, "unavailable_players": len(squad.players) - len(active),
+        "missing_slots": missing,
+    }
+
 
 def get_or_404(db: Session, model, entity_id: int):
     entity = db.get(model, entity_id)
-    if not entity: raise HTTPException(404, "Registro no encontrado")
+    if not entity:
+        raise HTTPException(404, "Registro no encontrado")
+    version = current_version(db)
+    if hasattr(entity, "game_version") and entity.game_version != version:
+        raise HTTPException(404, "Registro no disponible en la edición activa")
+    if isinstance(entity, Segment) and entity.challenge.game_version != version:
+        raise HTTPException(404, "Segmento no disponible en la edición activa")
     return entity
+
+
+def available_player(db: Session, player_id: int) -> Player:
+    player = get_or_404(db, Player, player_id)
+    if player.deleted:
+        raise HTTPException(404, "Jugador no disponible")
+    return player
+
+
+def validated_requirements(requirements: dict) -> dict:
+    try:
+        return normalize_requirements(requirements)
+    except ValueError as exc:
+        raise HTTPException(422, f"Revisa los requisitos: {exc}") from exc
+
 
 @router.get("/health")
 def health(db: DB):
     db.execute(select(1))
     return {"status": "healthy", "database": "ok", "time": datetime.now(timezone.utc)}
 
+
 @router.get("/dashboard")
 def dashboard(db: DB):
-    profile = db.scalar(select(Profile).limit(1))
-    available = Player.deleted.is_(False)
-    count = db.scalar(select(func.count(Player.id)).where(available)) or 0
-    protected = db.scalar(select(func.count(Player.id)).where(available, Player.protected.is_(True))) or 0
-    duplicates = db.scalar(select(func.count(Player.id)).where(available, Player.duplicate_untradeable.is_(True))) or 0
-    pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.completed.is_(False))) or 0
-    goals = db.scalars(select(Objective).where(Objective.completed.is_(False)).order_by(Objective.expires_at).limit(5)).all()
+    profile = ensure_profile(db)
+    db.commit()
+    version = profile.game_version
+    available = (Player.deleted.is_(False), Player.game_version == version)
+    count = db.scalar(select(func.count(Player.id)).where(*available)) or 0
+    protected = len(effective_protected_ids(db, version))
+    duplicates = db.scalar(select(func.count(Player.id)).where(*available, Player.duplicate_untradeable.is_(True))) or 0
+    pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
+    goals = db.scalars(select(Objective).where(Objective.game_version == version, Objective.completed.is_(False)).order_by(Objective.expires_at).limit(5)).all()
     alerts = []
-    if duplicates: alerts.append({"level": "warning", "message": f"Tienes {duplicates} duplicados intransferibles para priorizar."})
-    if protected: alerts.append({"level": "info", "message": f"{protected} cartas están protegidas contra entregas."})
-    return {"profile": {"id": profile.id, "name": profile.name, "coins": profile.coins, "platform": profile.platform, "max_budget": profile.max_budget, "risk_level": profile.risk_level, "preferences": profile.preferences}, "counts": {"players": count, "protected": protected, "duplicates": duplicates, "pending_challenges": pending}, "objectives": [objective_data(o) for o in goals], "alerts": alerts}
+    if duplicates:
+        alerts.append({"level": "warning", "message": f"Tienes {duplicates} duplicados intransferibles para priorizar."})
+    if protected:
+        alerts.append({"level": "info", "message": f"{protected} cartas están protegidas contra entregas."})
+    return {"profile": {key: getattr(profile, key) for key in ("id", "game_version", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}, "counts": {"players": count, "protected": protected, "duplicates": duplicates, "pending_challenges": pending}, "objectives": [objective_data(goal) for goal in goals], "alerts": alerts}
+
 
 @router.get("/players")
-def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0)):
-    conditions = [Player.deleted.is_(False)]
-    if search: conditions.append(or_(Player.name.ilike(f"%{search}%"), Player.club.ilike(f"%{search}%"), Player.nationality.ilike(f"%{search}%")))
-    if position: conditions.append(Player.position == position)
-    if league: conditions.append(Player.league == league)
-    if protected is not None: conditions.append(Player.protected == protected)
-    if duplicate is not None: conditions.append(Player.duplicate_untradeable == duplicate)
-    columns = {"rating": Player.rating, "name": Player.name, "price": Player.price, "position": Player.position}
-    sort_column = columns.get(sort, Player.rating)
+def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), game_version: str | None = None):
+    version = version_for(db, game_version)
+    conditions = [Player.deleted.is_(False), Player.game_version == version]
+    if search:
+        conditions.append(or_(Player.name.ilike(f"%{search}%"), Player.club.ilike(f"%{search}%"), Player.nationality.ilike(f"%{search}%")))
+    if position:
+        conditions.append(Player.position == position)
+    if league:
+        conditions.append(Player.league == league)
+    protected_ids = effective_protected_ids(db, version)
+    if protected is not None:
+        conditions.append(Player.id.in_(protected_ids) if protected else Player.id.not_in(protected_ids))
+    if duplicate is not None:
+        conditions.append(Player.duplicate_untradeable == duplicate)
+    sort_column = {"rating": Player.rating, "name": Player.name, "price": Player.price, "position": Player.position}.get(sort, Player.rating)
     ordering = sort_column.asc() if order == "asc" else sort_column.desc()
     total = db.scalar(select(func.count(Player.id)).where(*conditions)) or 0
     players = db.scalars(select(Player).where(*conditions).order_by(ordering, Player.id).offset(offset).limit(limit)).all()
-    return {"items": [player_data(p) for p in players], "total": total, "limit": limit, "offset": offset}
+    return {"items": [player_data(player, protected_ids) for player in players], "total": total, "limit": limit, "offset": offset, "game_version": version}
+
 
 @router.post("/players", status_code=201)
 def create_player(payload: PlayerCreate, db: DB):
-    player = Player(**payload.model_dump()); db.add(player); db.flush(); record(db, "create", "player", player.id); db.commit(); db.refresh(player)
-    return player_data(player)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        values = payload.model_dump()
+        values["game_version"] = payload_version(payload, db)
+        player = Player(**values)
+        db.add(player)
+        db.flush()
+        record_player(db, player)
+        record(db, "create", "player", player.id)
+        db.commit()
+        return player_data(player, effective_protected_ids(db))
+
 
 @router.patch("/players/{player_id}")
 def update_player(player_id: int, payload: PlayerUpdate, db: DB):
-    player = get_or_404(db, Player, player_id)
-    if player.deleted: raise HTTPException(404, "Jugador no disponible")
-    changes = payload.model_dump(exclude_unset=True)
-    for key, value in changes.items(): setattr(player, key, value.strip() if isinstance(value, str) else value)
-    record(db, "update", "player", player.id, {"fields": list(changes)}); db.commit(); db.refresh(player)
-    return player_data(player)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        player = available_player(db, player_id)
+        changes = payload.model_dump(exclude_unset=True)
+        if "game_version" in changes and changes["game_version"] != player.game_version:
+            raise HTTPException(422, "No se puede trasladar una carta entre ediciones")
+        merged = {key: getattr(player, key) for key in PlayerCreate.model_fields}
+        merged.update(changes)
+        try:
+            normalized = PlayerCreate.model_validate(merged).model_dump()
+        except ValidationError as exc:
+            raise HTTPException(422, exc.errors(include_url=False, include_context=False, include_input=False)) from exc
+        for key, value in normalized.items():
+            setattr(player, key, value)
+        record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
+        record(db, "update", "player", player.id, {"fields": list(changes)})
+        db.commit()
+        return player_data(player, effective_protected_ids(db))
+
 
 @router.delete("/players/{player_id}")
 def delete_player(player_id: int, db: DB):
-    player = get_or_404(db, Player, player_id); player.deleted = True; record(db, "soft_delete", "player", player.id); db.commit()
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        player = available_player(db, player_id)
+        player.deleted = True
+        record(db, "soft_delete", "player", player.id)
+        db.commit()
     return {"ok": True}
+
 
 @router.post("/players/{player_id}/protect")
 def protect_player(player_id: int, db: DB):
-    player = get_or_404(db, Player, player_id); player.protected = not player.protected; record(db, "protect" if player.protected else "unprotect", "player", player.id); db.commit()
-    return player_data(player)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        player = available_player(db, player_id)
+        player.protected = not player.protected
+        record(db, "protect" if player.protected else "unprotect", "player", player.id, {"scope": "manual"})
+        db.commit()
+        return player_data(player, effective_protected_ids(db))
+
 
 @router.get("/players/export")
 def download_players(db: DB, format: str = Query("csv", pattern="^(csv|xlsx)$")):
     content, media = export_players(db, excel=format == "xlsx")
-    filename = f"inventario_fc26.{format}"
-    return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+    return Response(content, media_type=media, headers={"Content-Disposition": f'attachment; filename="inventario_{current_version(db).lower()}.{format}"'})
+
+
+def _import_secret(db: Session) -> bytes:
+    setting = db.get(AppSetting, "_import_signing_key")
+    if not setting or not setting.value.get("secret"):
+        raise HTTPException(503, "La configuración de importación requiere inicializar el perfil")
+    return setting.value["secret"].encode()
+
+
+def _new_preview_token(db: Session, content_hash: str, suffix: str, version: str) -> str:
+    payload = {"hash": content_hash, "format": suffix, "version": version, "nonce": secrets.token_urlsafe(18), "expires": int(time.time()) + 3600}
+    encoded = base64.urlsafe_b64encode(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).decode().rstrip("=")
+    signature = hmac.new(_import_secret(db), encoded.encode(), hashlib.sha256).hexdigest()
+    return f"{encoded}.{signature}"
+
+
+def _check_preview_token(db: Session, token: str | None, content_hash: str, suffix: str, version: str) -> dict:
+    if not token:
+        raise HTTPException(422, "Revisa el archivo antes de confirmar la importación")
+    try:
+        encoded, signature = token.split(".", 1)
+        expected = hmac.new(_import_secret(db), encoded.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            raise ValueError("signature")
+        payload = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
+        if payload["hash"] != content_hash or payload["format"] != suffix or payload["version"] != version:
+            raise ValueError("file")
+        if not isinstance(payload["expires"], int):
+            raise ValueError("expires")
+    except (ValueError, KeyError, TypeError) as exc:
+        raise HTTPException(422, "El archivo o la edición no coinciden con la vista previa. Revisa el archivo de nuevo") from exc
+    return payload
+
+
+def _parse_player_records(content: bytes, filename: str, version: str) -> list[dict]:
+    try:
+        records = parse_import(content, filename)
+        if not records:
+            raise ValueError("El archivo no contiene jugadores")
+        if len(records) > 5000:
+            raise ValueError("El límite es de 5000 cartas por archivo")
+        for item in records:
+            if item.get("game_version") and item["game_version"] != version:
+                raise ValueError("El archivo incluye otra edición. Cambia la edición activa antes de importarlo")
+            item["game_version"] = version
+        return records
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+def _process_import(db: Session, content: bytes, filename: str, confirm: bool, token: str | None) -> dict:
+    content_hash = hashlib.sha256(content).hexdigest()
+    suffix = Path(filename).suffix.lower()
+    if not confirm:
+        version = current_version(db)
+        records = _parse_player_records(content, filename, version)
+        return {"preview": records[:100], "total": len(records), "requires_confirmation": True, "content_hash": content_hash, "preview_token": _new_preview_token(db, content_hash, suffix, version), "game_version": version}
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        version = current_version(db)
+        payload = _check_preview_token(db, token, content_hash, suffix, version)
+        receipt_key = "_import_receipt_" + hashlib.sha256(token.encode()).hexdigest()
+        receipt = db.get(AppSetting, receipt_key)
+        if receipt:
+            return {"imported": 0, "already_imported": True, "original_imported": receipt.value["imported"], "content_hash": content_hash}
+        if payload["expires"] < int(time.time()):
+            raise HTTPException(422, "La vista previa caducó. Revisa el archivo de nuevo")
+        records = _parse_player_records(content, filename, version)
+        players = [Player(**item) for item in records]
+        db.add_all(players)
+        db.flush()
+        for player in players:
+            record_player(db, player)
+        db.add(AppSetting(key=receipt_key, value={"imported": len(players), "hash": content_hash, "game_version": version}))
+        record(db, "import", "players", details={"count": len(players), "filename": filename[:120], "content_hash": content_hash, "game_version": version})
+        db.commit()
+        return {"imported": len(players), "already_imported": False, "content_hash": content_hash}
+
 
 @router.post("/players/import")
-async def import_players(db: DB, file: UploadFile = File(...), confirm: bool = Form(False)):
-    if not (file.filename or "").lower().endswith((".csv", ".xlsx")): raise HTTPException(415, "Solo se permiten CSV o XLSX")
+async def import_players(db: DB, file: UploadFile = File(...), confirm: bool = Form(False), preview_token: str | None = Form(default=None, max_length=2048)):
+    filename = file.filename or ""
+    if not filename.lower().endswith((".csv", ".xlsx")):
+        raise HTTPException(415, "Solo se permiten CSV o XLSX")
     content = await file.read(settings.max_upload_mb * 1024 * 1024 + 1)
-    if len(content) > settings.max_upload_mb * 1024 * 1024: raise HTTPException(413, "Archivo demasiado grande")
-    try: records = parse_import(content, file.filename or "import.csv")
-    except Exception as exc: raise HTTPException(422, str(exc)) from exc
-    if not confirm: return {"preview": records[:100], "total": len(records), "requires_confirmation": True}
-    for item in records: db.add(Player(**item))
-    record(db, "import", "players", details={"count": len(records), "filename": (file.filename or "")[:120]}); db.commit()
-    return {"imported": len(records)}
+    if len(content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, "Archivo demasiado grande")
+    return await run_in_threadpool(_process_import, db, content, filename, confirm, preview_token)
+
 
 @router.get("/duplicates")
 def duplicates(db: DB):
-    players = db.scalars(select(Player).where(Player.deleted.is_(False), Player.duplicate_untradeable.is_(True)).order_by(Player.rating.desc())).all()
-    return [player_data(p) for p in players]
+    version = current_version(db)
+    protected = effective_protected_ids(db, version)
+    players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.duplicate_untradeable.is_(True)).order_by(Player.rating.desc())).all()
+    return [player_data(player, protected) for player in players]
+
 
 @router.post("/duplicates/{player_id}/used")
 def mark_duplicate_used(player_id: int, db: DB):
-    player = get_or_404(db, Player, player_id); player.duplicate_untradeable = False; record(db, "duplicate_used", "player", player.id); db.commit(); return player_data(player)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        player = available_player(db, player_id)
+        player.duplicate_untradeable = False
+        record(db, "duplicate_used", "player", player.id)
+        db.commit()
+        return player_data(player, effective_protected_ids(db))
+
 
 @router.get("/squads")
-def list_squads(db: DB):
-    squads = db.scalars(select(Squad).options(selectinload(Squad.players).selectinload(SquadPlayer.player)).order_by(Squad.primary.desc(), Squad.id)).all()
-    return [squad_data(s) for s in squads]
+def list_squads(db: DB, game_version: str | None = None):
+    version = version_for(db, game_version)
+    squads = db.scalars(select(Squad).where(Squad.game_version == version).options(selectinload(Squad.players).selectinload(SquadPlayer.player)).order_by(Squad.primary.desc(), Squad.id)).all()
+    protected = effective_protected_ids(db, version)
+    return [squad_data(squad, protected) for squad in squads]
+
 
 @router.post("/squads", status_code=201)
 def create_squad(payload: SquadCreate, db: DB):
-    if len(set(payload.player_ids)) != len(payload.player_ids): raise HTTPException(422, "No se permiten jugadores repetidos")
-    players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False))).all() if payload.player_ids else []
-    if len(players) != len(payload.player_ids): raise HTTPException(422, "Uno o más jugadores no están disponibles")
-    squad = Squad(name=payload.name, formation=payload.formation); db.add(squad); db.flush()
-    for index, player_id in enumerate(payload.player_ids): db.add(SquadPlayer(squad_id=squad.id, player_id=player_id, slot=f"POS-{index + 1}"))
-    record(db, "create", "squad", squad.id); db.commit()
-    squad = db.scalar(select(Squad).where(Squad.id == squad.id).options(selectinload(Squad.players).selectinload(SquadPlayer.player)))
-    return squad_data(squad)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        version = payload_version(payload, db)
+        if payload.formation not in FORMATIONS:
+            raise HTTPException(422, "Formación no disponible")
+        players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False), Player.game_version == version)).all() if payload.player_ids else []
+        if len(players) != len(payload.player_ids) or len(set(payload.player_ids)) != len(payload.player_ids):
+            raise HTTPException(422, "Hay jugadores repetidos o no disponibles")
+        identities = set()
+        for player in players:
+            keys = athlete_keys(player)
+            if identities & keys:
+                raise HTTPException(422, "No se pueden alinear dos versiones del mismo futbolista")
+            identities.update(keys)
+        by_id = {player.id: player for player in players}
+        assignments = []
+        if payload.slots is not None:
+            allowed = {slot["slot"]: slot["position"] for slot in formation_slots(payload.formation)}
+            allowed.update({f"BENCH-{number}": None for number in range(1, 13)})
+            if len(payload.slots) != len(players) or len(set(payload.slots)) != len(payload.slots):
+                raise HTTPException(422, "Cada jugador requiere una plaza única")
+            for player_id, slot in zip(payload.player_ids, payload.slots):
+                if slot not in allowed or (allowed[slot] and allowed[slot] not in player_positions(by_id[player_id])):
+                    raise HTTPException(422, "Una carta no es elegible para la plaza indicada")
+                assignments.append((player_id, slot))
+        elif players:
+            starters = [by_id[player_id] for player_id in payload.player_ids[:11]]
+            try:
+                result = recommend_owned_squad(starters, game_version=version, formation=payload.formation, locked_player_ids=[p.id for p in starters], include_unreviewed=True, bench_size=0)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
+            assignments = [(row["player"]["id"], row["slot"]) for row in result["lineup"]]
+            assignments += [(player_id, f"BENCH-{number}") for number, player_id in enumerate(payload.player_ids[11:], 1)]
+        squad = Squad(name=payload.name, formation=payload.formation, game_version=version)
+        db.add(squad)
+        db.flush()
+        for player_id, slot in assignments:
+            db.add(SquadPlayer(squad_id=squad.id, player_id=player_id, slot=slot))
+        record(db, "create", "squad", squad.id)
+        db.commit()
+        db.refresh(squad)
+        return squad_data(squad, effective_protected_ids(db, version))
+
 
 @router.post("/squads/{squad_id}/duplicate")
 def duplicate_squad(squad_id: int, db: DB):
-    source = db.scalar(select(Squad).where(Squad.id == squad_id).options(selectinload(Squad.players)))
-    if not source: raise HTTPException(404, "Plantilla no encontrada")
-    copy = Squad(name=f"{source.name} (copia)", formation=source.formation); db.add(copy); db.flush()
-    for entry in source.players: db.add(SquadPlayer(squad_id=copy.id, player_id=entry.player_id, slot=entry.slot))
-    record(db, "duplicate", "squad", copy.id, {"source": squad_id}); db.commit()
-    return {"id": copy.id, "name": copy.name}
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        source = get_or_404(db, Squad, squad_id)
+        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version)
+        db.add(copy)
+        db.flush()
+        copied = 0
+        for entry in source.players:
+            if not entry.player.deleted and entry.player.game_version == source.game_version:
+                db.add(SquadPlayer(squad_id=copy.id, player_id=entry.player_id, slot=entry.slot))
+                copied += 1
+        record(db, "duplicate", "squad", copy.id, {"source": squad_id, "available_players": copied})
+        db.commit()
+        return {"id": copy.id, "name": copy.name, "copied_players": copied}
+
 
 @router.post("/squads/{squad_id}/protect")
 def protect_squad(squad_id: int, db: DB):
-    squad = db.scalar(select(Squad).where(Squad.id == squad_id).options(selectinload(Squad.players).selectinload(SquadPlayer.player)))
-    if not squad: raise HTTPException(404, "Plantilla no encontrada")
-    squad.protected = not squad.protected
-    for entry in squad.players: entry.player.protected = squad.protected
-    record(db, "protect" if squad.protected else "unprotect", "squad", squad.id, {"players": len(squad.players)}); db.commit()
-    return squad_data(squad)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        squad = get_or_404(db, Squad, squad_id)
+        squad.protected = not squad.protected
+        record(db, "protect" if squad.protected else "unprotect", "squad", squad.id, {"players": len(squad.players), "scope": "squad"})
+        db.commit()
+        return squad_data(squad, effective_protected_ids(db))
+
 
 @router.post("/squads/recommend")
-def recommend_squad(db: DB, formation: str = "4-3-3"):
-    positions = ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MCO", "ED", "DC", "EI"]
-    available = db.scalars(select(Player).where(Player.deleted.is_(False)).order_by(Player.rating.desc(), Player.chemistry.desc())).all()
-    chosen = []
-    for position in positions:
-        candidate = next((p for p in available if p.position == position and p.id not in {c.id for c in chosen}), None)
-        if candidate: chosen.append(candidate)
-    return {"formation": formation, "players": [player_data(p) for p in chosen], "rating": calculate_rating([p.rating for p in chosen]), "chemistry": sum(p.chemistry for p in chosen), "recommendation": True}
+def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommendationRequest | None = None):
+    options = (payload or SquadRecommendationRequest()).model_dump()
+    if formation is not None:
+        if formation not in FORMATIONS:
+            raise HTTPException(422, "Formación no disponible")
+        options["formation"] = formation
+    version = current_version(db)
+    players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
+    try:
+        return recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 
 @router.get("/challenges")
-def list_challenges(db: DB):
-    challenges = db.scalars(select(Challenge).options(selectinload(Challenge.segments)).order_by(Challenge.completed, Challenge.id)).all()
-    return [challenge_data(c) for c in challenges]
+def list_challenges(db: DB, game_version: str | None = None):
+    version = version_for(db, game_version)
+    challenges = db.scalars(select(Challenge).where(Challenge.game_version == version).options(selectinload(Challenge.segments)).order_by(Challenge.completed, Challenge.id)).all()
+    return [challenge_data(challenge, db) for challenge in challenges]
+
 
 @router.post("/challenges", status_code=201)
 def create_challenge(payload: ChallengeCreate, db: DB):
-    challenge = Challenge(**payload.model_dump()); db.add(challenge); db.flush(); record(db, "create", "challenge", challenge.id); db.commit(); return challenge_data(challenge)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        values = payload.model_dump(exclude={"segments"})
+        values["game_version"] = payload_version(payload, db)
+        challenge = Challenge(**values)
+        db.add(challenge)
+        db.flush()
+        for segment in payload.segments:
+            db.add(Segment(challenge_id=challenge.id, name=segment.name, requirements=validated_requirements(segment.requirements)))
+        record(db, "create", "challenge", challenge.id, {"segments": len(payload.segments)})
+        db.commit()
+        db.refresh(challenge)
+        return challenge_data(challenge, db)
+
 
 @router.post("/challenges/{challenge_id}/segments", status_code=201)
 def create_segment(challenge_id: int, payload: SegmentCreate, db: DB):
-    get_or_404(db, Challenge, challenge_id)
-    segment = Segment(challenge_id=challenge_id, **payload.model_dump()); db.add(segment); db.flush(); record(db, "create", "segment", segment.id); db.commit(); return segment_data(segment)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        challenge = get_or_404(db, Challenge, challenge_id)
+        segment = Segment(challenge_id=challenge_id, name=payload.name, requirements=validated_requirements(payload.requirements))
+        challenge.completed = False
+        db.add(segment)
+        db.flush()
+        record(db, "create", "segment", segment.id)
+        db.commit()
+        return segment_data(segment, db)
+
+
+@router.patch("/segments/{segment_id}")
+def update_segment(segment_id: int, payload: SegmentCreate, db: DB):
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        segment = get_or_404(db, Segment, segment_id)
+        requirements = validated_requirements(payload.requirements)
+        active = db.scalar(select(Submission.id).where(Submission.segment_id == segment.id, Submission.status == "confirmed").limit(1))
+        if active is not None and requirements != validated_requirements(segment.requirements):
+            raise HTTPException(409, "Restaura las entregas activas antes de cambiar los requisitos")
+        segment.name = payload.name
+        segment.requirements = requirements
+        record(db, "update", "segment", segment.id)
+        db.commit()
+        return segment_data(segment, db)
+
 
 def optimization_payload(db: Session, segment: Segment, request: OptimizeRequest):
-    players = db.scalars(select(Player).where(Player.deleted.is_(False))).all()
-    solutions = solve(players, segment.requirements, set(request.allow_protected_ids), set(request.exclude_ids), request.max_solutions)
-    by_id = {p.id: p for p in players}
-    return [{"player_ids": item.player_ids, "players": [player_data(by_id[pid]) for pid in item.player_ids], "total_cost": item.total_cost, "rating": item.rating, "chemistry": item.chemistry, "valid": item.valid, "violations": item.violations, "uses_protected": any(by_id[pid].protected for pid in item.player_ids), "duplicate_count": sum(by_id[pid].duplicate_untradeable for pid in item.player_ids)} for item in solutions]
+    version = current_version(db)
+    requirements = requirements_for_batch(db, segment)
+    players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
+    protected = effective_protected_ids(db, version)
+    progress = score_progress(db, segment) if requirements["kind"] == "score" else 0
+    solutions = solve(players, requirements, set(request.allow_protected_ids), set(request.exclude_ids), request.max_solutions, effective_protected_ids=protected, current_score=progress)
+    by_id = {player.id: player for player in players}
+    return [{**asdict(item), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True} for item in solutions]
+
 
 @router.post("/segments/{segment_id}/optimize")
 def optimize_segment(segment_id: int, payload: OptimizeRequest, db: DB):
     segment = get_or_404(db, Segment, segment_id)
+    if segment.completed:
+        raise HTTPException(409, "El segmento ya está completado")
     solutions = optimization_payload(db, segment, payload)
-    return {"segment": segment_data(segment), "solutions": solutions, "message": "No existe una solución válida con el inventario y protecciones actuales." if not solutions else None, "simulation": True}
+    return {"segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": ["La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
+
+
+def _recompute_completion(db: Session, segment: Segment) -> int:
+    db.flush()
+    progress = score_progress(db, segment)
+    if segment.requirements.get("kind") == "score":
+        segment.completed = progress >= segment.requirements["target_score"]
+    else:
+        segment.completed = db.scalar(select(Submission.id).where(Submission.segment_id == segment.id, Submission.status == "confirmed").limit(1)) is not None
+    db.flush()
+    challenge = segment.challenge
+    challenge.completed = all(row.completed for row in db.scalars(select(Segment).where(Segment.challenge_id == challenge.id)).all())
+    return progress
+
 
 @router.post("/segments/{segment_id}/confirm")
 def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
-    segment = get_or_404(db, Segment, segment_id)
-    if segment.completed: raise HTTPException(409, "El segmento ya está completado")
-    players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False))).all()
-    if len(players) != len(set(payload.player_ids)): raise HTTPException(422, "Hay jugadores repetidos o no disponibles")
-    if any(p.protected for p in players): raise HTTPException(422, "No se pueden entregar jugadores protegidos sin autorización individual")
-    violations = validate_solution(players, segment.requirements)
-    if violations: raise HTTPException(422, {"message": "La solución no es válida", "violations": violations})
-    snapshot = {str(p.id): {"deleted": p.deleted, "duplicate_untradeable": p.duplicate_untradeable} for p in players}
-    for player in players: player.deleted = True; player.duplicate_untradeable = False
-    segment.completed = True
-    submission = Submission(segment_id=segment.id, total_cost=sum(p.price for p in players), snapshot={"players": snapshot, "player_ids": payload.player_ids})
-    db.add(submission); db.flush()
-    challenge = get_or_404(db, Challenge, segment.challenge_id)
-    db.flush(); challenge.completed = all(s.completed for s in db.scalars(select(Segment).where(Segment.challenge_id == challenge.id)).all())
-    record(db, "confirm", "submission", submission.id, {"segment_id": segment.id, "players": payload.player_ids}); db.commit()
-    return {"submission_id": submission.id, "confirmed": True, "consumed_players": len(players)}
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        segment = get_or_404(db, Segment, segment_id)
+        requirements = requirements_for_batch(db, segment)
+        if segment.completed:
+            raise HTTPException(409, "El segmento ya está completado")
+        if len(payload.player_ids) != len(set(payload.player_ids)):
+            raise HTTPException(422, "No se permiten jugadores repetidos")
+        version = current_version(db)
+        players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False), Player.game_version == version).order_by(Player.id).with_for_update()).all()
+        if len(players) != len(payload.player_ids):
+            raise HTTPException(422, "Hay jugadores no disponibles en la edición activa")
+        protected = effective_protected_ids(db, version)
+        if any(player.id in protected for player in players):
+            raise HTTPException(422, "Hay cartas protegidas individualmente o por una plantilla")
+        progress = score_progress(db, segment) if requirements["kind"] == "score" else 0
+        violations = validate_solution(players, requirements, current_score=progress)
+        if violations:
+            raise HTTPException(422, {"message": "La solución no es válida", "violations": violations})
+        contribution = sum(player.gallery_score for player in players) if requirements["kind"] == "score" else 0
+        total_value = sum(player.price for player in players)
+        if max(contribution, total_value) > 2_147_483_647:
+            raise HTTPException(422, "El valor total de esta entrega excede el límite de almacenamiento")
+        snapshot = {
+            "ownership_version": 1, "requirements": requirements, "game_version": version,
+            "players": {str(player.id): {"deleted": player.deleted, "duplicate_untradeable": player.duplicate_untradeable, "consumed_by_submission_id": player.consumed_by_submission_id} for player in players},
+            "player_ids": list(payload.player_ids),
+            "cards": [{"id": player.id, "name": player.name, "rating": player.rating, "price": player.price, "gallery_score": player.gallery_score, "card_id": player.card_id, "base_card_id": player.base_card_id, "data_reviewed": player.data_reviewed, "data_source": player.data_source} for player in players],
+        }
+        submission = Submission(segment_id=segment.id, game_version=version, total_cost=total_value, score_contribution=contribution, snapshot=snapshot)
+        db.add(submission)
+        db.flush()
+        for player in players:
+            record_player(db, player)
+            player.deleted = True
+            player.duplicate_untradeable = False
+            player.consumed_by_submission_id = submission.id
+        progress = _recompute_completion(db, segment)
+        record(db, "confirm", "submission", submission.id, {"segment_id": segment.id, "players": payload.player_ids, "score_contribution": contribution, "partial": not segment.completed})
+        db.commit()
+        return {"submission_id": submission.id, "confirmed": True, "consumed_players": len(players), "completed": segment.completed, "score_contribution": contribution, "current_score": progress, "remaining_score": max(0, requirements.get("target_score", 0) - progress)}
+
+
+@router.get("/submissions")
+def list_submissions(db: DB, limit: int = Query(50, ge=1, le=200)):
+    version = current_version(db)
+    rows = db.scalars(select(Submission).where(Submission.game_version == version).order_by(Submission.id.desc()).limit(limit)).all()
+    items = []
+    for row in rows:
+        segment = db.get(Segment, row.segment_id)
+        items.append({"id": row.id, "game_version": row.game_version, "segment_id": row.segment_id, "segment_name": segment.name, "challenge_name": segment.challenge.name, "status": row.status, "total_cost": row.total_cost, "score_contribution": row.score_contribution, "player_ids": row.snapshot.get("player_ids", []), "created_at": row.created_at})
+    total = db.scalar(select(func.count(Submission.id)).where(Submission.game_version == version)) or 0
+    return {"items": items, "total": total}
+
 
 @router.post("/submissions/{submission_id}/restore")
 def restore_submission(submission_id: int, db: DB):
-    submission = get_or_404(db, Submission, submission_id)
-    if submission.status == "restored": raise HTTPException(409, "La entrega ya fue restaurada")
-    for raw_id, state in submission.snapshot.get("players", {}).items():
-        player = db.get(Player, int(raw_id))
-        if player:
-            player.deleted = bool(state.get("deleted", False)); player.duplicate_untradeable = bool(state.get("duplicate_untradeable", False))
-    segment = get_or_404(db, Segment, submission.segment_id); segment.completed = False
-    challenge = get_or_404(db, Challenge, segment.challenge_id); challenge.completed = False; submission.status = "restored"
-    record(db, "restore", "submission", submission.id); db.commit()
-    return {"restored": True, "players": len(submission.snapshot.get("players", {}))}
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        submission = get_or_404(db, Submission, submission_id)
+        if submission.status != "confirmed":
+            raise HTTPException(409, "La entrega ya fue restaurada o no está confirmada")
+        states = submission.snapshot.get("players", {})
+        if not states:
+            raise HTTPException(409, "La entrega no contiene un snapshot restaurable")
+        players = []
+        legacy_rows = None
+        for raw_id, state in states.items():
+            player = db.get(Player, int(raw_id))
+            if not player or player.game_version != submission.game_version or not player.deleted:
+                raise HTTPException(409, "El inventario cambió y no permite una restauración segura")
+            if player.consumed_by_submission_id != submission.id:
+                if player.consumed_by_submission_id is not None or submission.snapshot.get("ownership_version"):
+                    raise HTTPException(409, "Una carta pertenece a otra entrega activa")
+                if legacy_rows is None:
+                    legacy_rows = db.scalars(select(Submission).where(Submission.game_version == submission.game_version, Submission.status == "confirmed")).all()
+                owners = [row.id for row in legacy_rows if str(player.id) in row.snapshot.get("players", {})]
+                if owners != [submission.id]:
+                    raise HTTPException(409, "La entrega antigua tiene propietarios ambiguos y requiere revisión")
+            players.append((player, state))
+        for player, state in players:
+            player.deleted = bool(state.get("deleted", False))
+            player.duplicate_untradeable = bool(state.get("duplicate_untradeable", False))
+            player.consumed_by_submission_id = state.get("consumed_by_submission_id")
+        submission.status = "restored"
+        segment = get_or_404(db, Segment, submission.segment_id)
+        progress = _recompute_completion(db, segment)
+        record(db, "restore", "submission", submission.id, {"players": len(players), "current_score": progress})
+        db.commit()
+        return {"restored": True, "players": len(players), "current_score": progress, "completed": segment.completed}
+
 
 @router.get("/objectives")
-def list_objectives(db: DB):
-    return [objective_data(o) for o in db.scalars(select(Objective).order_by(Objective.completed, Objective.expires_at)).all()]
+def list_objectives(db: DB, game_version: str | None = None):
+    version = version_for(db, game_version)
+    return [objective_data(objective) for objective in db.scalars(select(Objective).where(Objective.game_version == version).order_by(Objective.completed, Objective.expires_at)).all()]
+
 
 @router.post("/objectives", status_code=201)
 def create_objective(payload: ObjectiveCreate, db: DB):
-    objective = Objective(**payload.model_dump()); objective.completed = objective.progress >= objective.target; db.add(objective); db.flush(); record(db, "create", "objective", objective.id); db.commit(); return objective_data(objective)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        values = payload.model_dump()
+        values["game_version"] = payload_version(payload, db)
+        objective = Objective(**values)
+        objective.completed = objective.progress >= objective.target
+        db.add(objective)
+        db.flush()
+        record(db, "create", "objective", objective.id)
+        db.commit()
+        return objective_data(objective)
+
 
 @router.patch("/objectives/{objective_id}")
 def update_objective(objective_id: int, payload: ObjectiveUpdate, db: DB):
-    objective = get_or_404(db, Objective, objective_id)
-    for key, value in payload.model_dump(exclude_unset=True).items(): setattr(objective, key, value)
-    if payload.completed is None: objective.completed = objective.progress >= objective.target
-    record(db, "update", "objective", objective.id); db.commit(); return objective_data(objective)
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        objective = get_or_404(db, Objective, objective_id)
+        for key, value in payload.model_dump(exclude_unset=True).items():
+            setattr(objective, key, value)
+        if payload.completed is None:
+            objective.completed = objective.progress >= objective.target
+        record(db, "update", "objective", objective.id)
+        db.commit()
+        return objective_data(objective)
+
 
 @router.get("/ai/status")
-async def ai_status(): return await status()
+async def ai_status():
+    return await status()
+
 
 @router.post("/ai/chat")
 async def ai_chat(payload: ChatRequest, db: DB):
-    count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False))) or 0
-    duplicates_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.duplicate_untradeable.is_(True))) or 0
-    protected_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.protected.is_(True))) or 0
-    pending = db.scalars(select(Challenge.name).where(Challenge.completed.is_(False)).limit(10)).all()
-    context = f"DATOS REGISTRADOS: {count} jugadores; {duplicates_count} duplicados; {protected_count} protegidos; DCP pendientes: {', '.join(pending)}."
+    version = current_version(db)
+    conditions = (Player.game_version == version, Player.deleted.is_(False))
+    count = db.scalar(select(func.count(Player.id)).where(*conditions)) or 0
+    duplicates_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.duplicate_untradeable.is_(True))) or 0
+    protected_count = len(effective_protected_ids(db, version))
+    pending = db.scalars(select(Challenge.name).where(Challenge.game_version == version, Challenge.completed.is_(False)).limit(10)).all()
+    context = f"DATOS REGISTRADOS {version}: {count} jugadores; {duplicates_count} duplicados; {protected_count} protegidos; DCP pendientes: {', '.join(pending)}."
     result = await chat(payload.message, context)
-    db.add(ChatMessage(role="user", content=payload.message, metadata_json={"source": "local"}))
-    db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model}))
-    record(db, "chat", "ai", details={"available": result["available"], "message_length": len(payload.message)}); db.commit()
+    db.add(ChatMessage(role="user", content=payload.message, metadata_json={"source": "local", "game_version": version}))
+    db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model, "game_version": version}))
+    record(db, "chat", "ai", details={"available": result["available"], "message_length": len(payload.message), "game_version": version})
+    db.commit()
     return result
+
 
 @router.get("/ai/history")
 def ai_history(db: DB, limit: int = Query(50, ge=1, le=200)):
-    rows = list(reversed(db.scalars(select(ChatMessage).order_by(ChatMessage.id.desc()).limit(limit)).all()))
+    version = current_version(db)
+    edition = ChatMessage.metadata_json["game_version"].as_string()
+    condition = or_(edition == version, edition.is_(None)) if version == "FC26" else edition == version
+    rows = list(reversed(db.scalars(select(ChatMessage).where(condition).order_by(ChatMessage.id.desc()).limit(limit)).all()))
     return [{"id": row.id, "role": row.role, "content": row.content, "metadata": row.metadata_json, "created_at": row.created_at} for row in rows]
+
 
 @router.post("/ocr/preview")
 async def ocr_preview(file: UploadFile = File(...)):
-    allowed = {"image/jpeg", "image/png", "image/webp"}
-    if file.content_type not in allowed: raise HTTPException(415, "Formato no permitido. Usa JPEG, PNG o WebP")
+    if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(415, "Formato no permitido. Usa JPEG, PNG o WebP")
     content = await file.read(settings.max_upload_mb * 1024 * 1024 + 1)
-    if len(content) > settings.max_upload_mb * 1024 * 1024: raise HTTPException(413, "Imagen demasiado grande")
-    try: return ocr_image(content)
-    except Exception as exc: raise HTTPException(422, "No se pudo procesar la imagen") from exc
+    if len(content) > settings.max_upload_mb * 1024 * 1024:
+        raise HTTPException(413, "Imagen demasiado grande")
+    try:
+        return await run_in_threadpool(ocr_image, content)
+    except Exception as exc:
+        raise HTTPException(422, "No se pudo procesar la imagen") from exc
+
 
 @router.get("/profile")
 def get_profile(db: DB):
-    profile = db.scalar(select(Profile).limit(1)); return {key: getattr(profile, key) for key in ("id", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}
+    profile = ensure_profile(db)
+    db.commit()
+    return {key: getattr(profile, key) for key in ("id", "game_version", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}
+
 
 @router.patch("/profile")
 def update_profile(payload: ProfileUpdate, db: DB):
-    profile = db.scalar(select(Profile).limit(1))
-    for key, value in payload.model_dump(exclude_unset=True).items(): setattr(profile, key, value)
-    record(db, "update", "profile", profile.id); db.commit(); return {key: getattr(profile, key) for key in ("id", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}
+    with resource_locks(db, "inventory"):
+        db.expire_all()
+        profile = ensure_profile(db)
+        for key, value in payload.model_dump(exclude_unset=True).items():
+            setattr(profile, key, value)
+        record(db, "update", "profile", profile.id)
+        db.commit()
+        return {key: getattr(profile, key) for key in ("id", "game_version", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}
+
 
 @router.get("/settings")
 def list_settings(db: DB):
-    return {row.key: row.value for row in db.scalars(select(AppSetting)).all()}
+    return {row.key: row.value for row in db.scalars(select(AppSetting)).all() if not row.key.startswith("_")}
+
 
 @router.put("/settings/{key}")
 def update_setting(key: str, value: dict, db: DB):
-    if not key.replace("_", "").isalnum() or len(key) > 80: raise HTTPException(422, "Clave inválida")
+    if key.startswith("_") or not key.replace("_", "").isalnum() or len(key) > 80:
+        raise HTTPException(422, "Clave inválida o reservada")
     setting = db.get(AppSetting, key)
-    if setting: setting.value = value
-    else: db.add(AppSetting(key=key, value=value))
-    record(db, "update", "setting", details={"key": key}); db.commit(); return {"key": key, "value": value}
+    if setting:
+        setting.value = value
+    else:
+        db.add(AppSetting(key=key, value=value))
+    record(db, "update", "setting", details={"key": key})
+    db.commit()
+    return {"key": key, "value": value}
+
 
 @router.get("/audit")
 def audit_logs(db: DB, limit: int = Query(50, ge=1, le=200)):

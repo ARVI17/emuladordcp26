@@ -1,136 +1,137 @@
-# emuladordcp26 — Asistente local FC 26
+# Club Lab · FC 27
 
-Aplicación local, mobile-first y no oficial para administrar un club ficticio, proteger cartas, organizar plantillas y objetivos, importar inventario, revisar capturas con OCR y resolver DCP mediante optimización determinista. Puede preparar en un teléfono o emulador Android conectado por ADB una combinación ya calculada, siempre con autorización explícita y deteniéndose antes de la entrega final. El frontend consume una API FastAPI real y toda la información se persiste en PostgreSQL local.
+Asistente local y no oficial para **analizar tus jugadores, armar plantillas, planificar DCP y llevar una Galería del club**. Incluye evoluciones con caminos y cadenas simuladas, noticias públicas y paquetes de contenido revisables. React/TypeScript, FastAPI, PostgreSQL y OR-Tools; chat local opcional con Ollama y lectura asistida de Companion por ADB.
 
-No inicia sesión ni se conecta directamente a las API de EA. Nunca solicita correo, contraseña, cookies, tokens ni códigos de verificación. La sesión, si se usa la preparación asistida, permanece dentro del dispositivo controlado por su propietario.
+El repositorio conserva el nombre `emuladordcp26` y los nombres de sus volúmenes para que actualizar no separe tu instalación de sus datos. **FC27 es la edición inicial; los datos existentes de FC26 se conservan como archivo separado.**
 
-## Requisitos
+## Qué puedes hacer
 
-- Windows 10/11, macOS o Linux con Docker Desktop/Engine y Docker Compose.
-- 4 GB de RAM libres para la aplicación base; 8 GB recomendados.
-- 12 GB o más de RAM si se usa Ollama junto con un emulador Android. El modelo `qwen2.5:3b` necesita además varios GB de disco.
-- Puertos libres: `8080` para la aplicación y `55432` para PostgreSQL. Ambos se pueden cambiar en `.env`.
+| Área | Funciones implementadas |
+| --- | --- |
+| Club | Crear, editar, buscar y paginar cartas; importar CSV/XLSX con revisión; registrar atributos, posiciones alternativas, PlayStyles, roles, cesiones, evolución, holográficos y puntuación revisada. |
+| Análisis | Ver cobertura por posición, referentes, huecos y datos pendientes. La recomendación explica qué información utilizó. |
+| Plantillas | Proponer once y siete suplentes en cinco formaciones; elegir enfoque, fijar/excluir jugadores y usar posiciones alternativas. Guardar y proteger equipos completos. |
+| Galería | Registrar adquisiciones locales, conservar cartas que ya no están disponibles, crear conjuntos con filtros/etiquetas y evaluar grados cuando hay reglas y puntos revisados. |
+| Evoluciones | Registrar requisitos y caminos, simular hasta cinco evoluciones encadenadas con topes y comprobar elegibilidad sin modificar las cartas. |
+| DCP | Resolver requisitos tradicionales o puntuación revisada, gestionar entregas parciales, proteger jugadores y restaurar una entrega local desde su historial. |
+| Novedades | Consultar referencias públicas de EA, actualizar titulares e importar versiones revisadas de conjuntos/evoluciones sin editar código. |
+| Companion | Leer candidatos revisables y requisitos, inspeccionar capturas y preparar un DCP tradicional mediante un plan ADB expresamente autorizado. |
 
-En Windows, instala Docker Desktop, activa WSL 2 cuando el instalador lo solicite y espera a que Docker indique que el motor está listo.
+Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni usa una API autenticada del club. La preparación ADB termina antes de entregar el DCP; la confirmación del inventario local y la entrega en el juego son acciones distintas.
 
-## Inicio en un comando
+## Empezar
 
-```bash
-docker compose up --build
-```
-
-Abre:
-
-- Aplicación: http://localhost:8080
-- Documentación de API: http://localhost:8080/api/docs
-- Health check: http://localhost:8080/health
-
-El proyecto usa contenedores dedicados llamados `emuladordcp26-database`, `emuladordcp26-backend`, `emuladordcp26-frontend` y `emuladordcp26-nginx`. No reutiliza los contenedores de otros proyectos. La base queda en el volumen `emuladordcp26_postgres_data`.
-
-En el primer inicio, PostgreSQL se prepara, Alembic aplica las migraciones y el backend carga datos demostrativos solo si la base está vacía: 132 jugadores, 5 DCP, 10 objetivos/evoluciones y una plantilla principal.
-
-## Configuración
-
-Opcionalmente copia `.env.example` a `.env` y modifica los valores locales. No confirmes `.env` en Git. Las variables principales son `APP_PORT`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `OLLAMA_MODEL`, `OLLAMA_URL`, `ADB_ENABLED`, `ADB_DEFAULT_ADDRESS`, `MAX_UPLOAD_MB` y `CORS_ORIGINS`.
-
-## Comandos
+Requiere Docker Engine/Desktop con Compose. Ollama y un emulador consumen memoria adicional; el stack base ya no exige GPU.
 
 ```bash
-make up                 # construir e iniciar en segundo plano
-make down               # detener sin borrar datos
-make restart            # reiniciar servicios
-make logs               # seguir registros
-make test               # Pytest y Vitest en contenedores temporales
-make seed               # cargar demo si la base está vacía
-make reset              # borrar volumen y regenerar la demo (destructivo)
-make backup             # crear dump, CSV y JSON en ./backups
-make restore FILE=backups/fc26-fecha.dump
-```
-
-En Windows sin `make`, usa directamente `docker compose up --build -d`, `docker compose down`, `docker compose logs -f`, `scripts/backup.ps1` y `scripts/restore.ps1 -BackupFile backups/archivo.dump`.
-
-## Servicios Docker
-
-- `database`: PostgreSQL 16 con volumen persistente y health check.
-- `backend`: Python 3.12, FastAPI, Alembic, SQLAlchemy, OR-Tools, OpenCV, Pillow y Tesseract.
-- `frontend`: React, TypeScript, Vite, Tailwind, TanStack Query, React Hook Form, Zod y PWA.
-- `nginx`: único acceso público, proxy `/api`, límites de carga y cabeceras de seguridad.
-- `ollama`: IA local en su propio contenedor y volumen; la aplicación sigue funcionando si temporalmente no responde.
-
-## Emulador o teléfono Android por ADB
-
-El backend incluye el cliente ADB dentro de su propio contenedor. El emulador o teléfono debe ofrecer ADB por TCP y ser accesible desde Docker; el valor predeterminado es `host.docker.internal:5555`. No instales credenciales en el proyecto ni las escribas en sus formularios.
-
-1. Inicia el emulador y activa su acceso ADB local/TCP.
-2. En **Emulador**, pulsa **Conectar** y comprueba que el dispositivo figure como disponible.
-3. Abre manualmente la pantalla de DCP en la aplicación del dispositivo.
-4. Calibra las coordenadas de búsqueda, campo, resultado y botón de agregar según la resolución mostrada.
-5. Desde una solución DCP, pulsa **Preparar en emulador**. Revisa el plan y escribe `PREPARAR <id>` para autorizar sus pulsaciones.
-6. Comprueba visualmente los once jugadores. La entrega final queda deliberadamente pendiente para que la aceptes tú en el dispositivo.
-
-Puedes diagnosticar la conexión desde PowerShell:
-
-```powershell
-scripts/check-emulator.ps1
-scripts/check-emulator.ps1 -Connect -Address host.docker.internal:5555
-```
-
-Cada conexión, calibración, plan, aprobación, pulsación manual y cancelación queda registrada localmente. La captura/OCR sirve para inspección; no extrae ni guarda contraseñas. Consulta [docs/USER_GUIDE.md](docs/USER_GUIDE.md) para el flujo detallado.
-
-## Ollama en Docker
-
-Ollama se inicia con el resto del proyecto. La primera vez, descarga el modelo configurado dentro de su volumen persistente:
-
-```bash
+# Copia .env.example a .env si necesitas cambiar puertos o configuración.
 docker compose up --build -d
+```
+
+Abre [la aplicación](http://localhost:8080), [la documentación HTTP](http://localhost:8080/api/docs) o [el health check](http://localhost:8080/health).
+
+Una instalación nueva crea un perfil vacío. **`SEED_DEMO=false` es el valor predeterminado.** Los 132 jugadores demostrativos son ficticios y solo se cargan si se solicita la demo antes de crear el primer perfil. El seed no rellena ni reemplaza una base que ya tenga perfil. Para probar con demo, usa una instalación desechable configurada desde su primer arranque con `SEED_DEMO=true`.
+
+### Si ya utilizabas FC26
+
+1. Crea un respaldo de tu instalación antes de actualizar.
+2. Actualiza el código y ejecuta `docker compose up --build -d`.
+3. Alembic aplica la revisión `0005`: conserva el inventario y el historial antiguo bajo FC26 y activa FC27.
+4. Cambia de edición desde la cabecera para consultar FC26. Importa tus cartas actuales con FC27 seleccionado.
+
+No cambies los nombres de los volúmenes ni uses `docker compose down -v` para actualizar. [Guía de actualización FC27](docs/FC27_UPGRADE.md).
+
+## Analizar tu club y armar un equipo
+
+1. En **Club**, crea cartas o importa un CSV/XLSX. Revisa la vista previa y confirma el mismo archivo.
+2. Completa posiciones alternativas y atributos si quieres comparar el encaje por puesto. Registra PlayStyles/roles solo cuando los hayas comprobado.
+3. En **Análisis**, comprueba cobertura, jugadores destacados y advertencias sobre datos incompletos.
+4. Pulsa **Armar un…** o entra en **Plantillas**. Elige formación y enfoque; puedes mantener jugadores concretos o excluirlos.
+5. Pulsa **Proponer once y suplentes**. Revisa las explicaciones y los huecos. Solo una propuesta completa puede guardarse como equipo.
+6. Protege el equipo para que sus cartas queden fuera de los DCP. Esta protección se suma a las protecciones individuales.
+
+Formaciones: **4-3-3, 4-4-2, 4-2-3-1, 4-1-2-1-2 y 3-5-2**. El encaje es una heurística local basada en media, atributos registrados y pequeños ajustes; la química suma los valores registrados por carta. No representa una garantía de rendimiento ni la fórmula completa del juego. [Detalles del optimizador](docs/OPTIMIZER.md).
+
+### Formato de importación
+
+Columnas obligatorias:
+
+```csv
+name,rating,position,league,club,nationality
+Ejemplo local,84,MC,Liga de ejemplo,Club de ejemplo,Colombia
+```
+
+También se admiten `game_version`, `card_id`, `base_card_id`, `card_type`, `price`, `chemistry`, `protected`, `tradable`, `special`, `duplicate_untradeable`, `alternate_positions`, `attributes`, `playstyles`, `playstyles_plus`, `roles`, `skill_moves`, `weak_foot`, `is_loan`, `is_evolution`, `is_holographic`, `gallery_score`, `data_source` y `data_reviewed`, además de los campos compatibles anteriores. Listas y objetos se escriben como JSON dentro de la celda. Exportar primero una carta completa proporciona una plantilla con todas las columnas.
+
+La revisión queda vinculada al archivo y a la edición. Cambiar cualquiera exige otra revisión. Repetir una confirmación ya recibida no crea otra copia; importar deliberadamente un nuevo archivo no hace un upsert automático del inventario.
+
+## Galería, evoluciones y novedades
+
+**Galería** conserva el registro local de cartas obtenidas. Las cesiones no se registran; una evolución requiere identificar su carta base. Las cartas históricas cuentan para colecciones, pero no vuelven a estar disponibles para jugar o entregar. Al corregir la identidad de una carta, su entrada se reconcilia para evitar duplicar la colección.
+
+Las puntuaciones deben revisarse. La referencia base incluida no calcula por sí sola todas las bonificaciones de rareza u holográficos. Sin puntos y reglas completos se muestran pendientes, no un grado supuesto. La app no acredita recompensas ni modifica la Galería de EA.
+
+**Evoluciones** permite introducir requisitos, caminos y topes, y comparar una cadena sobre una carta registrada. Si faltan atributos necesarios para verificarla, la simulación lo indica y se detiene. No aplica mejoras al inventario ni al juego.
+
+**Novedades** incluye referencias verificadas el 10 de octubre de 2026. Actualizar noticias consulta páginas públicas de EA; si fallan o cambian de formato, conserva la última lista. Los conjuntos y evoluciones se actualizan mediante un paquete JSON revisado. La fecha y procedencia quedan registradas. No hay un catálogo automático completo de todos los DCP, campañas, precios o evoluciones en vivo.
+
+Fuentes de las novedades de FC27: [FUT Deep Dive de EA](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y [actualización del lanzamiento de EA](https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update). El esquema de paquetes y ejemplos están en [FC27_UPGRADE.md](docs/FC27_UPGRADE.md).
+
+## Configuración local
+
+Variables principales en [.env.example](.env.example):
+
+- `APP_PORT=8080`, `POSTGRES_PORT=55432`, `APP_BIND_HOST=127.0.0.1`.
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. Deja `DATABASE_URL` vacío para derivarlo de esos valores, incluyendo contraseñas con caracteres especiales.
+- `SEED_DEMO=false`, `MAX_UPLOAD_MB=10`, `CORS_ORIGINS`.
+- `OLLAMA_URL`, `OLLAMA_MODEL`, `OLLAMA_KEEP_ALIVE` y límites `*_MEMORY_LIMIT`.
+- `ADB_ENABLED`, `ADB_DEFAULT_ADDRESS` y `ADB_SERVER_SOCKET`, según teléfono/AVD y servidor ADB.
+
+Nginx es la entrada web. PostgreSQL y Nginx publican sus puertos en loopback; backend, frontend y Ollama quedan en la red interna. No hay autenticación multiusuario: una exposición a otras máquinas requiere configurar acceso y protección de red. No confirmes `.env` ni respaldos en Git.
+
+Ollama necesita descargar un modelo para el chat:
+
+```bash
 docker compose exec ollama ollama pull qwen2.5:3b
 ```
 
-Cambia `OLLAMA_MODEL` en `.env` por otro modelo ya instalado y reinicia el backend. El chat solo consulta un resumen controlado del inventario; no ejecuta cambios. Preguntas y respuestas se almacenan únicamente en PostgreSQL local. Si Ollama falla, se muestra el aviso de degradación y el resto continúa activo.
-
-## Uso esencial
-
-### Inventario
-
-En **Club**, crea o edita cartas, filtra, protege y realiza eliminación lógica. Importa CSV o Excel con las columnas `name,rating,position,league,club,nationality` y, opcionalmente, `card_type,rare,special,tradable,price,chemistry,protected,duplicate_untradeable`. Primero se muestra una revisión y solo se persiste al confirmar. Los botones de exportación generan CSV o XLSX.
-
-### DCP
-
-En **DCP**, crea un desafío y su segmento básico o usa los ejemplos. Pulsa **Optimizar** para obtener hasta tres alternativas reales. Cada resultado muestra media, química, coste y duplicados. La simulación no toca el inventario. **Confirmar entrega** consume las cartas tras una segunda confirmación; el identificador de entrega permite restaurar el estado exacto desde Ajustes.
-
-Las cartas protegidas se excluyen. El optimizador prioriza duplicados intransferibles y penaliza transferibles, media excesiva, cartas útiles, especiales y titulares.
-
-### Capturas y registro manual
-
-En **Ajustes**, selecciona JPEG, PNG o WebP. OpenCV preprocesa la imagen y Tesseract propone nombre, media y posición con confianza aproximada. Nada se guarda automáticamente: corrige y registra la carta desde Club. El OCR es una ayuda, no una garantía de reconocimiento.
-
-### Copias de seguridad
-
-`scripts/backup.ps1` produce un dump PostgreSQL, un CSV del inventario y un JSON de configuración. `restore.ps1` exige que el archivo esté dentro de `./backups/`, crea primero otro dump de seguridad, restaura y reinicia el backend.
-
-## Pruebas
+La ausencia de Ollama o del modelo no impide usar el club. Para NVIDIA, utiliza explícitamente el archivo adicional y un runtime de contenedores compatible:
 
 ```bash
-docker compose run --rm --no-deps backend pytest -q
-docker compose run --rm frontend-test
-docker compose run --rm frontend-e2e
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
 ```
 
-Playwright está configurado para iPhone 13 y su imagen de prueba incluye el navegador, por lo que no requiere instalarlo en el host. Consulta [docs/TESTING.md](docs/TESTING.md).
+## Android / Companion
 
-## Solución de problemas
+El usuario inicia Android y su sesión de Companion. La guía de [Companion](docs/USER_GUIDE.md#companion-y-lectura-del-inventario) describe conexión, lectura, corrección de candidatos y calibración.
 
-- Puerto ocupado: cambia `APP_PORT` o `POSTGRES_PORT` en `.env`.
-- Backend no saludable: ejecuta `docker compose logs backend database`.
-- Base sin iniciar: espera al health check de PostgreSQL y revisa espacio disponible.
-- Ollama sin modelo: ejecuta el comando `ollama pull` anterior; no bloquea la aplicación.
-- ADB sin dispositivo: inicia un emulador/teléfono con ADB por TCP, revisa su puerto y ejecuta `scripts/check-emulator.ps1 -Connect -Address host.docker.internal:5555`.
-- Coordenadas ADB incorrectas: no ejecutes el plan; toma una captura desde **Emulador** y repite la calibración para esa resolución.
-- OCR débil: usa una captura nítida, recortada y de buen contraste, o registra/importa manualmente.
-- Reinicio limpio conservando datos: `docker compose down` seguido de `docker compose up --build -d`.
+Los scripts Windows mantienen el nombre técnico `FC26_Companion` del AVD existente. `start-android-avd.ps1` abre el AVD y selecciona su serial; los cambios persistentes de resolución, densidad o paquetes solo se aplican con `-OptimizeDevice`. `stop-android-avd.ps1` detiene el AVD elegido sin matar el servidor ADB compartido.
 
-## Seguridad y alcance
+Un plan tradicional exige la frase `PREPARAR <id>`, se vuelve a validar y comprueba la identidad visual antes de seleccionar cartas. Una interfaz no reconocida detiene la preparación. Los DCP por puntos se gestionan localmente y no generan un plan ADB. La compatibilidad visual debe comprobarse en la versión concreta de Companion del usuario.
 
-La aplicación está pensada para una red local confiable, restringe CORS, valida entradas, limita archivos, usa ORM parametrizado, nombres seguros, errores sin trazas y cabeceras de seguridad. No la expongas directamente a Internet. No es una aplicación oficial, afiliada ni aprobada por Electronic Arts. No implementa compras, ventas, partidos, scraping autenticado ni entregas finales automáticas. La preparación ADB solo reproduce un plan revisable y siempre se detiene antes de la acción irreversible.
+## Operación y respaldo
 
-Documentación adicional: [arquitectura](docs/ARCHITECTURE.md), [guía](docs/USER_GUIDE.md), [optimizador](docs/OPTIMIZER.md), [seguridad](docs/SECURITY.md), [pruebas](docs/TESTING.md) y [limitaciones](docs/KNOWN_LIMITATIONS.md).
+```bash
+docker compose down                    # detener, conservar datos
+docker compose logs --tail=200 backend database nginx
+docker compose exec backend alembic current
+docker compose exec backend alembic check
+```
+
+En Windows:
+
+```powershell
+scripts/backup.ps1
+scripts/export-data.ps1
+scripts/restore.ps1 -BackupFile backups/archivo.dump
+```
+
+Los scripts resuelven usuario, base y puerto desde la configuración efectiva de Compose. Restaurar crea un dump previo, detiene el backend, restaura en una transacción y vuelve a iniciarlo. Prueba primero con una instalación desechable. `make reset` borra volúmenes y nunca es un paso de actualización.
+
+## Desarrollo y pruebas
+
+La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) verificó el código `ba9c17b`: **111 pruebas backend con PostgreSQL, 24 pruebas frontend y 6 recorridos Playwright en móvil/escritorio**, además de la migración de 132 cartas FC26, TypeScript/Vite/PWA y las configuraciones Compose base/GPU. La auditoría npm de producción terminó sin avisos; el árbol de desarrollo conserva el aviso documentado en [SECURITY.md](docs/SECURITY.md).
+
+Consulta [TESTING.md](docs/TESTING.md) para comandos, alcance de la evidencia y pruebas pendientes con el stack Docker completo, PowerShell y hardware Companion. Todos los inventarios de prueba son ficticios y desechables.
+
+Documentación: [guía de usuario](docs/USER_GUIDE.md), [actualización FC27](docs/FC27_UPGRADE.md), [mapa técnico](docs/PROJECT_MAP.md), [arquitectura](docs/ARCHITECTURE.md), [optimizadores](docs/OPTIMIZER.md), [seguridad](docs/SECURITY.md) y [limitaciones](docs/KNOWN_LIMITATIONS.md).
