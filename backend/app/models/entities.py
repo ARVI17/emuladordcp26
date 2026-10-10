@@ -14,10 +14,12 @@ class Profile(Base):
     max_budget: Mapped[int] = mapped_column(Integer, default=100000)
     risk_level: Mapped[str] = mapped_column(String(20), default="medio")
     preferences: Mapped[dict] = mapped_column(JSON, default=dict)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27")
 
 class Player(Base):
     __tablename__ = "players"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(100), index=True)
     rating: Mapped[int] = mapped_column(Integer, index=True)
     position: Mapped[str] = mapped_column(String(8), index=True)
@@ -35,6 +37,24 @@ class Player(Base):
     squad_role: Mapped[str] = mapped_column(String(20), default="club")
     usefulness: Mapped[int] = mapped_column(Integer, default=0)
     duplicate_untradeable: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    card_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    base_card_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    alternate_positions: Mapped[list] = mapped_column(JSON, default=list)
+    attributes: Mapped[dict] = mapped_column(JSON, default=dict)
+    playstyles: Mapped[list] = mapped_column(JSON, default=list)
+    playstyles_plus: Mapped[list] = mapped_column(JSON, default=list)
+    roles: Mapped[dict] = mapped_column(JSON, default=dict)
+    skill_moves: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weak_foot: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_loan: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_evolution: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_holographic: Mapped[bool] = mapped_column(Boolean, default=False)
+    gallery_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    data_source: Mapped[str] = mapped_column(String(80), default="manual")
+    data_reviewed: Mapped[bool] = mapped_column(Boolean, default=True)
+    consumed_by_submission_id: Mapped[int | None] = mapped_column(
+        ForeignKey("submissions.id", name="fk_player_consumption", use_alter=True), nullable=True, index=True
+    )
     deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
@@ -42,6 +62,7 @@ class Player(Base):
 class Squad(Base):
     __tablename__ = "squads"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(100))
     formation: Mapped[str] = mapped_column(String(20), default="4-3-3")
     primary: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -62,6 +83,7 @@ class SquadPlayer(Base):
 class Challenge(Base):
     __tablename__ = "challenges"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     reward: Mapped[str] = mapped_column(String(120), default="")
@@ -81,6 +103,8 @@ class Segment(Base):
 class Submission(Base):
     __tablename__ = "submissions"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27")
+    score_contribution: Mapped[int] = mapped_column(Integer, default=0)
     segment_id: Mapped[int] = mapped_column(ForeignKey("segments.id"), index=True)
     status: Mapped[str] = mapped_column(String(20), default="confirmed")
     total_cost: Mapped[int] = mapped_column(Integer, default=0)
@@ -90,6 +114,7 @@ class Submission(Base):
 class Objective(Base):
     __tablename__ = "objectives"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(120))
     description: Mapped[str] = mapped_column(Text, default="")
     category: Mapped[str] = mapped_column(String(40), default="Objetivo")
@@ -123,6 +148,8 @@ class ChatMessage(Base):
 class AutomationPlan(Base):
     __tablename__ = "automation_plans"
     id: Mapped[int] = mapped_column(primary_key=True)
+    execution_generation: Mapped[int] = mapped_column(Integer, default=0)
+    worker_active: Mapped[bool] = mapped_column(Boolean, default=False)
     name: Mapped[str] = mapped_column(String(160))
     plan_type: Mapped[str] = mapped_column(String(40), default="dcp_prepare")
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
@@ -140,6 +167,10 @@ class AutomationPlan(Base):
 class InventoryScan(Base):
     __tablename__ = "inventory_scans"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), default="FC27")
+    next_candidate_id: Mapped[int] = mapped_column(Integer, default=1)
+    source_scan_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_page_hash: Mapped[str | None] = mapped_column(String(80), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="scanning", index=True)
     device_serial: Mapped[str] = mapped_column(String(120))
     screen_size: Mapped[list] = mapped_column(JSON, default=list)
@@ -151,3 +182,48 @@ class InventoryScan(Base):
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class GalleryEntry(Base):
+    __tablename__ = "gallery_entries"
+    __table_args__ = (UniqueConstraint("game_version", "item_key", name="uq_gallery_edition_item"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), index=True)
+    item_key: Mapped[str] = mapped_column(String(100))
+    player_id: Mapped[int | None] = mapped_column(ForeignKey("players.id"), nullable=True)
+    snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class GallerySet(Base):
+    __tablename__ = "gallery_sets"
+    __table_args__ = (UniqueConstraint("game_version", "slug", name="uq_gallery_edition_slug"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), index=True)
+    slug: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str] = mapped_column(Text, default="")
+    category: Mapped[str] = mapped_column(String(40), default="Personalizado")
+    rules: Mapped[dict] = mapped_column(JSON, default=dict)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    grade_thresholds: Mapped[dict] = mapped_column(JSON, default=dict)
+    reward: Mapped[str] = mapped_column(String(500), default="")
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    rules_reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class EvolutionDefinition(Base):
+    __tablename__ = "evolution_definitions"
+    __table_args__ = (UniqueConstraint("game_version", "slug", name="uq_evolution_edition_slug"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8), index=True)
+    slug: Mapped[str] = mapped_column(String(100))
+    name: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str] = mapped_column(Text, default="")
+    requirements: Mapped[dict] = mapped_column(JSON, default=dict)
+    paths: Mapped[list] = mapped_column(JSON, default=list)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    rules_reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

@@ -21,13 +21,14 @@ if (-not $serial) {
 }
 
 & $adb -s $serial emu kill | Out-Host
+if ($LASTEXITCODE -ne 0) { throw "ADB no pudo detener el AVD seleccionado." }
+$serialPattern = "^$([regex]::Escape($serial))\s"
 $deadline = (Get-Date).AddSeconds(30)
-while ((Get-Process -Name "qemu-system-x86_64" -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) {
+while (((& $adb devices) -match $serialPattern) -and (Get-Date) -lt $deadline) {
     Start-Sleep -Seconds 1
 }
-if (Get-Process -Name "qemu-system-x86_64" -ErrorAction SilentlyContinue) {
+if ((& $adb devices) -match $serialPattern) {
     throw "El AVD no se detuvo dentro de 30 segundos."
 }
 
-& $adb kill-server 2>$null
 Write-Host "$AvdName detenido; su memoria fue liberada. Los contenedores del proyecto siguen activos."

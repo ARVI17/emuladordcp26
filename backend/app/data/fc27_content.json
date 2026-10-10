@@ -1,0 +1,26 @@
+{
+  "game_version": "FC27",
+  "verified_at": "2026-10-10T02:30:00Z",
+  "features": [
+    {"id":"gallery","title":"Galería e historial de colección","description":"Conserva cartas obtenidas, conjuntos, etiquetas y puntuaciones. Las cesiones no cuentan; las evoluciones representan la carta base.","source_url":"https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive"},
+    {"id":"streamlined-sbc","title":"DCP por puntos y entregas parciales","description":"Planifica contribuciones con los puntos revisados de cada copia.","source_url":"https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update"},
+    {"id":"evolution-pathways","title":"Caminos y cadenas de evoluciones","description":"Compara ramas antes de elegir y proyecta cadenas de mejoras.","source_url":"https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive"},
+    {"id":"holographic","title":"Cartas holográficas","description":"Presentación y puntuación de colección diferentes; mismos atributos de juego.","source_url":"https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive"},
+    {"id":"rarity","title":"Bronce, Plata y Oro","description":"Las cartas base de FC 27 dejan la distinción común/rara.","source_url":"https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive"},
+    {"id":"live-content","title":"Campañas y contenido cambiante","description":"Consulta noticias oficiales y actualiza definiciones revisadas mediante paquetes de contenido.","source_url":"https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update"}
+  ],
+  "articles": [
+    {"title":"Future Stars: campaña y academia","url":"https://www.ea.com/fr/games/ea-sports-fc/fc-27/news/fc-27-future-stars","published_at":"2026-10-09"},
+    {"title":"FC 27: notas del lanzamiento","url":"https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update","published_at":"2026-09-14"},
+    {"title":"FC 27: análisis de Ultimate Team","url":"https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive","published_at":"2026-08-02"},
+    {"title":"Companion: funciones y acceso","url":"https://www.ea.com/games/ea-sports-fc/ultimate-team/web-app","published_at":null}
+  ],
+  "scoring": {
+    "verified_at":"2026-10-10T02:30:00Z",
+    "published_at":"2026-09-14",
+    "source_url":"https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update",
+    "chart_url":"https://drop-assets.ea.com/images/5umx6fyLpF0gL1bvp8gVUL/886531a04e657f47196f8e419f8c67ca/Item-Scores.jpg",
+    "message":"Referencia publicada por EA. Solo puntuación base por media; verifica la puntuación final en el juego para rarezas, holográficas y cambios posteriores.",
+    "base_scores":{"45":20,"46":20,"47":20,"48":20,"49":20,"50":20,"51":20,"52":20,"53":20,"54":20,"55":20,"56":20,"57":20,"58":20,"59":20,"60":20,"61":20,"62":20,"63":20,"64":20,"65":35,"66":35,"67":35,"68":35,"69":35,"70":35,"71":35,"72":35,"73":35,"74":35,"75":90,"76":100,"77":120,"78":140,"79":160,"80":180,"81":280,"82":340,"83":410,"84":830,"85":2100,"86":4100,"87":5500,"88":8300,"89":11000,"90":14000,"91":19000,"92":20000,"93":25000,"94":30000,"95":40000,"96":55000,"97":85000,"98":90000,"99":100000}
+  }
+}

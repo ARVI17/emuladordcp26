@@ -1,0 +1,15 @@
+import {z} from 'zod'
+import type {AttributeKey,GameVersion,PlayerInput} from '../types'
+
+export type PlayerDraft=Omit<PlayerInput,'rating'>&{rating:number|''}
+export const positions=['POR','LD','CAD','DFC','LI','CAI','MCD','MD','MC','MI','MCO','ED','SD','DC','EI']
+export const attributeLabels:Record<AttributeKey,string>={pace:'Ritmo',shooting:'Tiro',passing:'Pase',dribbling:'Regate',defending:'Defensa',physical:'Físico',diving:'Estirada',handling:'Paradas',kicking:'Saque',reflexes:'Reflejos',speed:'Velocidad',positioning:'Posicionamiento'}
+export const playerSchema=z.object({
+  name:z.string().trim().min(1,'Escribe el nombre').max(100),rating:z.coerce.number().int().min(1,'Revisa la media (1–99)').max(99),
+  position:z.string().trim().min(1,'Selecciona la posición').max(8),league:z.string().trim().min(1,'Completa la liga').max(80),club:z.string().trim().min(1,'Completa el club').max(80),nationality:z.string().trim().min(1,'Completa la nacionalidad').max(80),
+  card_type:z.string().trim().min(1).max(40),rare:z.boolean(),special:z.boolean(),tradable:z.boolean(),price:z.coerce.number().int().min(0).max(100_000_000),chemistry:z.coerce.number().int().min(0).max(3),protected:z.boolean(),starter:z.boolean(),squad_role:z.string().max(20),usefulness:z.coerce.number().int().min(0).max(100),duplicate_untradeable:z.boolean(),
+  game_version:z.enum(['FC26','FC27']),card_id:z.string().trim().min(1).max(80).nullable(),base_card_id:z.string().trim().min(1).max(80).nullable(),alternate_positions:z.array(z.string().max(8)).max(15),attributes:z.record(z.number().int().min(1).max(99)),playstyles:z.array(z.string().trim().min(1).max(60)).max(30),playstyles_plus:z.array(z.string().trim().min(1).max(60)).max(5),roles:z.record(z.string().min(1).max(80),z.string().min(1).max(40)).refine(value=>Object.keys(value).length<=40,'Máximo 40 roles'),skill_moves:z.number().int().min(1).max(5).nullable(),weak_foot:z.number().int().min(1).max(5).nullable(),
+  is_loan:z.boolean(),is_evolution:z.boolean(),is_holographic:z.boolean(),gallery_score:z.number().int().min(0).max(1000000).nullable(),data_source:z.string().trim().min(1).max(80),data_reviewed:z.boolean(),
+}).superRefine((value,context)=>{if(value.game_version==='FC27'&&value.playstyles_plus.length>3)context.addIssue({code:z.ZodIssueCode.custom,path:['playstyles_plus'],message:'FC 27 admite hasta 3 PlayStyles+ por carta.'})})
+export function emptyPlayer(game_version:GameVersion):PlayerDraft{return {name:'',rating:'',position:'',league:'',club:'',nationality:'',card_type:game_version==='FC27'?'Oro':'Oro común',rare:false,special:false,tradable:false,price:0,chemistry:0,protected:false,starter:false,squad_role:'club',usefulness:0,duplicate_untradeable:false,game_version,card_id:null,base_card_id:null,alternate_positions:[],attributes:{},playstyles:[],playstyles_plus:[],roles:{},skill_moves:null,weak_foot:null,is_loan:false,is_evolution:false,is_holographic:false,gallery_score:null,data_source:'manual',data_reviewed:false}}
+export const splitValues=(text:string)=>[...new Set(text.split(/[,;\n]+/).map(value=>value.trim()).filter(Boolean))]

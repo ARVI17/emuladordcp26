@@ -13,4 +13,7 @@ data/uploads/*
 !data/uploads/.gitkeep
 *.log
 test_fc26.db
+test-results/
+playwright-report/
+*.tsbuildinfo
 .DS_Store

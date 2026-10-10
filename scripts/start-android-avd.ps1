@@ -5,7 +5,8 @@ param(
     [int]$MemoryMb = 1536,
     [ValidateRange(1, 4)]
     [int]$Cores = 2,
-    [switch]$ColdBoot
+    [switch]$ColdBoot,
+    [switch]$OptimizeDevice
 )
 
 $ErrorActionPreference = "Stop"
@@ -73,6 +74,8 @@ if (-not $serial -or $bootCompleted -ne "1") {
     throw "Android no terminó de iniciar dentro de cuatro minutos. Revisa la ventana del emulador."
 }
 
+# Device settings are only changed when this switch is explicitly requested.
+if ($OptimizeDevice) {
 # El panel mantiene proporción Pixel 5, pero renderiza menos píxeles y usa
 # animaciones cortas para reducir GPU/RAM sin alterar la compatibilidad Android.
 & $adb -s $serial shell wm size 720x1560 | Out-Null
@@ -98,17 +101,22 @@ foreach ($package in $unusedPackages) {
     & $adb -s $serial shell pm disable-user --user 0 $package 2>$null | Out-Null
 }
 
-Write-Host "Android listo: $serial ($MemoryMb MB, $Cores núcleos, 720x1560, modo oscuro)."
+}
+
+Write-Host "Android listo: $serial ($MemoryMb MB, $Cores núcleos)."
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot "project-config.ps1")
 Push-Location $projectRoot
 try {
+    $projectConfig = Get-ProjectConfig
+    $appBaseUrl = $projectConfig.AppBaseUrl
     $backendId = docker compose ps -q backend 2>$null
     if ($backendId) {
         $payload = @{ serial = $serial } | ConvertTo-Json -Compress
-        $selection = Invoke-RestMethod -Method Post -Uri "http://localhost:8080/api/emulator/select" -ContentType "application/json" -Body $payload -TimeoutSec 15
+        $selection = Invoke-RestMethod -Method Post -Uri "$appBaseUrl/api/emulator/select" -ContentType "application/json" -Body $payload -TimeoutSec 15
         if ($selection.selected) {
-            Write-Host "AVD seleccionado en Asistente FC 26. Abre http://localhost:8080"
+            Write-Host "AVD seleccionado en Club Lab FC 27. Abre $appBaseUrl"
         }
     }
     else {

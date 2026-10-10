@@ -24,7 +24,7 @@ def test_squad_create_duplicate_and_protect(client):
     assert client.post(f"/squads/{squad_id}/duplicate").status_code == 200
     protected = client.post(f"/squads/{squad_id}/protect").json()
     assert protected["protected"] is True
-    assert all(entry["player"]["protected"] for entry in protected["players"])
+    assert all(entry["player"]["effective_protected"] for entry in protected["players"])
 
 def test_objective_progress(client):
     created = client.post("/objectives", json={"name":"Objetivo API","description":"Prueba","category":"Objetivo","progress":0,"target":2})
@@ -38,7 +38,7 @@ def test_csv_preview_confirm_and_export(client):
     preview = client.post("/players/import", data={"confirm":"false"}, files=files)
     assert preview.status_code == 200 and preview.json()["total"] == 1
     files = {"file": ("club.csv", io.BytesIO(csv_data.encode()), "text/csv")}
-    confirmed = client.post("/players/import", data={"confirm":"true"}, files=files)
+    confirmed = client.post("/players/import", data={"confirm":"true", "preview_token":preview.json()["preview_token"]}, files=files)
     assert confirmed.json()["imported"] == 1
     exported = client.get("/players/export?format=csv")
     assert exported.status_code == 200 and b"Importado" in exported.content

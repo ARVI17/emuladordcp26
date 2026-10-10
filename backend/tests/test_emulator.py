@@ -58,7 +58,7 @@ def test_create_and_prepare_automation_plan(client):
     prepared = client.post(f"/emulator/plans/{plan['id']}/prepare").json()
     assert prepared["status"] == "prepared"
     assert prepared["confirmation_phrase"] == f"PREPARAR {plan['id']}"
-    assert len(prepared["steps"]) == 99
+    assert len(prepared["steps"]) == 110
     wrong = client.post(f"/emulator/plans/{plan['id']}/execute", json={"confirmation":"NO EJECUTAR"})
     assert wrong.status_code == 422
     assert client.post(f"/emulator/plans/{plan['id']}/cancel").json()["status"] == "cancelled"
@@ -90,7 +90,7 @@ def test_execution_logs_every_step_and_checks_resolution(client, monkeypatch):
     finished = next(row for row in client.get("/emulator/plans").json() if row["id"] == plan["id"])
     assert finished["status"] == "completed"
     step_logs = [row for row in client.get("/audit?limit=200").json() if row["action"] == "execute_step" and row["entity_id"] == plan["id"]]
-    assert len(step_logs) == 99
+    assert len(step_logs) == len(finished["steps"])
 
 def test_protected_combination_is_rejected(client):
     segment_id, player_ids = feasible_solution(client)
@@ -101,7 +101,9 @@ def test_protected_combination_is_rejected(client):
 
 def test_generated_steps_never_submit_dcp():
     steps = build_dcp_steps(CALIBRATION, [{"name":"Jugador Uno"}])
-    assert {step["action"] for step in steps} <= {"tap", "text", "wait"}
+    assert {step["action"] for step in steps} <= {"tap", "text", "wait", "clear_text", "select_verified", "add_verified"}
+    assert any(step["action"] == "select_verified" for step in steps)
+    assert any(step["action"] == "add_verified" for step in steps)
     assert not any("enviar" in step["label"].lower() or "entregar" in step["label"].lower() for step in steps)
 
 def test_inventory_scan_requires_review_and_explicit_import(client, monkeypatch):
@@ -143,7 +145,7 @@ def test_inventory_scan_imports_reviewed_candidates_in_partial_batches(client, m
     assert first.status_code == 200
     assert first.json()["scan"]["status"] == "review" and first.json()["scan"]["imported_count"] == 1
     assert [item["candidate_id"] for item in first.json()["scan"]["candidates"]] == [2]
-    assert client.post(f"/emulator/scans/{scan['id']}/import", json={"players":[player("Jugador 1",81)],"candidate_ids":[1],"confirmation":f"IMPORTAR {scan['id']}"}).status_code == 422
+    assert client.post(f"/emulator/scans/{scan['id']}/import", json={"players":[player("Jugador 1",81)],"candidate_ids":[1],"confirmation":f"IMPORTAR {scan['id']}"}).status_code == 409
     second = client.post(f"/emulator/scans/{scan['id']}/import", json={"players":[player("Jugador 2",82)],"candidate_ids":[2],"confirmation":f"IMPORTAR {scan['id']}"})
     assert second.status_code == 200
     assert second.json()["scan"]["status"] == "imported" and second.json()["scan"]["imported_count"] == 2
@@ -181,7 +183,9 @@ def test_ui_hierarchy_is_bounded_and_removed_from_device(monkeypatch):
         return content if command[:2] == ["exec-out", "cat"] else b"" if binary else ""
     monkeypatch.setattr(bridge, "_device", fake_device)
     assert bridge.ui_hierarchy("emulator-5554") == content
-    assert calls[-1] == ["shell", "rm", "-f", "/data/local/tmp/emuladordcp26-ui.xml"]
+    path = calls[0][-1]
+    assert path.startswith("/data/local/tmp/emuladordcp26-ui-") and path.endswith(".xml")
+    assert calls[-1] == ["shell", "rm", "-f", path]
 
 def test_inventory_advance_validates_navigation_and_changed_page(client, monkeypatch):
     def hierarchy(name, rating, position, next_button=False):

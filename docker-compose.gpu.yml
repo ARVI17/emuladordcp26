@@ -1,0 +1,11 @@
+# Optional: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
+# Requires an NVIDIA GPU and the configured NVIDIA container runtime.
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
