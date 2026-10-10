@@ -20,7 +20,7 @@ jobs:
           POSTGRES_PASSWORD: fc27_test_only
         ports: ['5432:5432']
         options: >-
-          --health-cmd 'pg_isready -U fc27_test -d fc27_test'
+          --health-cmd "pg_isready -U fc27_test -d fc27_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
     steps:
       - uses: actions/checkout@v4
@@ -105,9 +105,9 @@ jobs:
           cd ../frontend
           npm run test:e2e
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
         with:
-          name: fc27-browser-failure
+          name: fc27-browser-verification
           path: |
             frontend/test-results
             ${{ runner.temp }}/fc27-api.log

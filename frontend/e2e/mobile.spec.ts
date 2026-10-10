@@ -24,7 +24,7 @@ test('Companion conserva la revisión y la entrega manual cuando ADB no está co
 })
 
 // Este recorrido crea datos locales: CI debe proporcionar una base desechable.
-test('FC27: analiza un club, guarda un once completo y registra su Galería',async({page,request})=>{
+test('FC27: analiza un club, guarda un once completo y registra su Galería',async({page,request},testInfo)=>{
   test.skip(process.env.PLAYWRIGHT_DISPOSABLE_DB!=='1','Configura PLAYWRIGHT_DISPOSABLE_DB=1 con una base exclusiva de pruebas.')
   test.setTimeout(60000)
   const previous=await request.get('/api/profile')
@@ -40,6 +40,7 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
   expect(positions).toHaveLength(11)
   const names=['Alba','Bruno','Carlos','Diego','Elena','Fabio','Gabriel','Hugo','Irene','Jorge','Karla']
   const created:number[]=[]
+  let workflowFailed=false
   try{
     const history=await request.post('/api/gallery/record-inventory',{data:{}})
     expect(history.ok()).toBeTruthy()
@@ -54,10 +55,16 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
     await expect(page.getByRole('heading',{name:'Análisis de mi club'})).toBeVisible()
     await page.getByRole('button',{name:/^Armar un /}).click()
     await expect(page.getByRole('heading',{name:'Armar mi equipo'})).toBeVisible()
-    await page.getByLabel('Formación',{exact:true}).selectOption('4-3-3')
-    await page.getByRole('button',{name:'Proponer once y suplentes'}).click()
-    await expect(page.getByRole('heading',{name:'Tu once propuesto'})).toBeVisible()
-    await expect(page.locator('.pitch-player')).toHaveCount(11)
+    await test.step('Seleccionar la formación y proponer un once completo',async()=>{
+      const formation=page.getByRole('combobox',{name:'Formación',exact:true})
+      await expect(formation).toBeVisible()
+      await formation.selectOption('4-3-3')
+      await expect(formation).toHaveValue('4-3-3')
+      await page.getByRole('button',{name:'Proponer once y suplentes'}).click()
+      await expect(page.getByRole('heading',{name:'Tu once propuesto'})).toBeVisible()
+      await expect(page.locator('.pitch-player')).toHaveCount(11)
+    await page.screenshot({path:testInfo.outputPath('squad.png'),fullPage:true})
+    })
     const squadName=`Plantilla ${run}`
     await page.getByLabel('Nombre de la plantilla').fill(squadName)
     const saved=page.waitForResponse(response=>response.url().endsWith('/api/squads')&&response.request().method()==='POST')
@@ -70,11 +77,21 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
     await page.getByRole('button',{name:'Registrar mi colección'}).click()
     expect((await registered).ok()).toBeTruthy()
     await expect(page.getByRole('heading',{name:`${run} ${names[0]}`,exact:true})).toBeVisible()
+    await page.screenshot({path:testInfo.outputPath('gallery.png'),fullPage:true})
     const widths=await page.evaluate(()=>({viewport:window.innerWidth,document:document.documentElement.scrollWidth}))
     expect(widths.document).toBeLessThanOrEqual(widths.viewport)
     expect(created).toHaveLength(11)
+  }catch(error){
+    workflowFailed=true
+    throw error
   }finally{
+    // Conservar el fallo original si Playwright ya cerró el contexto por timeout.
     // La plantilla y su Galería forman parte de la base de pruebas desechable.
-    await request.patch('/api/profile',{data:{game_version:original.game_version}})
+    try{
+      const restored=await request.patch('/api/profile',{data:{game_version:original.game_version}})
+      expect(restored.ok()).toBeTruthy()
+    }catch(error){
+      if(!workflowFailed)throw error
+    }
   }
 })
