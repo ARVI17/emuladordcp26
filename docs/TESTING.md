@@ -1,21 +1,27 @@
 # Pruebas y estado de verificación
 
-Esta página distingue pruebas ejecutadas de verificaciones preparadas. Los resultados corresponden a la actualización FC27 en desarrollo; no describen una ejecución de producción ni garantizan comportamiento en un dispositivo Companion real.
+Esta página distingue pruebas ejecutadas de verificaciones pendientes. La [CI del 10 de octubre de 2026 UTC](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) terminó correctamente sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e). Los resultados usan datos desechables; no describen una ejecución de producción ni garantizan comportamiento en un dispositivo Companion real.
 
 ## Estado registrado
 
 | Comprobación | Resultado |
 | --- | --- |
-| Pytest backend completo con dependencias actualizadas y SQLite aislada | **109 correctos, 2 omitidos** |
-| Integración PostgreSQL entre procesos | Dos casos preparados; omitidos porque la ejecución local usa SQLite |
-| Vitest frontend | **24 correctos en 10 archivos** |
+| Pytest local con dependencias actualizadas y SQLite aislada | **109 correctos, 2 casos PostgreSQL omitidos** |
+| Pytest en PostgreSQL 16 de CI | **111 correctos**, incluidos los dos casos de bloqueo entre procesos; [job backend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119429998) |
+| Migración PostgreSQL desde PR1 | Actualización a `0005`, conservación de **132 cartas FC26**, perfil FC27 y `alembic check` correctos |
+| Vitest frontend | **24 correctos en 10 archivos**; [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) |
+| TypeScript, Vite y PWA | Build correcto en CI |
+| Auditoría npm de producción | **0 vulnerabilidades reportadas** en esa ejecución; alcance y desarrollo en [SECURITY.md](SECURITY.md) |
+| Playwright Chromium contra Vite y API real | **6/6 correctos**, viewport móvil de **390 × 664 px CSS** y escritorio de **1280 × 900 px**; pantalla móvil emulada de 390 × 844 px, DPR 3 |
+| Revisión visual de plantillas y Galería | Cuatro capturas revisadas, móvil/escritorio, sin desbordamiento horizontal ni defectos materiales observados en esas vistas; [artefacto](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) |
+| Comprobación HTTP local complementaria | **26 comprobaciones correctas**, con 223 cartas ficticias |
 | Compilación de módulos Python modificados | Correcta |
 | Whitespace/diff de los cambios verificados | `git diff --check` correcto |
-| Workflow CI de PostgreSQL 16, migraciones y frontend | Preparado; todavía no ejecutado para esta actualización |
-| Playwright E2E y revisión visual FC27 | Seis recorridos preparados; ejecución local bloqueada por la descarga del navegador |
-| Companion FC27 con teléfono/emulador real | Pendiente |
+| Configuración Compose base y GPU | Ambas válidas en CI mediante `docker compose config --quiet` |
+| Build y arranque del stack Docker completo, incluido Nginx | Pendientes |
+| Backup/restauración PowerShell real, Safari y Companion FC27 con hardware o club EA real | Pendientes |
 
-Pytest muestra un aviso de deprecación por el uso de httpx en TestClient con la versión de Starlette instalada. La suite terminó correctamente; el aviso no valida ni invalida los flujos de producción.
+Pytest terminó con un aviso de deprecación por el uso de httpx en TestClient con la versión de Starlette instalada. El resultado PostgreSQL fue `111 passed, 1 warning`; la diferencia respecto a SQLite corresponde a los dos casos de integración que allí se omiten.
 
 ## Backend y aislamiento de datos
 
@@ -56,7 +62,7 @@ Las pruebas que simulan un dispositivo comprueban contratos y decisiones del pro
 
 El head de Alembic es [0005](../backend/alembic/versions/0005_fc27_club.py). La migración añade metadatos/entidades FC27 y preserva los datos anteriores como FC26, incluyendo la asignación de propietario de consumo cuando existe uno inequívoco.
 
-[.github/workflows/ci.yml](../.github/workflows/ci.yml) prepara PostgreSQL 16 en una base de CI desechable. El trabajo backend está configurado para:
+[.github/workflows/ci.yml](../.github/workflows/ci.yml) prepara PostgreSQL 16 en una base de CI desechable. El [job backend del 10 de octubre](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119429998) ejecutó correctamente esta secuencia:
 
 1. Crear una base con el código anterior de PR1 y cargar sus datos FC26.
 2. Aplicar la migración actual, consultar `alembic current` y ejecutar `alembic check`.
@@ -66,7 +72,7 @@ El head de Alembic es [0005](../backend/alembic/versions/0005_fc27_club.py). La 
 
 [test_postgres_integration.py](../backend/tests/test_postgres_integration.py) comprueba que una reserva asesora sigue vigente después de un commit y excluye a otro proceso. Cubre las claves `inventory` y dispositivo; después de liberar la reserva, otro proceso debe poder adquirirla. Estos casos se omiten expresamente cuando no se configura PostgreSQL de prueba.
 
-La definición del workflow no equivale a una ejecución correcta. En el estado registrado todavía falta su resultado real. Una prueba SQLite de dos peticiones concurrentes tampoco prueba por sí misma el bloqueo entre procesos de PostgreSQL.
+El log confirma `0005 (head)`, `No new upgrade operations detected.` y `111 passed, 1 warning in 39.58s`. Los dos casos entre procesos se ejecutaron con PostgreSQL y pasaron. Las comprobaciones de Compose validan la configuración base y la variante GPU; no construyen ni arrancan todas las imágenes de la aplicación.
 
 Para inspeccionar el estado de una instalación ya iniciada, sin ejecutar la suite destructiva contra ella:
 
@@ -79,7 +85,7 @@ Una migración limpia o un ensayo de actualización debe realizarse en una base 
 
 ## Frontend
 
-[frontend/package.json](../frontend/package.json) define Vitest, compilación y dependencias. Los 24 casos registrados cubren contratos/formularios/utilidades del frontend actualizado. La compilación se verifica con TypeScript y Vite:
+[frontend/package.json](../frontend/package.json) define Vitest, compilación y dependencias. El [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) instaló con `npm ci`, superó 24 pruebas en 10 archivos y compiló TypeScript, Vite y PWA. Se puede repetir la parte de pruebas y build con:
 
 ```bash
 cd frontend
@@ -87,11 +93,17 @@ npm test -- --run
 npm run build
 ```
 
-También se puede usar `docker compose run --rm frontend-test`. El trabajo frontend de CI instala con `npm ci`, ejecuta pruebas y build, y consulta advisories de dependencias de producción. Ese trabajo sigue pendiente de ejecución remota en el estado de esta página.
+También se puede usar `docker compose run --rm frontend-test`. La auditoría `npm audit --omit=dev --audit-level=high` del job terminó con `found 0 vulnerabilities`. Ese resultado corresponde a las dependencias de producción de esta revisión y fecha; no afirma ausencia de avisos en el árbol de desarrollo. Consulte [SECURITY.md](SECURITY.md).
 
-## E2E y revisión manual pendiente
+## E2E ejecutado y revisión manual pendiente
 
-El servicio `frontend-e2e` prueba contra Nginx mediante Playwright. La configuración prepara tres escenarios en Chromium para móvil de 390 × 844 px y escritorio de 1280 × 900 px, con un solo trabajador. La emulación móvil no comprueba Safari ni un teléfono real. El recorrido FC27 crea once cartas propias a partir de las posiciones de `/squads/formations`, propone y guarda un equipo y registra su Galería. Requiere `PLAYWRIGHT_DISPOSABLE_DB=1` y una base exclusiva de pruebas; sin esa variable se omite ese recorrido con escrituras. Los otros dos escenarios no dependen de su orden.
+En la [CI verificada](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117), Playwright ejecutó tres escenarios en Chromium para móvil y escritorio: **6/6 correctos en 11,8 segundos**. El perfil `iPhone 13` de Playwright 1.62.1 utiliza un **viewport de 390 × 664 píxeles CSS**, pantalla emulada de **390 × 844 píxeles** y DPR 3; el viewport de escritorio es **1280 × 900 píxeles**. Usó una API FastAPI real con SQLite desechable, ADB desactivado y Vite redirigiendo `/api` a Uvicorn. El build de producción se comprobó por separado; estos recorridos no atravesaron los contenedores ni el Nginx del despliegue Docker.
+
+El recorrido FC27 crea once cartas propias a partir de las posiciones de `/squads/formations`, propone y guarda un equipo y registra su Galería. Requiere `PLAYWRIGHT_DISPOSABLE_DB=1` y una base exclusiva de pruebas; sin esa variable se omite ese recorrido con escrituras. Los otros dos escenarios no dependen de su orden. La emulación móvil Chromium no comprueba Safari ni un teléfono real.
+
+El artefacto [fc27-browser-verification, ID 11657254992](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) contiene las capturas de plantillas/Galería y el registro de API. Se revisaron las cuatro capturas, dos vistas en móvil y escritorio, sin desbordamiento horizontal ni defectos materiales observados. Esta revisión visual se limita a esas capturas; el pase de hardware sigue pendiente. El workflow establece una retención de siete días para ese artefacto.
+
+El servicio Docker `frontend-e2e` permite probar contra Nginx mediante Playwright, pero esa variante aún no se ha ejecutado en esta verificación.
 
 Con un stack de pruebas accesible:
 
@@ -121,7 +133,7 @@ PLAYWRIGHT_DISPOSABLE_DB=1 npm run test:e2e
 
 Si Vite ya está iniciado, configura también `PLAYWRIGHT_BASE_URL=http://127.0.0.1:5173`; con una URL externa, Playwright no inicia su propio servidor. En entornos que aíslan la red de cada ejecución, API, Vite y las pruebas deben ser procesos de una misma ejecución permitida.
 
-El resultado E2E de la actualización FC27 está pendiente. En la verificación local, las descargas oficiales de Chromium y de Headless Shell recibieron un HTML «Site Unavailable» en lugar del archivo del navegador. La ejecución quedó bloqueada antes de abrir páginas; no se ha validado visualmente el diseño ni se declara un pase de navegador. No se debe reutilizar como evidencia un resultado anterior a estos cambios. El pase manual debe comprobar, con datos desechables:
+La descarga de Chromium estuvo bloqueada en el entorno local antes de abrir páginas; esa limitación local no impidió el pase posterior de los seis recorridos en CI. Las cuatro capturas revisadas son evidencia de esas pantallas y resoluciones, no de todos los flujos ni de Safari. El pase manual ampliado y la repetición sobre el stack Docker completo deben comprobar, con datos desechables:
 
 1. Arranque con `SEED_DEMO=false`, respuestas de `/health`, `/api/dashboard`, `/api/docs` y navegación en móvil.
 2. Cambio FC26/FC27 conservando datos y cachés coherentes.
@@ -140,4 +152,4 @@ Primero compruebe que `/api/emulator/status` degrada sin dispositivo y el resto 
 
 Para un plan tradicional, compruebe frase incorrecta, cambios de carta/calibración, preparación, ejecución y cancelación. Inspeccione que ningún paso incluya la pulsación final de entrega. Los score deben rechazarse antes de generar preparación automática. La preparación puede cambiar la selección visible en el dispositivo; use datos y una pantalla que permitan revisar esos efectos.
 
-Los resultados de hardware, stack Docker completo y E2E deben añadirse cuando se ejecuten, indicando versión de Companion, resolución, entorno y cualquier fallo observado.
+Siguen pendientes el build/arranque del stack Docker completo, el E2E a través de su Nginx, backup/restauración reales mediante PowerShell, Safari y un teléfono/emulador con Companion y un club EA real. Esos resultados deben añadirse cuando se ejecuten, indicando versión de Companion, resolución, entorno y cualquier fallo observado. Los datos de las comprobaciones registradas son ficticios y no demuestran una sincronización ni una entrega real en EA.

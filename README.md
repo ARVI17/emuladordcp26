@@ -130,6 +130,8 @@ Los scripts resuelven usuario, base y puerto desde la configuración efectiva de
 
 ## Desarrollo y pruebas
 
-Consulta [TESTING.md](docs/TESTING.md) para comandos, evidencia y pruebas que requieren PostgreSQL, navegador, Docker o hardware. La CI incluye una migración de datos FC26, la suite backend con PostgreSQL, pruebas/build frontend y validación de Compose.
+La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) verificó el código `ba9c17b`: **111 pruebas backend con PostgreSQL, 24 pruebas frontend y 6 recorridos Playwright en móvil/escritorio**, además de la migración de 132 cartas FC26, TypeScript/Vite/PWA y las configuraciones Compose base/GPU. La auditoría npm de producción terminó sin avisos; el árbol de desarrollo conserva el aviso documentado en [SECURITY.md](docs/SECURITY.md).
+
+Consulta [TESTING.md](docs/TESTING.md) para comandos, alcance de la evidencia y pruebas pendientes con el stack Docker completo, PowerShell y hardware Companion. Todos los inventarios de prueba son ficticios y desechables.
 
 Documentación: [guía de usuario](docs/USER_GUIDE.md), [actualización FC27](docs/FC27_UPGRADE.md), [mapa técnico](docs/PROJECT_MAP.md), [arquitectura](docs/ARCHITECTURE.md), [optimizadores](docs/OPTIMIZER.md), [seguridad](docs/SECURITY.md) y [limitaciones](docs/KNOWN_LIMITATIONS.md).

@@ -1,6 +1,6 @@
 # Limitaciones conocidas
 
-Estado de la actualización local FC27. El alcance implementado y las pruebas ejecutadas están en [ARCHITECTURE.md](ARCHITECTURE.md), [OPTIMIZER.md](OPTIMIZER.md) y [TESTING.md](TESTING.md).
+Estado de la actualización local FC27, revisado el **10 de octubre de 2026 UTC**. El alcance implementado y las pruebas ejecutadas están en [ARCHITECTURE.md](ARCHITECTURE.md), [OPTIMIZER.md](OPTIMIZER.md) y [TESTING.md](TESTING.md).
 
 ## Cuenta, ediciones y datos
 
@@ -54,4 +54,10 @@ El alcance sigue siendo local y sin autenticación multiusuario. Los puertos se 
 
 Ollama necesita descargar un modelo y puede funcionar con CPU o con la configuración GPU opcional. La degradación sin Ollama está cubierta; el consumo real de recursos, la aceleración GPU y un arranque completo del stack dependen del host.
 
-La ejecución local registrada es de 109 pruebas backend correctas, con dos casos PostgreSQL omitidos, y 24 Vitest correctos en 10 archivos. CI incluye PostgreSQL 16, migración de datos FC26 y exclusión entre procesos, pero **todavía no se ha ejecutado ese workflow en esta actualización**. Playwright prepara móvil de 390 px y escritorio de 1280 px en Chromium, pero la descarga del navegador estuvo bloqueada por la red local antes de abrir páginas. E2E, revisión visual y hardware ADB siguen pendientes; los recorridos con escrituras requieren una base desechable y `PLAYWRIGHT_DISPOSABLE_DB=1`, según [TESTING.md](TESTING.md). Los resultados SQLite no sustituyen esas verificaciones.
+La [CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563), sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e), pasó **111 pruebas backend en PostgreSQL 16**, incluidos los dos casos de bloqueo entre procesos. También verificó la migración desde PR1 conservando 132 cartas FC26, `alembic check` y las configuraciones Compose base/GPU. La ejecución local anterior de 109 correctos y dos omitidos correspondía a SQLite; ambos resultados quedan diferenciados en [TESTING.md](TESTING.md).
+
+El [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) pasó **24 Vitest en 10 archivos**, TypeScript/Vite/PWA, auditoría de producción con cero vulnerabilidades reportadas y **6/6 recorridos Playwright Chromium**. El viewport móvil fue de **390 × 664 px CSS**, con pantalla emulada de 390 × 844 px y DPR 3; el de escritorio, 1280 × 900 px. Los recorridos utilizaron Vite y una API real con datos desechables; no atravesaron el stack Docker/Nginx. El pase no certifica Safari ni dispositivos reales. El árbol de dependencias de desarrollo mantiene el alcance documentado en [SECURITY.md](SECURITY.md).
+
+Las cuatro capturas de plantillas y Galería en móvil/escritorio de [fc27-browser-verification](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) fueron revisadas sin desbordamiento horizontal ni defectos materiales observados en esas vistas. Esa revisión no cubre el resto de pantallas ni el hardware. Se registraron además 26 comprobaciones HTTP locales correctas con 223 cartas ficticias. Ninguno de esos datos proviene de un club EA real.
+
+Continúan pendientes el build y arranque del stack Docker completo, las pruebas a través de su Nginx, backup/restauración reales con PowerShell, Safari y Companion con hardware ADB y un club EA real. Validar `docker compose config` no sustituye construir las imágenes ni arrancar sus servicios. La configuración de GPU tampoco demuestra aceleración efectiva en el host.

@@ -151,4 +151,6 @@ No están implementados el Hub 3D, canje de recompensas/tokens, sincronización 
 
 ## Evidencia de verificación
 
-La migración se probó localmente con SQLite nueva y con una base anterior de 132 cartas, incluyendo consumo, lectura parcial y un plan en ejecución. PostgreSQL real, Compose, navegador y hardware requieren sus entornos correspondientes. [TESTING.md](TESTING.md) separa las pruebas ejecutadas, las de CI y las pendientes; el estado de una función implementada no equivale a verificación en tu dispositivo.
+La migración se probó localmente con SQLite nueva y con una base anterior de 132 cartas, incluyendo consumo, lectura parcial y un plan en ejecución. La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563), sobre el código `ba9c17b`, comprobó también la actualización desde FC26 en PostgreSQL 16, la conservación de las 132 cartas y `alembic check`. Pasaron las 111 pruebas backend, 24 pruebas frontend y 6 recorridos Chromium en móvil/escritorio; las configuraciones Compose base/GPU fueron válidas.
+
+La CI de navegador utilizó Vite y una API con datos desechables. Quedan por ejecutar un arranque completo del stack Docker, respaldo/restauración en PowerShell y las comprobaciones con Companion real. [TESTING.md](TESTING.md) detalla el alcance y las limitaciones; estas pruebas no describen tu instalación ni utilizan tus jugadores.
