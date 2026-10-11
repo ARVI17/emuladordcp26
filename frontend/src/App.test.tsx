@@ -4,6 +4,7 @@ import {api} from './api/client'
 import App from './App'
 import {profile,renderClub} from './test/helpers'
 
+vi.mock('./lib/entry',()=>({openEntry:vi.fn(async()=>({entry_id:1,mode:'local',modules:{}}))}))
 vi.mock('./api/client',async()=>({...await vi.importActual('./api/client'),api:vi.fn()}))
 it('cambia la edición del perfil y consulta los datos de la temporada elegida',async()=>{
   vi.mocked(api).mockImplementation(async(path,options)=>{

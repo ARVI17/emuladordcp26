@@ -16,7 +16,13 @@ docker compose exec backend alembic current
 docker compose exec backend alembic check
 ```
 
-La revisión esperada es `0005`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+La revisión esperada es `0009`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+
+`0006` añade contextos, sesiones, snapshots, mapeos externos, planes/reservas, mercado y conocimiento; `0007` conserva indicadores remotos desconocidos; `0008` separa definiciones públicas de progreso privado; `0009` conserva edición y mercado en el diario. Ninguna migra la demo a una cuenta vinculada. Los precios cero heredados, usados como desconocidos por el editor anterior, pasan a `null`; las nuevas entradas permiten cero explícito.
+
+Hay dos revisiones históricas llamadas `0005`: la de FC27 y la de `candidate_count` en Companion. `0006` inspecciona el esquema: si falta `players.game_version`, ejecuta el puente FC27 existente antes de ampliar contextos. Ambas rutas se comprobaron en PostgreSQL desechable, sin modificar las migraciones aplicadas. El conteo del escáner se conserva. No copies el archivo de la otra `0005` sobre una instalación aplicada.
+
+El downgrade que eliminaría contextos está bloqueado; recuperar una versión anterior requiere restaurar el respaldo en el esquema/código correspondientes. Para una revisión aislada usa `docker-compose.review.yml`; no apliques una rama sin revisar a los datos únicos. Consulta [FC27_PLANNER.md](FC27_PLANNER.md).
 
 La migración:
 

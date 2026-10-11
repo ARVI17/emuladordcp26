@@ -1,63 +1,39 @@
 # Limitaciones conocidas
 
-Estado de la actualización local FC27, revisado el **10 de octubre de 2026 UTC**. El alcance implementado y las pruebas ejecutadas están en [ARCHITECTURE.md](ARCHITECTURE.md), [OPTIMIZER.md](OPTIMIZER.md) y [TESTING.md](TESTING.md).
+Estado del 11 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
 
-## Cuenta, ediciones y datos
+## Club real y contexto
 
-La aplicación administra un registro local de un solo usuario. No utiliza una API autenticada de EA ni conoce automáticamente el club completo, el inventario vendido o el historial anterior al registro. Una importación revisada o una captura ADB puede seguir conteniendo errores humanos.
+No hay acceso EA autorizado para esta aplicación. Faltan aprobación, protocolo, permisos, identidad/copia, cobertura/paginación, cuotas y frescura documentadas. La sesión local y una importación revisada no verifican una cuenta. Al entrar se muestra **Integración pendiente**; las simulaciones locales requieren elegirlas expresamente. No se realizaron pruebas contra cuenta/proveedor/hardware reales.
 
-Los datos migrados se conservan como FC26 y el perfil inicia FC27. Cambiar la edición no convierte cartas ni lleva su historial al juego nuevo. El patrón de versión permite preparar datos de otras ediciones, pero admitir una etiqueta futura no certifica compatibilidad con sus reglas o pantallas. Las fuentes públicas configuradas y los datos incluidos son los que muestra [content.py](../backend/app/services/content.py).
+El reconciliador es un contrato interno probado con fixtures, sin adaptador ni cargador público de instantáneas verificadas. Una futura integración debe demostrar sus garantías antes de utilizarlo. La frescura máxima de 15 minutos es un límite del producto; no una promesa de actualización de EA. Las migraciones y fixtures usan sesiones internas sin los filtros HTTP: no deben exponerse al cliente.
 
-No hay precios de mercado en tiempo real. Precio, atributos, posiciones alternativas, identificadores, roles y puntuaciones son valores registrados o revisados por el usuario. Los ejemplos y la demo son ficticios; no se deben presentar como plantillas o campañas reales.
+Los contextos aíslan registros personales en una instalación de un propietario. No hay autenticación multiusuario. Publicar requiere TLS, autenticación y control de red. No se copiaron datos originales al stack desechable de revisión.
 
-Sin identificadores fiables, versiones y homónimos pueden confundirse. El analizador agrupa también nombres normalizados para evitar alinear dos versiones de la misma persona, lo que puede excluir homónimos válidos. Corregir una identidad ayuda a la conciliación de Galería, pero no valida el dato contra EA.
+## Análisis, planes y mercado
 
-## Análisis y DCP
+El encaje es una heurística, no una medida de victorias. Compara diez formaciones y cinco objetivos, agrupando coincidencias. Banquillo y asignación disjunta son heurísticos posteriores/secuenciales. No modela animaciones, técnico, habilidad, fatiga ni toda la táctica del juego. Homónimos se separan con ID de futbolista fiable; sin él la agrupación sigue siendo aproximada.
 
-El encaje, la media y la química son cálculos locales. Las cinco formaciones disponibles, los pesos de atributos y los ajustes por roles/PlayStyles no modelan todos los efectos de táctica, animaciones, técnico, forma de jugar o actualizaciones de gameplay. El banquillo se construye con una heurística posterior al once y la formación sugerida prioriza cobertura. Consulte los coeficientes y tiempos en [OPTIMIZER.md](OPTIMIZER.md).
+Química oficial desconocida y media local aproximada. La suma histórica por carta permanece por compatibilidad, etiquetada. Ninguna solución garantiza aceptación oficial. Los requisitos tradicionales conservan los límites expresables en el esquema, incluyendo posiciones principales.
 
-Los solvers tienen límites de tiempo. Una solución factible puede no ser óptima; una respuesta sin solución puede reflejar el tiempo disponible además de restricciones imposibles. La prueba automatizada valida las reglas locales, no la aceptación por una interfaz concreta del juego.
+El cálculo conjunto está acotado a 24 copias/6 segmentos, 20 000 combinaciones y cinco segundos. Declara timeout/factibilidad y solo llama óptimo al espacio examinado completamente. No prueba el óptimo del club fuera de la selección. Las entregas parciales necesitan aceptación específica; los sobrantes consumidos no se recuperan. Restaurar exige origen explícito de simulación local.
 
-Los DCP por puntos usan puntuaciones positivas explícitas y revisadas. La tabla base enlazada en contenido sirve de referencia y no completa por sí sola bonificaciones de tipos de carta, holografía o cambios posteriores. Si faltan datos, no se consume suponiendo una puntuación.
+Los planes reservan recursos locales; no ejecutan operaciones EA. Un gasto confirmado queda comprometido hasta conciliar monedas posteriores. El presupuesto local no acredita saldo. Datos desconocidos, ausencias, anuncios, resultados inciertos y compras propuestas no se convierten en recursos disponibles. Retirar el candado manual no elimina otras protecciones acumuladas.
 
-Un segmento tradicional sigue usando los requisitos tradicionales registrados, incluidas las posiciones principales. No adapta silenciosamente un DCP antiguo a un formato score. Las condiciones que la interfaz no modele deben verificarse antes de una entrega real.
+No hay feed autorizado de precios/ventas. Las cotizaciones manuales exigen variante, edición, mercado, tipo, fuente y tiempo, pero no prueban que el anuncio siga disponible. Fichajes requiere inventario/monedas verificados y muestra química/costes complementarios pendientes. Los tramos son porcentajes del presupuesto, no categorías universales. Volumen desconocido. El diario usa hasta 500 registros recientes; nunca volumen global. Tasa del 5 % y redondeo son hipótesis.
 
-Confirmar y restaurar solo cambian la base local. **Restaurar una entrega local no devuelve cartas entregadas en EA.** Los consumos heredados con más de un posible propietario se rechazan para revisión. Tampoco se puede asegurar coherencia si se modifica directamente la base saltándose validaciones y bloqueos de la API.
+## Galería, evoluciones y referencias
 
-## Galería, contenido cambiante y evoluciones
+Galería conserva adquisiciones locales aunque dejen de estar disponibles; no reclama recompensas. Puntos, reglas y progreso oficial requieren evidencia. La carta base Evo puede seguir pendiente. Simular una cadena no activa caminos ni modifica atributos reales. Coste máximo y plazos se registran tras revisión, sin descargar automáticamente tareas o efectos sobre transferibilidad.
 
-Galería es un historial local. Registrar inventario, completar un conjunto local o mostrar una nota no reclama recompensas ni modifica la Galería de EA. Las copias de una versión comparten una puntuación revisada; si el identificador o el valor introducido es incorrecto, la consistencia interna no corrige esa información.
+Las 50 referencias conservan el alcance aportado por el usuario. Se contrastaron fuentes clave de reglas, permisos y formaciones; no se afirma haber revalidado las 50 páginas individualmente. R20–R22 solo acreditan metadatos audiovisuales. Una URL no acredita vigencia ni licencia de extracción. Las revisiones guardan diferencias/versiones anteriores sin modificar reglas o planes por sí solas. El mantenimiento programable es un recordatorio, no un rastreador. Las noticias EA son una consulta manual acotada que puede fallar conservando lo anterior.
 
-Una evolución sin carta base identificable queda pendiente en el historial. Las notas de conjuntos dependen de reglas, etiquetas, umbrales y puntos revisados; una URL de fuente no equivale a validación automática.
+## Importación y Companion
 
-`POST /content/refresh` busca enlaces públicos en fuentes predefinidas. Puede fallar por cambios de HTML, bloqueo, red o ausencia de enlaces legibles. Conserva lo disponible e informa del error. No constituye una sincronización completa de campañas, DCP, conjuntos y evoluciones activos.
+El mismo contenido CSV/XLSX en contexto/edición iguales es idempotente aunque cambie la vista previa. Otro contenido no dispone de IDs externos de copia: no es sincronización. Nombre/media/posición detecta ambigüedad y evita resucitar consumidas, pero no identifica dos copias EA idénticas.
 
-Los paquetes de contenido requieren vista previa y confirmación. Su hash detecta cambios o repetición, pero no certifica autoría ni exactitud. Actualizan definiciones por identificador: hay que revisar qué reemplazan y su edición.
+OCR siempre requiere revisión. Resúmenes sin candidatos y detalles de hasta 20. Observar Companion hace una lectura manual de jerarquía, sin temporizador/captura/OCR/toque. Pulsaciones y ejecución ADB están deshabilitadas por falta de permiso aplicable; se conserva el motor histórico y sus pruebas ficticias.
 
-La vista previa de evoluciones aplica únicamente las condiciones y mejoras expresables en [schemas/fc27.py](../backend/app/schemas/fc27.py). No activa caminos, no comprueba todas las condiciones posibles del juego y no rellena atributos desconocidos. Costes, tareas, elegibilidad adicional y cambios de plazos deben contrastarse antes de actuar.
+## Verificación pendiente
 
-## Importación, OCR y ADB
-
-CSV/XLSX valida filas, rangos, booleanos y metadatos; la confirmación está vinculada a un archivo revisado y es idempotente por token. Confirmar deliberadamente nuevas vistas previas del mismo archivo permite crear nuevas copias: no hay conciliación universal de inventario externo.
-
-OCR depende de calidad, idioma, recorte y diseño. La lectura visual puede asociar mal datos o no encontrar atributos y puntuaciones. Los límites de bytes, píxeles, tiempo y simultaneidad acotan trabajo, pero no garantizan precisión.
-
-El proyecto aporta cliente y controles ADB. El usuario inicia y conecta su dispositivo o emulador. Las coordenadas absolutas requieren recalibración tras cambios de resolución, escala, orientación o interfaz.
-
-Los planes tradicionales rechazan ambigüedad conocida y cambios en el snapshot. Aun así, la preparación busca por nombre y no demuestra mediante reconocimiento completo que cada resultado seleccionado sea la copia prevista. La integración visual con Companion FC27 sigue pendiente de una prueba con hardware.
-
-Los DCP score quedan excluidos de la preparación ADB. Un estado de plan `completed` significa que terminaron los pasos de preparación, nunca que se pulsó la entrega. La cancelación evita pasos posteriores cuando el trabajador la observa; no deshace una pulsación ya enviada.
-
-## Despliegue y verificaciones pendientes
-
-El alcance sigue siendo local y sin autenticación multiusuario. Los puertos se publican por defecto en loopback. Exponer la instalación fuera de ese entorno exige revisar autenticación, TLS y acceso de red; las pruebas funcionales no convierten el servicio en una aplicación multiusuario.
-
-Ollama necesita descargar un modelo y puede funcionar con CPU o con la configuración GPU opcional. La degradación sin Ollama está cubierta; el consumo real de recursos, la aceleración GPU y un arranque completo del stack dependen del host.
-
-La [CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563), sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e), pasó **111 pruebas backend en PostgreSQL 16**, incluidos los dos casos de bloqueo entre procesos. También verificó la migración desde PR1 conservando 132 cartas FC26, `alembic check` y las configuraciones Compose base/GPU. La ejecución local anterior de 109 correctos y dos omitidos correspondía a SQLite; ambos resultados quedan diferenciados en [TESTING.md](TESTING.md).
-
-El [job frontend](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/job/114119430117) pasó **24 Vitest en 10 archivos**, TypeScript/Vite/PWA, auditoría de producción con cero vulnerabilidades reportadas y **6/6 recorridos Playwright Chromium**. El viewport móvil fue de **390 × 664 px CSS**, con pantalla emulada de 390 × 844 px y DPR 3; el de escritorio, 1280 × 900 px. Los recorridos utilizaron Vite y una API real con datos desechables; no atravesaron el stack Docker/Nginx. El pase no certifica Safari ni dispositivos reales. El árbol de dependencias de desarrollo mantiene el alcance documentado en [SECURITY.md](SECURITY.md).
-
-Las cuatro capturas de plantillas y Galería en móvil/escritorio de [fc27-browser-verification](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563/artifacts/11657254992) fueron revisadas sin desbordamiento horizontal ni defectos materiales observados en esas vistas. Esa revisión no cubre el resto de pantallas ni el hardware. Se registraron además 26 comprobaciones HTTP locales correctas con 223 cartas ficticias. Ninguno de esos datos proviene de un club EA real.
-
-Continúan pendientes el build y arranque del stack Docker completo, las pruebas a través de su Nginx, backup/restauración reales con PowerShell, Safari y Companion con hardware ADB y un club EA real. Validar `docker compose config` no sustituye construir las imágenes ni arrancar sus servicios. La configuración de GPU tampoco demuestra aceleración efectiva en el host.
+Faltan proveedor/club real, Android, Safari, GPU/Ollama en esta rama y prueba de los scripts PowerShell de backup/restore sobre una instalación real. Sí se construyó/inició el stack aislado con Nginx, se probaron degradaciones sin Ollama/ADB, migraciones PostgreSQL y dump/restauración con datos desechables. Ninguna sustituye las pendientes.

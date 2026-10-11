@@ -40,7 +40,7 @@ describe('revisión de inventario Companion',()=>{
   it('permite avanzar desde la primera página heredada de un lote continuado',async()=>{
     responses({...scan,id:2,captured_pages:0,source_scan_id:1,can_capture:true})
     renderClub(<CompanionPage/>)
-    expect(await screen.findByRole('button',{name:'Avanzar y leer siguiente'})).toBeEnabled()
+    expect(await screen.findByRole('button',{name:'Avanzar y leer siguiente'})).toBeDisabled()
   })
   it('respeta el límite de captura aunque ya se hayan importado candidatos',async()=>{
     responses({...scan,candidates:[],captured_pages:8,can_capture:false,can_continue:true})

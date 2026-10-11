@@ -1,0 +1,11 @@
+import {useState} from 'react'
+import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
+import {api} from '../api/client'
+import {ErrorBox} from './ui'
+type Match={id:number;tactic:string;minutes:number;chances:number;dangerous_losses:number;conceded:number;change_tested:string}
+export function MatchDiary(){
+ const qc=useQueryClient(),[tactic,setTactic]=useState(''),[change,setChange]=useState(''),[minutes,setMinutes]=useState(90),[chances,setChances]=useState(0),[losses,setLosses]=useState(0),[conceded,setConceded]=useState(0)
+ const query=useQuery({queryKey:['matches'],queryFn:()=>api<{items:Match[];sample_size:number;message:string}>('/matches')})
+ const save=useMutation({mutationFn:()=>api('/matches',{method:'POST',body:JSON.stringify({played_at:new Date().toISOString(),tactic,minutes,chances,dangerous_losses:losses,conceded,change_tested:change})}),onSuccess:()=>{void qc.invalidateQueries({queryKey:['matches']});setChange('')}})
+ return <details className="panel"><summary>Diario de partidos y práctica</summary><p>Prueba un cambio por sesión. Registra minutos jugados y resultados observados; una muestra pequeña no prueba superioridad táctica.</p><div className="form-grid"><label>Táctica utilizada<input value={tactic} onChange={e=>setTactic(e.target.value)}/></label><label>Cambio probado<input value={change} onChange={e=>setChange(e.target.value)}/></label>{([{label:'Minutos jugados',value:minutes,set:setMinutes,min:1,max:240},{label:'Ocasiones creadas',value:chances,set:setChances,min:0,max:100},{label:'Pérdidas peligrosas',value:losses,set:setLosses,min:0,max:100},{label:'Goles concedidos',value:conceded,set:setConceded,min:0,max:100}]).map(f=><label key={f.label}>{f.label}<input type="number" min={f.min} max={f.max} value={f.value} onChange={e=>f.set(Number(e.target.value))}/></label>)}</div><button disabled={save.isPending||!tactic||!change} onClick={()=>save.mutate()}>Guardar partido observado</button><ErrorBox error={save.error||query.error}/><p>Muestra: {query.data?.sample_size||0} partidos.</p>{query.data?.items.map(m=><p key={m.id}>{m.tactic} · {m.minutes} min · {m.chances} ocasiones · {m.dangerous_losses} pérdidas · {m.conceded} goles concedidos. Cambio: {m.change_tested}</p>)}</details>
+}

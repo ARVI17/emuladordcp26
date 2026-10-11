@@ -73,7 +73,7 @@ def requirements_for_batch(db: Session, segment: Segment) -> dict:
     if "required_player_ids" in requirements:
         requirements["required_player_ids"] = [player_id for player_id in requirements["required_player_ids"] if player_id not in delivered]
     if "max_total_value" in requirements:
-        requirements["max_total_value"] -= sum(row.total_cost for row in active)
+        requirements["max_total_value"] -= sum(row.total_cost or 0 for row in active)
         if requirements["max_total_value"] < 0:
             raise HTTPException(409, "Las entregas activas ya exceden el valor máximo de este segmento")
     return requirements
@@ -219,6 +219,10 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
             raise HTTPException(422, exc.errors(include_url=False, include_context=False, include_input=False)) from exc
         for key, value in normalized.items():
             setattr(player, key, value)
+        if player.unknown_fields and changes.get("data_reviewed") is True:
+            player.unknown_fields = [field for field in player.unknown_fields if field not in changes]
+            if player.unknown_fields:
+                player.data_reviewed = False
         record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
         record(db, "update", "player", player.id, {"fields": list(changes)})
         db.commit()
@@ -261,7 +265,7 @@ def _import_secret(db: Session) -> bytes:
 
 
 def _new_preview_token(db: Session, content_hash: str, suffix: str, version: str) -> str:
-    payload = {"hash": content_hash, "format": suffix, "version": version, "nonce": secrets.token_urlsafe(18), "expires": int(time.time()) + 3600}
+    payload = {"context": db.info.get("club_context_id", 1), "hash": content_hash, "format": suffix, "version": version, "nonce": secrets.token_urlsafe(18), "expires": int(time.time()) + 3600}
     encoded = base64.urlsafe_b64encode(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).decode().rstrip("=")
     signature = hmac.new(_import_secret(db), encoded.encode(), hashlib.sha256).hexdigest()
     return f"{encoded}.{signature}"
@@ -276,7 +280,7 @@ def _check_preview_token(db: Session, token: str | None, content_hash: str, suff
         if not hmac.compare_digest(signature, expected):
             raise ValueError("signature")
         payload = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
-        if payload["hash"] != content_hash or payload["format"] != suffix or payload["version"] != version:
+        if payload["hash"] != content_hash or payload["format"] != suffix or payload["version"] != version or payload.get("context") != db.info.get("club_context_id", 1):
             raise ValueError("file")
         if not isinstance(payload["expires"], int):
             raise ValueError("expires")
@@ -312,7 +316,7 @@ def _process_import(db: Session, content: bytes, filename: str, confirm: bool, t
         db.expire_all()
         version = current_version(db)
         payload = _check_preview_token(db, token, content_hash, suffix, version)
-        receipt_key = "_import_receipt_" + hashlib.sha256(token.encode()).hexdigest()
+        receipt_key = "_import_receipt_" + hashlib.sha256(f"{db.info.get('club_context_id', 1)}:{version}:{content_hash}".encode()).hexdigest()
         receipt = db.get(AppSetting, receipt_key)
         if receipt:
             return {"imported": 0, "already_imported": True, "original_imported": receipt.value["imported"], "content_hash": content_hash}
@@ -453,7 +457,8 @@ def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommen
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
     try:
-        return recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options)
+        from app.services.contexts import require_module
+        return {**recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options), "binding": require_module(db, "squads")}
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -520,7 +525,7 @@ def optimization_payload(db: Session, segment: Segment, request: OptimizeRequest
     progress = score_progress(db, segment) if requirements["kind"] == "score" else 0
     solutions = solve(players, requirements, set(request.allow_protected_ids), set(request.exclude_ids), request.max_solutions, effective_protected_ids=protected, current_score=progress)
     by_id = {player.id: player for player in players}
-    return [{**asdict(item), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True} for item in solutions]
+    return [{**asdict(item), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "official_validation": False} for item in solutions]
 
 
 @router.post("/segments/{segment_id}/optimize")
@@ -529,7 +534,9 @@ def optimize_segment(segment_id: int, payload: OptimizeRequest, db: DB):
     if segment.completed:
         raise HTTPException(409, "El segmento ya está completado")
     solutions = optimization_payload(db, segment, payload)
-    return {"segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": ["La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
+    from app.services.contexts import require_module
+    binding = require_module(db, "dcp")
+    return {"binding": binding, "segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": ["La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
 
 
 def _recompute_completion(db: Session, segment: Segment) -> int:
@@ -547,6 +554,8 @@ def _recompute_completion(db: Session, segment: Segment) -> int:
 
 @router.post("/segments/{segment_id}/confirm")
 def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
+    if db.info["context"].verified:
+        raise HTTPException(409, "Revisa y aprueba una propuesta en Planes antes de registrar una entrega real")
     with resource_locks(db, "inventory"):
         db.expire_all()
         segment = get_or_404(db, Segment, segment_id)
@@ -567,11 +576,11 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         if violations:
             raise HTTPException(422, {"message": "La solución no es válida", "violations": violations})
         contribution = sum(player.gallery_score for player in players) if requirements["kind"] == "score" else 0
-        total_value = sum(player.price for player in players)
-        if max(contribution, total_value) > 2_147_483_647:
+        total_value = None if any(player.price is None for player in players) else sum(player.price for player in players)
+        if max(contribution, total_value or 0) > 2_147_483_647:
             raise HTTPException(422, "El valor total de esta entrega excede el límite de almacenamiento")
         snapshot = {
-            "ownership_version": 1, "requirements": requirements, "game_version": version,
+            "ownership_version": 1, "origin": "local_simulation", "requirements": requirements, "game_version": version,
             "players": {str(player.id): {"deleted": player.deleted, "duplicate_untradeable": player.duplicate_untradeable, "consumed_by_submission_id": player.consumed_by_submission_id} for player in players},
             "player_ids": list(payload.player_ids),
             "cards": [{"id": player.id, "name": player.name, "rating": player.rating, "price": player.price, "gallery_score": player.gallery_score, "card_id": player.card_id, "base_card_id": player.base_card_id, "data_reviewed": player.data_reviewed, "data_source": player.data_source} for player in players],
@@ -609,6 +618,8 @@ def restore_submission(submission_id: int, db: DB):
         submission = get_or_404(db, Submission, submission_id)
         if submission.status != "confirmed":
             raise HTTPException(409, "La entrega ya fue restaurada o no está confirmada")
+        if submission.snapshot.get("origin") != "local_simulation" or not submission.snapshot.get("ownership_version"):
+            raise HTTPException(409, "Una entrega real o de origen incierto requiere conciliación; restaurar no recupera cartas en EA")
         states = submission.snapshot.get("players", {})
         if not states:
             raise HTTPException(409, "La entrega no contiene un snapshot restaurable")
@@ -730,6 +741,9 @@ def update_profile(payload: ProfileUpdate, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         profile = ensure_profile(db)
+        context = db.info["context"]
+        if context.verified and payload.game_version and payload.game_version != context.game_version:
+            raise HTTPException(409, "Selecciona el contexto de la otra edicion antes de cambiar de temporada")
         for key, value in payload.model_dump(exclude_unset=True).items():
             setattr(profile, key, value)
         record(db, "update", "profile", profile.id)

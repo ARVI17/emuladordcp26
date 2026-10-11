@@ -13,7 +13,8 @@ def test_player_crud_and_protection(client):
     player_id = created.json()["id"]
     assert client.patch(f"/players/{player_id}", json={"rating":85}).json()["rating"] == 85
     assert client.post(f"/players/{player_id}/protect").json()["protected"] is True
-    assert client.delete(f"/players/{player_id}").json()["ok"] is True
+    assert client.delete(f"/players/{player_id}").status_code == 409
+    assert client.get("/players?search=Prueba%20Local").json()["total"] == 1
 
 def test_squad_create_duplicate_and_protect(client):
     recommended = client.post("/squads/recommend").json()

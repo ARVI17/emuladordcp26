@@ -1,7 +1,7 @@
-import {test,expect} from '@playwright/test'
+import {test,expect,openLocal} from './fixtures'
 
 test('el panel y la navegación de FC 27 caben en una pantalla móvil',async({page})=>{
-  await page.goto('/')
+  await openLocal(page)
   await expect(page.getByRole('heading',{name:/FC (26|27) Club Lab/})).toBeVisible()
   await expect(page.getByRole('navigation',{name:'Navegación principal'})).toBeVisible()
   await expect(page.getByRole('button',{name:'Mi club',exact:true})).toBeVisible()
@@ -14,7 +14,7 @@ test('el panel y la navegación de FC 27 caben en una pantalla móvil',async({pa
 
 test('Companion conserva la revisión y la entrega manual cuando ADB no está conectado',async({page})=>{
   await page.route('**/emulator/status',route=>route.fulfill({json:{enabled:false,available:false,devices:[],config:{},message:'ADB desactivado para esta prueba'}}))
-  await page.goto('/')
+  await openLocal(page)
   await page.getByRole('button',{name:'Emulador',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Conexión con Companion'})).toBeVisible()
   await expect(page.getByRole('heading',{name:'Leer mi inventario'})).toBeVisible()
@@ -49,7 +49,7 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
       expect(response.ok(),await response.text()).toBeTruthy()
       created.push((await response.json()).id)
     }
-    await page.goto('/')
+    await openLocal(page)
     await expect(page.getByRole('heading',{name:'FC 27 Club Lab'})).toBeVisible()
     await page.getByRole('button',{name:'Análisis',exact:true}).click()
     await expect(page.getByRole('heading',{name:'Análisis de mi club'})).toBeVisible()

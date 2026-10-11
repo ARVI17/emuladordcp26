@@ -4,20 +4,24 @@ Asistente local y no oficial para **analizar tus jugadores, armar plantillas, pl
 
 El repositorio conserva el nombre `emuladordcp26` y los nombres de sus volúmenes para que actualizar no separe tu instalación de sus datos. **FC27 es la edición inicial; los datos existentes de FC26 se conservan como archivo separado.**
 
+**Revisión del planificador, 11 de octubre de 2026:** la entrada comprueba sesión, contexto y capacidades. La conexión EA muestra **Integración pendiente**: falta autorización/documentación para este proyecto. Solo la elección explícita de **Abrir registro local** habilita simulaciones con datos locales. Incluye planes revisables, reservas de cartas/monedas, cinco perfiles de plantilla, fichajes condicionados a datos verificados, mercado/diario y 50 referencias. [Implementación, comparación y límites](docs/FC27_PLANNER.md).
+
+Para probar esta rama con datos desechables y sin usar los volúmenes normales: `docker compose -f docker-compose.review.yml up --build -d`, luego abre `http://localhost:8081`. La base de revisión usa memoria temporal; no guardes datos únicos en ella.
+
 ## Qué puedes hacer
 
 | Área | Funciones implementadas |
 | --- | --- |
 | Club | Crear, editar, buscar y paginar cartas; importar CSV/XLSX con revisión; registrar atributos, posiciones alternativas, PlayStyles, roles, cesiones, evolución, holográficos y puntuación revisada. |
 | Análisis | Ver cobertura por posición, referentes, huecos y datos pendientes. La recomendación explica qué información utilizó. |
-| Plantillas | Proponer once y siete suplentes en cinco formaciones; elegir enfoque, fijar/excluir jugadores y usar posiciones alternativas. Guardar y proteger equipos completos. |
+| Plantillas | Proponer once y siete suplentes en diez formaciones; comparar cinco objetivos, fijar/excluir jugadores y usar posiciones alternativas. Guardar y proteger equipos completos. |
 | Galería | Registrar adquisiciones locales, conservar cartas que ya no están disponibles, crear conjuntos con filtros/etiquetas y evaluar grados cuando hay reglas y puntos revisados. |
 | Evoluciones | Registrar requisitos y caminos, simular hasta cinco evoluciones encadenadas con topes y comprobar elegibilidad sin modificar las cartas. |
 | DCP | Resolver requisitos tradicionales o puntuación revisada, gestionar entregas parciales, proteger jugadores y restaurar una entrega local desde su historial. |
 | Novedades | Consultar referencias públicas de EA, actualizar titulares e importar versiones revisadas de conjuntos/evoluciones sin editar código. |
-| Companion | Leer candidatos revisables y requisitos, inspeccionar capturas y preparar un DCP tradicional mediante un plan ADB expresamente autorizado. |
+| Companion | Lecturas manuales revisables, requisitos e inspección; máximo 20 formularios por bloque. Envío de pulsaciones deshabilitado por falta de permiso aplicable. |
 
-Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni usa una API autenticada del club. La preparación ADB termina antes de entregar el DCP; la confirmación del inventario local y la entrega en el juego son acciones distintas.
+Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni usa una API autenticada del club. Las confirmaciones registran decisiones/resultados locales; no ejecutan operaciones en EA. La sesión local no sustituye autenticación multiusuario.
 
 ## Empezar
 
@@ -36,7 +40,7 @@ Una instalación nueva crea un perfil vacío. **`SEED_DEMO=false` es el valor pr
 
 1. Crea un respaldo de tu instalación antes de actualizar.
 2. Actualiza el código y ejecuta `docker compose up --build -d`.
-3. Alembic aplica la revisión `0005`: conserva el inventario y el historial antiguo bajo FC26 y activa FC27.
+3. Alembic llega a `0009`: conserva FC26/FC27 y sus historiales, y guarda lo heredado en un contexto local sin vincular.
 4. Cambia de edición desde la cabecera para consultar FC26. Importa tus cartas actuales con FC27 seleccionado.
 
 No cambies los nombres de los volúmenes ni uses `docker compose down -v` para actualizar. [Guía de actualización FC27](docs/FC27_UPGRADE.md).

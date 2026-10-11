@@ -1,5 +1,17 @@
 # Guía de usuario · FC27
 
+## Entrada y planificador
+
+Al abrir verás **Conexiones y estado del club**. Actualmente muestra **Integración pendiente**, con los permisos y datos que faltan. **Abrir registro local** es una alternativa explícita para revisar lo anterior; el aviso permanece visible y no acredita sincronización EA. El selector de contextos aparece cuando hay más de uno.
+
+En **Planes**, compara cinco objetivos de plantilla o varios DCP, añade acciones/copias concretas y simula. Guarda el borrador, escribe `REVISAR <id>`, reserva y finalmente escribe `APROBAR <id>`. Registra cada resultado con `CONFIRMAR <id> <paso>` después de observarlo. Las operaciones en el juego son manuales. El servidor vuelve a comprobar inventario, reservas, reglas, precios y plazos. Una entrega parcial necesita aceptación específica; cancelar no recupera cartas reales.
+
+**Fichajes** permite preparar fichas públicas asociadas a precios registrados en **Mercado**. La comparación personal espera inventario completo y monedas verificadas. **Mercado** también calcula escenarios hipotéticos y registra compras/anuncios/ventas contrastadas; un anuncio no es venta ni saldo. **Referencias** guarda evidencia revisable de las 50 fuentes y reglas compartidas sin compartir progreso. El recordatorio de revisión no descarga fuentes automáticamente. En Planes también puedes abrir el diario de partidos.
+
+Las lecturas Companion son manuales y muestran hasta 20 candidatos por bloque. Importa la revisión antes de cambiar de bloque. La preparación ADB y los botones de envío de entradas están deshabilitados por falta de permiso aplicable. No se certifica un club completo por capturar muchas páginas.
+
+Consulta [alcance y límites del planificador](FC27_PLANNER.md) para distinguir resultados locales, pruebas sintéticas y conexión real pendiente.
+
 ## 1. Elegir la edición y cargar tus jugadores
 
 Selecciona **FC27** en la cabecera. FC26 conserva los datos anteriores en un archivo separado; cambiar de edición no convierte cartas ni mezcla sus DCP o plantillas. Una instalación nueva empieza vacía salvo que se haya configurado expresamente una demo antes del primer arranque.

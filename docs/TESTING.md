@@ -1,4 +1,48 @@
-# Pruebas y estado de verificación
+# Pruebas del planificador FC27
+
+Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
+
+| Verificacion actual | Resultado |
+| --- | --- |
+| Pytest completo, PostgreSQL 16 aislado | **154 passed**, 1 aviso httpx/Starlette, 121,18 s; ninguno omitido |
+| Vitest | **25 passed en 11 archivos** |
+| TypeScript/Vite/PWA en imagen Docker | Build correcto |
+| Playwright por Nginx/API/PostgreSQL reales | **12 passed**, 29,1 s, Chromium iPhone 13 y escritorio 1280 x 900 |
+| Migraciones desde 0005 Companion y 0005 FC27 | Ambas a **0009**, alembic check sin cambios, conservadas 132 cartas FC26 y 132 FC27 respectivamente |
+| Migracion de consumo/historial | Conserva 132 cartas, carta 1 eliminada logicamente, consumed_by_submission_id=1, entrega propietaria y Galeria |
+| Dump/restauracion PostgreSQL desechable | pg_dump -Fc / pg_restore --exit-on-error: head 0009, 132 cartas restauradas |
+| SQLite desechable del flujo CI | upgrade head 0009, alembic check y bootstrap correctos |
+| Degradacion | Revision sin Ollama ni dispositivo ADB; modulos principales utilizables |
+| Compose y stack de revisión | Configuraciones válidas, cuatro servicios healthy, head 0009 y alembic check sin cambios |
+| HTTP y contratos | Health 200 en 8081 y en el original 8080; OpenAPI de revisión válido, 97 rutas |
+| Proveedor EA / club del usuario / hardware | **No probados: acceso autorizado y dispositivo pendientes** |
+
+Los E2E cubren entrada pendiente, modo local expreso, navegacion/layout, plantillas/Galeria, mercado, 50 referencias y reserva/cancelacion sin consumo. Solo el diagnostico ADB sustituye su estado; las mutaciones del planificador usan la API real. Capturas revisadas de entrada, plan y vistas heredadas. Artefactos locales en `frontend/test-results/`, sin versionar.
+
+`test_planner.py` usa lecturas remotas **sinteticas**: relecturas/dos copias/movimientos, parcial, cuenta/logout/expiracion, rollback al fallar commit, preferencias, frescura por modulo y cuotas. Cubre reservas concurrentes de cartas/monedas, rutas antiguas, dos pasos/cambio externo, aprobacion caducada/alterada/repetida, perdida parcial, incertidumbre, variante/mercado/edicion/precio incorrectos, homonimos/calidad de atributos, disjuntos y catalogo/progreso separado. Una enumeracion independiente obtiene coste DCP conjunto 3 frente a 101 de elecciones separadas; timeout no afirma imposibilidad.
+
+## Reproducir sin tocar datos normales
+
+Pytest recrea tablas. Se uso exclusivamente `TEST_DATABASE_URL` con contenedor `emuladordcp26-planner-test-db`, red `emuladordcp26_planner_test`, base `planner_test`. Migraciones en otras bases `planner_migration_*`; dumps en `backups/`.
+
+```powershell
+# Requiere esa base exclusivamente desechable.
+docker run --rm --network emuladordcp26_planner_test --mount "type=bind,source=$PWD/backend,target=/app" -e TEST_DATABASE_URL=postgresql+psycopg://planner_test:planner_test_only@emuladordcp26-planner-test-db:5432/planner_test --entrypoint python emuladordcp26-planner-backend -m pytest -q
+
+docker compose -f docker-compose.review.yml up --build -d
+docker compose -f docker-compose.review.yml exec backend alembic current
+docker compose -f docker-compose.review.yml exec backend alembic check
+docker compose -f docker-compose.review.yml build frontend-e2e
+docker compose -f docker-compose.review.yml run --rm frontend-e2e
+```
+
+Build: `npm run build`. Vitest: `npm test -- --run` en imagen de build montando `frontend/src`. Revision en localhost:8081; el stack original localhost:8080 no se migro ni reconstruyo. No se probaron scripts PowerShell de restauracion, GPU/inferencia Ollama, Safari ni operaciones EA.
+
+## Medicion acotada
+
+`python -m benchmarks.planner` genera cartas solo en memoria. Con 512 MB, comparar diez formaciones equilibradas tardo **0,529 s para 132 copias** y **1,569 s para 1000**: diez onces completos, optimal en ambos casos. Excluye HTTP, proveedor, DB, otros estilos e inventarios. Objetivo de referencia: menos de cinco segundos para esa muestra de 1000 cartas; no es SLA ni una aceleracion porcentual sin linea base.
+
+# Registro histórico de PR #2
 
 Esta página distingue pruebas ejecutadas de verificaciones pendientes. La [CI del 10 de octubre de 2026 UTC](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) terminó correctamente sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e). Los resultados usan datos desechables; no describen una ejecución de producción ni garantizan comportamiento en un dispositivo Companion real.
 

@@ -1,3 +1,4 @@
+from fastapi import Request
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -9,7 +10,15 @@ if not settings.database_url.startswith("sqlite"):
 engine = create_engine(settings.database_url, **engine_options)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
-def get_db():
+def get_db(request: Request):
     db = SessionLocal()
-    try: yield db
+    try:
+        from app.services.contexts import bind_request
+        bind_request(db, request)
+        yield db
     finally: db.close()
+
+
+def raw_db():
+    with SessionLocal() as db:
+        yield db

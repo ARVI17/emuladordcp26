@@ -17,6 +17,8 @@ def demo_player_names() -> list[str]:
 def seed_database() -> None:
     db = SessionLocal()
     try:
+        from app.services.contexts import ensure_local_context
+        ensure_local_context(db)
         if db.scalar(select(Profile.id).limit(1)) is not None:
             ensure_profile(db)
             db.commit()

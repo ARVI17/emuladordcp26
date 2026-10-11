@@ -7,7 +7,7 @@ import type {ImportPreview} from '../types'
 
 vi.mock('../api/client',async()=>({...await vi.importActual('../api/client'),api:vi.fn()}))
 const mocked=vi.mocked(api)
-const preview=(name:string,token:string):ImportPreview=>({total:1,preview:[player({name})],requires_confirmation:true,content_hash:`hash-${token}`,preview_token:token})
+const preview=(name:string,token:string):ImportPreview=>({total:1,preview:[{...player({name}),tradable:false,is_loan:false,is_evolution:false}],requires_confirmation:true,content_hash:`hash-${token}`,preview_token:token})
 const select=(file:File)=>fireEvent.change(screen.getByLabelText('CSV o Excel'),{target:{files:[file]}})
 function open(){renderClub(<InventoryImport/>);fireEvent.click(screen.getByText('Importar y exportar inventario'))}
 beforeEach(()=>{mocked.mockReset()})

@@ -1,5 +1,13 @@
 # Seguridad local
 
+## Sesión y contexto del planificador
+
+Cookie aleatoria HttpOnly/SameSite Strict, CSRF derivado de secreto del servidor, comprobación de origen y entrada vigente. Las respuestas privadas llevan `Cache-Control: no-store`. Cambiar contexto limpia la caché cliente e invalida trabajos anteriores; el servidor valida propiedad y cobertura. Esto protege los flujos locales y no constituye autenticación para publicar el servicio en Internet.
+
+Las reservas persistentes y los compromisos monetarios se revisan bajo lock; una mutación antigua no puede consumir una copia reservada. Las aprobaciones ligan sesión, contexto, contenido exacto, vigencia, reglas y cotizaciones. Restaurar exige origen explícito de simulación local. No hay un adaptador EA ni un endpoint que convierta un JSON suministrado por el cliente en inventario remoto verificado.
+
+`require_adb_permission` rechaza pulsaciones/ejecución en producción. Su sustitución en Pytest solo prueba puentes ficticios. Documentos, OCR, referencias y salida Ollama son datos no confiables y no conceden permisos. Las 50 referencias no se descargan automáticamente.
+
 ## Edición FC27, revisión y transacciones
 
 - El inventario y sus consumos se separan por edición. La migración conserva FC26 y activa FC27 sin copiar cartas.

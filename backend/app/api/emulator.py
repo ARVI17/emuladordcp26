@@ -24,6 +24,10 @@ from app.services.import_export import extract_accessibility_inventory_candidate
 from app.services.locks import ResourceBusy, resource_locks
 from app.services.squad_analysis import effective_protected_ids
 
+def require_adb_permission():
+    raise HTTPException(403, "Automatización deshabilitada: no hay permiso aplicable para enviar acciones a EA. Usa Companion manualmente.")
+
+
 router = APIRouter(prefix="/emulator", tags=["Emulador asistido"])
 DB = Annotated[Session, Depends(get_db)]
 logger = logging.getLogger(__name__)
@@ -72,8 +76,11 @@ def plan_data(plan: AutomationPlan) -> dict:
     }
 
 
-def scan_data(scan: InventoryScan) -> dict:
-    return {key: getattr(scan, key) for key in ("id", "status", "game_version", "device_serial", "screen_size", "captured_pages", "candidates", "imported_player_ids", "imported_count", "last_error", "created_at", "imported_at", "source_scan_id", "next_candidate_id")} | {
+def scan_data(scan: InventoryScan, *, summary=False) -> dict:
+    return {key: getattr(scan, key) for key in ("id", "status", "game_version", "device_serial", "screen_size", "captured_pages", "imported_player_ids", "imported_count", "last_error", "created_at", "imported_at", "source_scan_id", "next_candidate_id")} | {
+        "candidates": [] if summary else scan.candidates[:20],
+        "candidate_count": scan.candidate_count if summary else len(scan.candidates),
+        "offset": 0,
         "confirmation_phrase": f"IMPORTAR {scan.id}",
         "archive_demo_phrase": f"REEMPLAZAR DEMO {scan.id}",
         "images_saved": False,
@@ -216,6 +223,7 @@ def _append_page(scan: InventoryScan, candidates: list[dict], digest: str, page:
         next_id += 1
     scan.next_candidate_id = next_id
     scan.candidates = [*scan.candidates, *additions]
+    scan.candidate_count = len(scan.candidates)
     scan.capture_hashes = [*scan.capture_hashes, digest]
     scan.last_page_hash = digest
     scan.captured_pages = page
@@ -324,7 +332,7 @@ def inspect_dcp_screen(db: DB):
         return result | {"screen_size": size, "source": "ADB", "saved": False, "detected_requirements": review["requirements"], "review_warnings": review["warnings"], "requires_confirmation": True, "requires_human_review": True}
 
 
-@router.post("/tap")
+@router.post("/tap", dependencies=[Depends(require_adb_permission)])
 def tap(payload: EmulatorTapRequest, db: DB):
     serial = connected_serial(db)
     with operation(db, f"device:{serial}", blocking=False):
@@ -341,7 +349,7 @@ def tap(payload: EmulatorTapRequest, db: DB):
         return {"ok": True}
 
 
-@router.post("/swipe")
+@router.post("/swipe", dependencies=[Depends(require_adb_permission)])
 def swipe(payload: EmulatorSwipeRequest, db: DB):
     serial = connected_serial(db)
     with operation(db, f"device:{serial}", blocking=False):
@@ -376,8 +384,10 @@ def set_calibration(payload: EmulatorCalibration, db: DB):
 
 @router.get("/scans")
 def list_inventory_scans(db: DB, limit: int = Query(20, ge=1, le=100)):
-    rows = db.scalars(select(InventoryScan).where(InventoryScan.game_version == current_version(db)).order_by(InventoryScan.id.desc()).limit(limit)).all()
-    return [scan_data(row) for row in rows]
+    from sqlalchemy import func
+    from sqlalchemy.orm import defer
+    rows = db.execute(select(InventoryScan, func.json_array_length(InventoryScan.candidates)).options(defer(InventoryScan.candidates)).where(InventoryScan.game_version == current_version(db)).order_by(InventoryScan.id.desc()).limit(limit)).all()
+    return [{**scan_data(row, summary=True), "candidate_count": count, "summary": True} for row, count in rows]
 
 
 @router.post("/scans", status_code=201)
@@ -446,7 +456,7 @@ def capture_inventory_page(scan_id: int, db: DB):
         return {"scan": scan_data(scan), "raw_text": result.get("raw_text", ""), "duplicate_capture": False, "detected": len(additions)}
 
 
-@router.post("/scans/{scan_id}/advance")
+@router.post("/scans/{scan_id}/advance", dependencies=[Depends(require_adb_permission)])
 def advance_inventory_page(scan_id: int, db: DB):
     serial = _scan_serial(db, scan_id)
     with operation(db, f"device:{serial}", f"scan:{scan_id}", blocking=False):
@@ -513,10 +523,20 @@ def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db:
         archived = 0
         if payload.archive_demo:
             demo_rows = db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source == "demo", Player.deleted.is_(False))).all()
+            db.info["reviewed_exception_ids"] = {p.id for p in demo_rows}
             for player in demo_rows:
                 player.deleted = True
                 player.duplicate_untradeable = False
             archived = len(demo_rows)
+        from app.services.squad_analysis import athlete_keys
+        def visual_key(value):
+            import unicodedata
+            name = " ".join(unicodedata.normalize("NFKD", value["name"]).encode("ascii", "ignore").decode().casefold().split())
+            return name, value["rating"], value["position"]
+        existing = {visual_key({"name": p.name, "rating": p.rating, "position": p.position}) for p in db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source != "demo"))}
+        keys = [visual_key(value) for value in validated]
+        if len(keys) != len(set(keys)) or existing.intersection(keys):
+            raise HTTPException(409, "Identidad visual ambigua: ya existe una carta activa o consumida. Concilia las copias antes de importar; OCR no aporta IDs de copia EA.")
         imported = [Player(**value) for value in validated]
         db.add_all(imported)
         db.flush()
@@ -682,7 +702,7 @@ def execute_automation_plan(plan_id: int, generation: int | None = None):
         db.close()
 
 
-@router.post("/plans/{plan_id}/execute")
+@router.post("/plans/{plan_id}/execute", dependencies=[Depends(require_adb_permission)])
 def execute_plan(plan_id: int, payload: AutomationExecuteRequest, background: BackgroundTasks, db: DB):
     initial = db.get(AutomationPlan, plan_id)
     if not initial:
@@ -753,3 +773,28 @@ def recover_interrupted_automation():
             except ResourceBusy:
                 # A live worker in another process still owns the device.
                 db.rollback()
+
+
+@router.get("/scans/{scan_id}")
+def review_scan(scan_id: int, offset: int = Query(0, ge=0), db: Session = Depends(get_db)):
+    scan = _scan(db, scan_id, closed=True)
+    return {**scan_data(scan), "candidates": scan.candidates[offset:offset+20], "candidate_count": len(scan.candidates), "offset": offset}
+
+
+@router.post("/scans/{scan_id}/observe")
+def observe_once(scan_id: int, db: DB):
+    serial = _scan_serial(db, scan_id)
+    with operation(db, f"device:{serial}", f"scan:{scan_id}", blocking=False):
+        scan = _scan(db, scan_id)
+        if scan_at_capacity(scan):
+            raise HTTPException(409, "La lectura alcanzó su límite")
+        bridge, _ = _same_scan_device(db, scan)
+        candidates = extract_accessibility_inventory_candidates(bridge.ui_hierarchy(serial), scan.captured_pages+1)[:20]
+        if not candidates:
+            return {"scan": scan_data(scan), "detected": 0, "changed": False}
+        additions = _append_page(scan, candidates, _signature(candidates), scan.captured_pages+1)
+        if additions is None:
+            return {"scan": scan_data(scan), "detected": 0, "changed": False}
+        record(db, "observe", "inventory_scan", scan.id, {"detected": len(additions), "manual": True})
+        db.commit()
+        return {"scan": {**scan_data(scan), "candidates": scan.candidates[-20:], "offset": max(0, len(scan.candidates)-20)}, "detected": len(additions), "changed": True}

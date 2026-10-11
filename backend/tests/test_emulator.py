@@ -224,7 +224,11 @@ def test_inventory_scan_can_continue_after_bounded_thousand_candidates(client, m
         captured = client.post(f"/emulator/scans/{scan['id']}/capture")
         assert captured.status_code == 200
     full = captured.json()["scan"]
-    assert full["captured_pages"] == 50 and len(full["candidates"]) == 1000
+    assert full["captured_pages"] == 50 and full["candidate_count"] == 1000 and len(full["candidates"]) == 20
+    last = client.get(f"/emulator/scans/{scan['id']}?offset=980").json()
+    assert len(last["candidates"]) == 20 and last["candidates"][0]["candidate_id"] == 981
+    summary = client.get('/emulator/scans').json()[0]
+    assert summary['candidates'] == [] and summary['candidate_count'] == 1000
     continuation = client.post(f"/emulator/scans/{scan['id']}/continue")
     assert continuation.status_code == 201
     assert continuation.json()["captured_pages"] == 0 and continuation.json()["candidates"] == []

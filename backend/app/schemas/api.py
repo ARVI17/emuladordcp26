@@ -32,9 +32,12 @@ class PlayerBase(InputModel):
     rare: bool = False
     special: bool = False
     tradable: bool = False
-    price: int = Field(default=0, ge=0, le=100_000_000)
+    price: int | None = Field(default=None, ge=0, le=100_000_000)
     chemistry: int = Field(default=0, ge=0, le=3)
     protected: bool = False
+    favorite: bool = False
+    notes: str = Field(default="", max_length=2000)
+    athlete_id: str | None = Field(default=None, min_length=1, max_length=120)
     starter: bool = False
     squad_role: str = Field(default="club", min_length=1, max_length=20)
     usefulness: int = Field(default=0, ge=0, le=100)
@@ -93,7 +96,7 @@ class PartialInput(InputModel):
     @model_validator(mode="before")
     @classmethod
     def reject_explicit_nulls(cls, values):
-        nullable = {"card_id", "base_card_id", "gallery_score", "skill_moves", "weak_foot"}
+        nullable = {"athlete_id", "price", "card_id", "base_card_id", "gallery_score", "skill_moves", "weak_foot"}
         if isinstance(values, dict):
             invalid = [key for key, value in values.items() if value is None and key not in nullable]
             if invalid:
@@ -115,6 +118,9 @@ class PlayerUpdate(PartialInput):
     price: int | None = Field(default=None, ge=0, le=100_000_000)
     chemistry: int | None = Field(default=None, ge=0, le=3)
     protected: bool | None = None
+    favorite: bool | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+    athlete_id: str | None = Field(default=None, min_length=1, max_length=120)
     starter: bool | None = None
     squad_role: str | None = Field(default=None, min_length=1, max_length=20)
     usefulness: int | None = Field(default=None, ge=0, le=100)

@@ -7,7 +7,7 @@ Protection is derived here so a squad never overwrites a manual player flag.
 from collections import Counter, defaultdict
 import unicodedata
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.entities import Player, Squad, SquadPlayer
@@ -15,6 +15,11 @@ from app.services.editions import current_version
 from app.services.rating import calculate_rating
 
 FORMATIONS = {
+    "4-2-1-3": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MCO", "ED", "DC", "EI"],
+    "4-2-3-1 abierta": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MD", "MCO", "MI", "DC"],
+    "4-4-1-1 mediocampo": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "MCO", "DC"],
+    "4-3-1-2": ["POR", "LD", "DFC", "DFC", "LI", "MC", "MC", "MC", "MCO", "DC", "DC"],
+    "4-1-2-1-2 estrecha": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "MCO", "DC", "DC"],
     "4-3-3": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "ED", "DC", "EI"],
     "4-4-2": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "DC", "DC"],
     "4-2-3-1": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MCO", "MCO", "MCO", "DC"],
@@ -41,24 +46,29 @@ ATTRIBUTE_WEIGHTS = {
 }
 ATTRIBUTE_LABELS = {"pace": "ritmo", "shooting": "tiro", "passing": "pase", "dribbling": "regate", "defending": "defensa", "physical": "físico", "diving": "estirada", "handling": "paradas", "reflexes": "reflejos", "positioning": "colocación", "kicking": "saque", "speed": "velocidad"}
 PLAYER_FIELDS = (
-    "id", "game_version", "name", "rating", "position", "league", "club", "nationality", "card_type", "rare", "special", "tradable", "price", "chemistry", "protected", "starter", "squad_role", "usefulness", "duplicate_untradeable", "deleted", "created_at", "updated_at", "card_id", "base_card_id", "alternate_positions", "attributes", "playstyles", "playstyles_plus", "roles", "skill_moves", "weak_foot", "is_loan", "is_evolution", "is_holographic", "gallery_score", "data_source", "data_reviewed",
+    "id", "game_version", "name", "rating", "position", "league", "club", "nationality", "card_type", "rare", "special", "tradable", "price", "chemistry", "protected", "starter", "squad_role", "usefulness", "duplicate_untradeable", "deleted", "created_at", "updated_at", "card_id", "base_card_id", "alternate_positions", "attributes", "playstyles", "playstyles_plus", "roles", "skill_moves", "weak_foot", "is_loan", "is_evolution", "is_holographic", "gallery_score", "data_source", "data_reviewed", "athlete_id", "favorite", "notes", "availability",
 )
 
 
 def serialize_player(player: Player, protected_ids: set[int] | None = None) -> dict:
     result = {key: getattr(player, key, None) for key in PLAYER_FIELDS}
+    for key in (getattr(player, "unknown_fields", None) or []):
+        if key in result:
+            result[key] = None
+    result["unknown_fields"] = getattr(player, "unknown_fields", None) or []
     result["effective_protected"] = bool(player.protected or player.id in (protected_ids or set()))
     return result
 
 
 def effective_protected_ids(db: Session, game_version: str | None = None) -> set[int]:
     version = game_version or current_version(db)
-    manual = db.scalars(select(Player.id).where(Player.game_version == version, Player.deleted.is_(False), Player.protected.is_(True))).all()
+    manual = db.scalars(select(Player.id).where(Player.game_version == version, Player.deleted.is_(False), or_(Player.protected.is_(True), Player.starter.is_(True), Player.is_evolution.is_(True), Player.favorite.is_(True)))).all()
     inherited = db.scalars(
         select(SquadPlayer.player_id).join(Squad, Squad.id == SquadPlayer.squad_id).join(Player, Player.id == SquadPlayer.player_id)
         .where(Squad.game_version == version, Squad.protected.is_(True), Player.game_version == version, Player.deleted.is_(False))
     ).all()
-    return set(manual) | set(inherited)
+    from app.services.protection import reserved_ids
+    return set(manual) | set(inherited) | reserved_ids(db)
 
 
 def formation_slots(formation: str) -> list[dict]:
@@ -73,7 +83,7 @@ def formation_slots(formation: str) -> list[dict]:
 
 
 def formations_data() -> dict:
-    return {"items": [{"id": key, "name": key, "slots": formation_slots(key)} for key in FORMATIONS]}
+    return {"items": [{"id": key, "name": key, "slots": formation_slots(key), "source_url": "https://www.fut.gg/tactics/", "reviewed_on": "2026-10-11", "tactic_status": "local_hypothesis", "import_code": None} for key in FORMATIONS]}
 
 
 def normalized_position(position: str) -> str:
@@ -90,6 +100,8 @@ def player_positions(player: Player, use_alternate_positions: bool = True) -> se
 
 def athlete_keys(player: Player) -> set[str]:
     """A duplicate name OR base identity OR card identity cannot play twice."""
+    if getattr(player, "athlete_id", None):
+        return {f"athlete:{player.athlete_id}"}
     name = " ".join(unicodedata.normalize("NFKD", player.name).encode("ascii", "ignore").decode("ascii").casefold().split())
     keys = {f"name:{name}"} if name else {f"row:{player.id}"}
     if player.base_card_id:
@@ -105,26 +117,28 @@ def _fit(player: Player, position: str, style: str = "balanced") -> tuple[float,
         for attribute in weights:
             if style == "attacking" and attribute in {"pace", "shooting", "dribbling"}:
                 weights[attribute] *= 1.25
+            if style == "possession" and attribute in {"passing", "dribbling"}:
+                weights[attribute] *= 1.4
             if style == "defensive" and attribute in {"defending", "physical"}:
                 weights[attribute] *= 1.4
     attributes = player.attributes or {}
     observed = {key: float(attributes[key]) for key in weights if key in attributes and isinstance(attributes[key], (int, float)) and 0 <= attributes[key] <= 99}
     if observed:
-        weighted = sum(observed[key] * weights[key] for key in observed) / sum(weights[key] for key in observed)
+        weighted = sum(observed[key] * weights[key] for key in observed) / sum(weights.values())
         score = 0.70 * player.rating + 0.30 * weighted
         strongest = sorted(observed, key=lambda key: weights[key] * observed[key], reverse=True)[:2]
         explanation = f"Media {player.rating}; " + ", ".join(f"{ATTRIBUTE_LABELS[key]} {observed[key]:g}" for key in strongest)
     else:
-        score = float(player.rating)
+        score = 0.70 * float(player.rating)
         explanation = f"Media {player.rating}; sin atributos detallados, se usa la media registrada"
     role = (player.roles or {}).get(position)
     bonus = 2 if role == "++" else 1 if role == "+" else 0
     if bonus:
         score += bonus
         explanation += f"; rol {position}{role} registrado"
+    explanation += f"; cobertura de atributos {round(100 * sum(weights[k] for k in observed) / sum(weights.values()))}%"
     if player.playstyles_plus:
-        score += min(3, len(player.playstyles_plus)) * 0.25
-        explanation += f"; {len(player.playstyles_plus)} PlayStyles+ registrados"
+        explanation += "; PlayStyles registrados sin bonificación numérica no verificada"
     if normalized_position(player.position) != position:
         explanation += "; posición alternativa registrada"
     return round(min(100, max(0, score)), 2), explanation
@@ -147,7 +161,7 @@ def recommend_owned_squad(players: list[Player], *, game_version: str, formation
     locked, excluded = set(locked_player_ids or []), set(excluded_player_ids or [])
     if locked & excluded:
         raise ValueError("Una carta no puede estar fijada y excluida a la vez")
-    candidates = sorted((p for p in players if not p.deleted and p.game_version == game_version and p.id not in excluded and (include_loans or not p.is_loan) and (include_unreviewed or p.data_reviewed)), key=lambda p: (-p.rating, p.id))
+    candidates = sorted((p for p in players if not p.deleted and getattr(p, "availability", "available") in {None, "available"} and p.game_version == game_version and p.id not in excluded and (include_loans or not p.is_loan) and (include_unreviewed or p.data_reviewed)), key=lambda p: (-p.rating, p.id))
     by_id = {p.id: p for p in candidates}
     if not locked.issubset(by_id):
         raise ValueError("Una carta fijada no está disponible en esta edición o está pendiente de revisión")
@@ -228,8 +242,8 @@ def recommend_owned_squad(players: list[Player], *, game_version: str, formation
         "complete": len(lineup) == 11, "players": [row["player"] for row in lineup], "lineup": lineup,
         "bench": [serialize_player(p, protected_ids) for p in bench], "gaps": gaps, "warnings": warnings,
         "rating": calculate_rating([p.rating for p in chosen.values()]), "chemistry": sum(p.chemistry for p in chosen.values()),
-        "chemistry_approximate": True, "eligible_count": len(candidates),
-        "explanations": ["Se prioriza cubrir los once puestos con cartas propias de la edición activa.", "Encaje local: 70 % media y 30 % atributos disponibles ponderados por puesto; bonos pequeños por rol y PlayStyles+ registrados.", "Las cartas protegidas sí pueden jugar; su protección únicamente impide consumirlas en DCP.", "No se repite la misma carta, identificador base o nombre de futbolista entre titulares y suplentes."],
+        "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "solver_status": "optimal" if status == cp_model.OPTIMAL else "feasible" if status == cp_model.FEASIBLE else "infeasible" if status == cp_model.INFEASIBLE else "timeout", "objective_bound": solver.best_objective_bound, "eligible_count": len(candidates),
+        "explanations": ["Se prioriza cubrir los once puestos con cartas propias de la edición activa.", "Encaje local: 70 % media y 30 % atributos disponibles ponderados por puesto; ajuste por rol registrado; PlayStyles sin bonificación numérica.", "Las cartas protegidas sí pueden jugar; su protección únicamente impide consumirlas en DCP.", "No se repite la misma carta, identificador base o nombre de futbolista entre titulares y suplentes."],
     }
 
 
@@ -237,7 +251,7 @@ def _formation_coverage(players: list[Player], formation: str) -> int:
     """Small augmenting-path match for a formation hint, not a lineup result."""
     groups: dict[str, set[str]] = defaultdict(set)
     for player in players:
-        key = f"base:{player.base_card_id}" if player.base_card_id else next(key for key in athlete_keys(player) if key.startswith(("name:", "row:")))
+        key = sorted(athlete_keys(player))[0]
         groups[key].update(player_positions(player))
     taken: dict[str, int] = {}
     slots = FORMATIONS[formation]
@@ -255,11 +269,12 @@ def _formation_coverage(players: list[Player], formation: str) -> int:
 
 def analyze_club(db: Session) -> dict:
     version = current_version(db)
-    players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False)).order_by(Player.rating.desc(), Player.id)).all()
+    players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
     protected = effective_protected_ids(db, version)
     reviewed = [p for p in players if p.data_reviewed]
-    recommended = max(FORMATIONS, key=lambda formation: _formation_coverage(reviewed, formation))
-    recommendation = recommend_owned_squad(players, game_version=version, formation=recommended, bench_size=0, protected_ids=protected)
+    alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in FORMATIONS]
+    recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])))
+    recommended = recommendation["formation"]
     positions = []
     for position in ATTRIBUTE_WEIGHTS:
         suitable = [p for p in reviewed if position in player_positions(p)]

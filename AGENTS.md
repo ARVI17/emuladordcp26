@@ -2,11 +2,20 @@
 
 Este archivo es la entrada rápida para cualquier agente que trabaje en `emuladordcp26`. Lee también [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md) antes de cambiar arquitectura, datos o contratos HTTP.
 
+
+## Estado del planificador (11 de octubre de 2026)
+
+Lee [docs/FC27_PLANNER.md](docs/FC27_PLANNER.md) junto con el mapa. La entrada exige sesion/contexto y vigencia por dependencia; sin proveedor EA autorizado muestra **Integracion pendiente**. El modo local se elige expresamente. Reservas persistentes y aprobaciones no se pueden eludir desde rutas antiguas. Nunca habilites un proveedor ficticio ni una carga publica de snapshots verificados.
+
+Head `0009`: `0006` reconoce las dos variantes historicas de `0005` sin editarlas. El contexto 1 conserva registros sin vincular, nunca asignados a la primera cuenta. Las tablas personales usan ClubScoped; las mutaciones privadas requieren CSRF/entrada vigente. Restaurar exige local_simulation. Pulsaciones ADB deshabilitadas por falta de permiso aplicable; solo las pruebas mock sustituyen esa dependencia.
+
+Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
+
 ## Propósito y estado real
 
-`emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. También prepara combinaciones tradicionales mediante pulsaciones ADB asistidas. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
+`emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. Conserva el motor ADB, deshabilitado en producción por falta de permiso aplicable. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
 
-El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, proponer inventario/requisitos, enviar toques y deslizamientos manuales, y ejecutar un plan revisable que busca y agrega los jugadores de una solución DCP. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
+El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, proponer inventario/requisitos, conservar planes revisables. Las rutas de toques, deslizamientos y ejecución rechazan acciones en producción. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
 
 ## Inicio rápido
 
@@ -106,7 +115,7 @@ El entrypoint ejecuta `alembic upgrade head`, `app.db.bootstrap` y Uvicorn. Por 
 - `backend/app/services/audit.py`: creación de eventos de auditoría dentro de la transacción llamante.
 - `backend/app/db/session.py`: engine y sesiones.
 - `backend/app/db/seed.py`: demo idempotente.
-- `backend/alembic/versions/`: esquema reproducible; head actual `0005` (`fc27_club`).
+- `backend/alembic/versions/`: esquema reproducible; head actual `0009` (`trade_edition_market`).
 - `frontend/src/App.tsx`: navegación/edición; vistas en `pages/`, componentes en `components/` y utilidades en `lib/`.
 - `frontend/src/api/client.ts`: prefijo `/api`, errores y formatos locales.
 - `frontend/src/types/index.ts`: contratos TypeScript consumidos por la UI.

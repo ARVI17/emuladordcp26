@@ -268,7 +268,7 @@ def content(game_version: GameVersion | None = None, db: Session = Depends(get_d
     version = version_of(db, game_version)
     result = builtin_content(version)
     news = db.get(AppSetting, f"content_news_{version}")
-    manifest = db.get(AppSetting, f"content_manifest_{version}")
+    manifest = db.get(AppSetting, f"content_manifest_{db.info.get('club_context_id', 1)}_{version}")
     result.update(last_checked=None, refresh_error=None, last_import=manifest.value if manifest else None)
     if news:
         result.update(last_checked=news.value.get("last_checked"), refresh_error=news.value.get("refresh_error"))
@@ -302,7 +302,9 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
     if manifest.game_version != current_version(db): raise HTTPException(409, "El paquete pertenece a otra edición")
     serialized = json.dumps(manifest.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if len(serialized.encode()) > 2_000_000: raise HTTPException(413, "El paquete supera 2 MB")
-    digest = hashlib.sha256(serialized.encode()).hexdigest()
+    from app.api.routes import _import_secret
+    import hmac
+    digest = hmac.new(_import_secret(db), f"{db.info.get('club_context_id', 1)}:{serialized}".encode(), "sha256").hexdigest()
     for collection in (manifest.sets, manifest.evolutions):
         slugs = [item.slug or slug_for(item.name) for item in collection]
         if len(slugs) != len(set(slugs)): raise HTTPException(422, "El paquete contiene identificadores repetidos")
@@ -317,7 +319,7 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
     with resource_locks(db, "inventory"):
         db.expire_all()
         if version != current_version(db): raise HTTPException(409, "La edición activa cambió después de la vista previa")
-        setting = db.get(AppSetting, f"content_manifest_{version}")
+        setting = db.get(AppSetting, f"content_manifest_{db.info.get('club_context_id', 1)}_{version}")
         receipt_key = "_content_" + digest
         if db.get(AppSetting, receipt_key) is not None:
             return {"preview": False, "already_imported": True, **summary}
@@ -330,7 +332,7 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
         value = {"preview_hash": digest, "published_at": manifest.published_at.isoformat(), "source_url": manifest.source_url,
                  "imported_at": datetime.now(timezone.utc).isoformat(), "sets": len(manifest.sets), "evolutions": len(manifest.evolutions)}
         if setting: setting.value = value
-        else: db.add(AppSetting(key=f"content_manifest_{version}", value=value))
+        else: db.add(AppSetting(key=f"content_manifest_{db.info.get('club_context_id', 1)}_{version}", value=value))
         db.add(AppSetting(key=receipt_key, value={"game_version": version, "imported_at": value["imported_at"]}))
         record(db, "import_reviewed_content", "content", None, value)
         db.commit()

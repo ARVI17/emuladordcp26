@@ -108,7 +108,7 @@ def record_player(db, player, *, score_changed=False):
 def owned_index(players):
     result = defaultdict(list)
     for player in players:
-        if not player.deleted and not player.is_loan and not player.is_evolution:
+        if not player.deleted and not player.is_loan and not player.is_evolution and getattr(player, "availability", "available") in {None, "available", "unavailable"}:
             result[item_key(player)].append(player.id)
     return result
 
