@@ -76,9 +76,12 @@ def sync_state(db, context, entry=None):
     status = entry.status if entry else "sync_required"
     if checked and not fresh:
         status = "sync_required"
+    labels = {"ready": "Verificado", "syncing": "Sincronizando", "partial": "Parcial", "no_permissions": "Sin permisos",
+              "sync_required": "Desactualizado", "offline": "Sin conexión", "error": "Error de lectura",
+              "review_required": "Requiere revisión", "rate_limited": "Espera requerida", "unavailable": "Integración pendiente"}
     return {"entry_id": entry.id if entry else None, "club_context_id": context.id,
             "game_version": context.game_version,
-            "status": status, "label": "Integración pendiente" if not context.verified else status,
+            "status": status, "label": "Integración pendiente" if not context.verified else labels.get(status, "Requiere revisión"),
             "identity_verified": context.verified, "snapshot_id": snapshot.id if snapshot else None,
             "revision": context.revision, "remote_revision": snapshot.revision if snapshot else None,
             "observed_at": utc(snapshot.observed_at).isoformat() if snapshot else None,

@@ -510,3 +510,135 @@ def test_journal_profit_idempotence_and_edition_market_boundaries(client):
     assert client.patch('/profile',json={'game_version':'FC26'}).status_code==200
     assert client.get('/market/journal').json()['items']==[]
     assert client.post('/market/journal',json=sale).status_code==409
+
+
+def wired_adapter(client, monkeypatch, read=None, initial=False):
+    from types import SimpleNamespace
+    from app.models.planner import ProviderConnection
+    from app.services import providers
+    context, run = fake_run(client)
+    if initial:
+        publish(run, remote())
+    else:
+        with SessionLocal() as db:
+            db.get(SyncRun, run).status = 'cancelled'
+            db.commit()
+    with SessionLocal() as db:
+        db.add(ProviderConnection(club_context_id=context, provider='test', status='connected', permissions=['synthetic-read']))
+        db.commit()
+    adapter = SimpleNamespace(provider='test', approval_reference='test-fixture-only', documentation_url='https://example.test/contract',
+                              required_permissions=frozenset({'synthetic-read'}), coverage=frozenset({'inventory','coins'}),
+                              timeout_seconds=1, read=read or (lambda identity, **kw: remote()))
+    monkeypatch.setitem(providers.ADAPTERS, 'test', adapter)
+    return context, adapter
+
+
+def test_authorized_adapter_checks_on_entry_and_deduplicates_nonce(client, monkeypatch):
+    calls=[]
+    context, adapter = wired_adapter(client, monkeypatch, lambda identity, **kw: calls.append(identity) or remote())
+    payload={'nonce':'adapter-entry-check','mode':'live','reason':'retry'}
+    response=client.post('/app/entries',json=payload)
+    assert response.status_code==200 and response.json()['status']=='syncing'
+    client.headers['X-App-Entry']=str(response.json()['entry_id'])
+    assert client.get(f'/club-contexts/{context}/sync-state').json()['modules']['analysis']['ready']
+    assert client.post('/app/entries',json=payload).status_code==200
+    assert len(calls)==1 and calls[0].game_version=='FC27' and calls[0].club_key=='club-a'
+    assert client.get('/players').json()['total']==1
+
+
+@pytest.mark.parametrize('failure,status', [('quota','rate_limited'),('permission','no_permissions'),('offline','offline'),('timeout','offline'),('invalid','error')])
+def test_adapter_failures_keep_snapshot_and_never_echo_private_errors(client, monkeypatch, failure, status):
+    from app.services.providers import ProviderRateLimited
+    def read(identity, **kw):
+        errors={'quota':ProviderRateLimited(30),'permission':PermissionError('private-token'), 'offline':OSError('private-token'),
+                'timeout':TimeoutError('private-token'),'invalid':ValueError('private-token')}
+        raise errors[failure]
+    context, _=wired_adapter(client,monkeypatch,read,initial=True)
+    previous=client.get(f'/club-contexts/{context}/sync-state').json()['snapshot_id']
+    response=client.post(f'/club-contexts/{context}/sync-runs')
+    assert response.status_code==200
+    run=client.get('/sync-runs/'+str(response.json()['id']))
+    assert run.json()['status']==status and 'private-token' not in run.text
+    state=client.get(f'/club-contexts/{context}/sync-state').json()
+    assert state['snapshot_id']==previous and not state['modules']['analysis']['ready']
+    if failure=='quota': assert client.post(f'/club-contexts/{context}/sync-runs').status_code==429
+
+
+def test_adapter_revalidates_permission_after_read(client,monkeypatch):
+    from app.models.planner import ProviderConnection
+    def revoked(identity, **kw):
+        with SessionLocal() as db:
+            db.scalar(select(ProviderConnection).where(ProviderConnection.provider=='test')).permissions=[]
+            db.commit()
+        return remote()
+    context,_=wired_adapter(client,monkeypatch,revoked)
+    run=client.post(f'/club-contexts/{context}/sync-runs').json()
+    assert client.get('/sync-runs/'+str(run['id'])).json()['status']=='no_permissions'
+    assert client.get('/players').json()['total']==0
+
+
+def test_adapter_cannot_certify_progress_it_did_not_reconcile(client,monkeypatch):
+    context,_=wired_adapter(client,monkeypatch,lambda identity,**kw: remote(coverage={'inventory':{'complete':True},'gallery':{'complete':True}}))
+    run=client.post(f'/club-contexts/{context}/sync-runs').json()
+    assert client.get('/sync-runs/'+str(run['id'])).json()['status']=='error'
+    assert client.get('/players').json()['total']==0
+
+
+def test_cancelled_read_does_not_contact_adapter_or_publish(client,monkeypatch):
+    from app.services.providers import begin_sync,execute_read
+    calls=[]
+    context,adapter=wired_adapter(client,monkeypatch,lambda identity,**kw: calls.append(identity) or remote())
+    with SessionLocal() as db:
+        db.info['club_context_id']=context
+        session=db.get(LocalSession,digest(client.cookies.get('club_lab_session')))
+        run,_,created=begin_sync(db,session,db.get(ClubContext,context))
+        identifier=run.id
+        again,_,created_again=begin_sync(db,session,db.get(ClubContext,context))
+        assert created and not created_again and again.id==identifier
+    assert client.post(f'/sync-runs/{identifier}/cancel').json()['status']=='cancelled'
+    execute_read(identifier,adapter)
+    assert calls==[] and client.get('/players').json()['total']==0
+
+
+def test_omitted_remote_details_do_not_reuse_stale_attributes(client):
+    context,run=fake_run(client)
+    first=remote()
+    first.items[0].fields.update(attributes={'passing':99},alternate_positions=['MCO'],roles={'MC':'++'},gallery_score=800)
+    snapshot=publish(run,first)
+    with SessionLocal() as db:
+        p=db.scalar(select(Player).where(Player.club_context_id==context))
+        p.favorite=True; p.notes='Conservar nota privada'
+        db.commit()
+    _,run=fake_run(client,context)
+    publish(run,remote())
+    with SessionLocal() as db:
+        p=db.scalar(select(Player).where(Player.club_context_id==context))
+        assert p.attributes=={} and p.alternate_positions==[] and p.roles=={} and p.gallery_score is None
+        assert p.favorite and p.notes=='Conservar nota privada'
+        assert db.get(InventorySnapshot,snapshot).items[0]['fields']['attributes']['passing']==99
+
+
+def test_missing_core_remote_identity_rolls_back(client):
+    _,run=fake_run(client)
+    reading=remote()
+    del reading.items[0].fields['position']
+    with pytest.raises(ValueError): publish(run,reading)
+    assert client.get('/players').json()['total']==0
+
+
+def test_adapter_deadline_discards_a_late_result(client,monkeypatch):
+    from threading import Event
+    release,finished=Event(),Event()
+    def slow(identity,**kw):
+        release.wait(2)
+        finished.set()
+        return remote()
+    context,adapter=wired_adapter(client,monkeypatch,slow)
+    adapter.timeout_seconds=0.02
+    try:
+        response=client.post(f'/club-contexts/{context}/sync-runs')
+        assert client.get('/sync-runs/'+str(response.json()['id'])).json()['status']=='offline'
+    finally:
+        release.set()
+    assert finished.wait(1)
+    assert client.get('/players').json()['total']==0

@@ -10,6 +10,7 @@ El head es `0009`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación c
 | --- | --- |
 | Contextos/sesiones | `models/planner.py`, `services/contexts.py`, `api/connections.py`: cookie HttpOnly/CSRF, entradas, logout, aislamiento y cobertura/vigencia por módulo |
 | Conciliación | `services/sync.py`: contrato interno sin adaptador EA; snapshots/mapeos de copia y publicación atómica |
+| Adaptadores de lectura | `services/providers.py`: registro vacío en producción, entrada/lectura/cancelación, límites y errores; [contrato](PROVIDER_CONTRACT.md) |
 | Planes/protecciones | `schemas/planner.py`, `services/planner.py`, `services/protection.py`, `api/planner.py`: `/plans`, review/reserve/approve/cancel y confirmación manual de pasos |
 | Cálculos | `services/joint.py` y `api/analysis.py`: `/club/profiles`, `/dcp/joint-preview`, `/transfers/compare`; sin mutación por simulación |
 | Mercado | `/market/quotes`, `/market/simulate`, `/market/journal`; cotizaciones revisadas y diario por contexto |

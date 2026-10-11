@@ -6,6 +6,8 @@ Sprint 1, 11-oct-2026: `python scripts/verify_docker.py --scope full` pasó con 
 
 ## Registro de la implementación inicial
 
+Sprint 2: **167 Pytest/PostgreSQL** correctos, build, arranque, Alembic/HTTP y OpenAPI con 98 rutas. Se ejecutó `--scope backend`: Vitest/Playwright no se repitieron porque no cambió la interfaz. Lecturas, permisos, cuotas, cancelación y timeout se probaron exclusivamente con adaptadores sintéticos; cero acceso EA. El timeout real del ejecutor descarta también una respuesta que llega después del plazo. El comando retiró el stack temporal y verificó que el principal no se reinició.
+
 Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
 
 | Verificacion actual | Resultado |

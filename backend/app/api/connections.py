@@ -3,7 +3,7 @@ import hmac
 import secrets
 from datetime import timedelta
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -28,6 +28,8 @@ def capabilities():
             "authorization_supported": False, "documentation_url": EA_SOURCE, "reviewed_on": "2026-10-11",
             "blocker": BLOCKER, "capabilities": {field: {"status": "unverified", "evidence": EA_SOURCE, "reason": "No hay concesión documentada para esta aplicación"} for field in fields},
             "approved_partners": ["FUTBIN", "FUT.GG", "FUTWIZ"], "automated_ea_operations": "unsupported",
+            "implemented_reconciliation": ["inventory", "coins"],
+            "pending_reconciliation": ["squads", "gallery", "dcp", "evolutions", "history"],
             "alternative": "Registro local revisado explícitamente; no verifica la cuenta ni sincroniza el club."}
 
 
@@ -64,7 +66,7 @@ class EntryInput(InputModel):
 
 
 @router.post("/app/entries")
-def enter(payload: EntryInput, request: Request, db: Session = Depends(raw_db)):
+def enter(payload: EntryInput, request: Request, background: BackgroundTasks, db: Session = Depends(raw_db)):
     session, context = session_for(db, request, mutate=True)
     with resource_locks(db, "session:"+session.id):
         db.refresh(session)
@@ -92,6 +94,15 @@ def enter(payload: EntryInput, request: Request, db: Session = Depends(raw_db)):
         # No registered authorized adapter: an entry never certifies local cache as ready.
         record(db, "entry", "app_entry", entry.id, {"mode": payload.mode, "remote_checked": False})
         db.commit()
+        from app.services.providers import authorized_adapter, begin_sync, execute_read
+        if payload.mode == "live" and authorized_adapter(db, target)[0] is not None:
+            try:
+                run, adapter, created = begin_sync(db, session, target)
+                if created: background.add_task(execute_read, run.id, adapter)
+            except HTTPException as error:
+                if error.status_code != 429: raise
+                entry.status = "rate_limited"
+                db.commit()
         return {**sync_state(db, target, entry), "mode": session.mode}
 
 
@@ -125,14 +136,32 @@ def connection_status(connection_id: int, request: Request, db: Session = Depend
 
 
 @router.post("/club-contexts/{context_id}/sync-runs")
-def start_sync(context_id: int, request: Request, db: Session = Depends(raw_db)):
+def start_sync(context_id: int, request: Request, background: BackgroundTasks, db: Session = Depends(raw_db)):
     session, context = session_for(db, request, mutate=True)
     if context.id != context_id or not session.entry_id:
         raise HTTPException(404, "Contexto o entrada no disponible")
-    row = db.scalar(select(ProviderConnection).where(ProviderConnection.club_context_id == context_id))
-    if row and row.retry_after and utc(row.retry_after) > now():
-        raise HTTPException(429, "El proveedor requiere esperar", headers={"Retry-After": str(int((utc(row.retry_after)-now()).total_seconds())+1)})
-    raise HTTPException(409, {"message": "Integración pendiente", "dependency": BLOCKER})
+    if request.headers.get("X-App-Entry") != str(session.entry_id):
+        raise HTTPException(409, "La entrada fue sustituida")
+    from app.services.providers import begin_sync, execute_read
+    run, adapter, created = begin_sync(db, session, context)
+    if created: background.add_task(execute_read, run.id, adapter)
+    return {"id": run.id, "status": run.status, "created": created}
+
+
+@router.post("/sync-runs/{run_id}/cancel")
+def cancel_sync(run_id: int, request: Request, db: Session = Depends(raw_db)):
+    session, context = session_for(db, request, mutate=True)
+    with resource_locks(db, "sync-start:"+str(context.id)):
+        row = db.get(SyncRun, run_id)
+        if row is None or row.entry_id != session.entry_id or request.headers.get("X-App-Entry") != str(session.entry_id):
+            raise HTTPException(404, "Lectura no disponible en esta entrada")
+        if row.status == "syncing":
+            row.status, row.finished_at = "cancelled", now()
+            context.generation += 1
+            db.get(AppEntry, row.entry_id).status = "sync_required"
+            record(db, "cancel_read", "sync_run", row.id, {})
+            db.commit()
+        return {"id": row.id, "status": row.status}
 
 
 @router.get("/sync-runs/{run_id}")

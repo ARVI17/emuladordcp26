@@ -21,6 +21,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await run_in_threadpool(recover_interrupted_automation)
+    from app.services.providers import recover_reads
+    await run_in_threadpool(recover_reads)
     yield
 
 app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan, docs_url="/docs", redoc_url=None, root_path="/api")

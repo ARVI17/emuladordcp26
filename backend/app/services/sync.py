@@ -88,10 +88,20 @@ def publish_read(db, run_id: int, read: RemoteRead):
         for item in unique.values():
             if set(item.fields) - (set(PlayerCreate.model_fields) - protected_fields):
                 raise ValueError("El proveedor incluyó campos no admitidos")
+            if not {"name", "rating", "position"}.issubset(item.fields):
+                raise ValueError("Cada copia requiere identidad deportiva actual; no se infiere de una lectura antigua")
             mapping = mappings.get(item.copy_id)
             player = db.get(Player, mapping.player_id) if mapping else None
             fields = {key: getattr(player, key) for key in PlayerCreate.model_fields} if player else {"league": "No disponible", "club": "No disponible", "nationality": "No disponible"}
             fields.update(item.fields)
+            # An observation is not an undocumented delta. Old details remain in the
+            # historical snapshot, never masquerade as newly observed current facts.
+            missing_details = {"attributes": {}, "alternate_positions": [], "playstyles": [],
+                               "playstyles_plus": [], "roles": {}, "skill_moves": None,
+                               "weak_foot": None, "gallery_score": None}
+            for key, empty in missing_details.items():
+                if key not in item.fields:
+                    fields[key] = empty
             fields.update(game_version=context.game_version, card_id=item.variant_id, data_source=read.provider, data_reviewed=True)
             # Omitted remote facts are unknown in this snapshot, even if history has a value.
             missing = {"tradable", "is_loan", "is_evolution"} - set(item.fields)
@@ -120,6 +130,9 @@ def publish_read(db, run_id: int, read: RemoteRead):
                 # Omitted fields are preserved; new copies never inherit old preferences.
                 for key in item.fields:
                     setattr(player, key, fields[key])
+                for key in missing_details:
+                    if key not in item.fields:
+                        setattr(player, key, fields[key])
                 player.card_id = item.variant_id
                 player.unknown_fields = fields["unknown_fields"]
                 player.data_reviewed = fields["data_reviewed"]
