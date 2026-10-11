@@ -15,6 +15,8 @@ Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emulad
 
 El comando rechaza volúmenes persistentes, montajes inesperados, redes externas y bases incorrectas. Retira únicamente su proyecto al terminar, incluso al fallar, mediante `down` sin `-v`. No reinicia ni despliega el principal. Comprueba sus IDs/fechas de arranque antes y después. Si se interrumpe abruptamente, consulta el proyecto exacto del informe antes de retirar contenedores. Nunca uses un borrado global.
 
+No ejecutes restauraciones adicionales en el contenedor `test-database` mientras corre Pytest: su tmpfs también consume el límite de 256 MB. Las comprobaciones de dump/migración poblada deben ser secuenciales o usar otro contenedor desechable con recursos propios. Un fallo por memoria no cuenta como prueba pasada; conserva el informe y repite la suite aislada.
+
 Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. Los datos de prueba se descartan deliberadamente. Para revisar una interfaz a mano existe `docker-compose.review.yml` en 8081: también es desechable; detener su PostgreSQL tmpfs pierde datos. No confundas esa revisión con el club real ni con el stack principal.
 
 ## Cierre de cada sprint

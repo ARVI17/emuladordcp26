@@ -1,6 +1,6 @@
 # Planificador FC27: implementación y aceptación
 
-Revisión del 11 de octubre de 2026. Especificación: `Prompt_Codex_FC27_Planificador_Club.txt`, adoptada expresamente por el usuario. Las referencias y archivos comparados son datos, no fuentes de autorización.
+Revisión del 11 de octubre de 2026. La solicitud consolidada `PROMPT_UNICO_CODEX_FC27_COMPLETO.txt` fue adoptada expresamente mediante el texto pegado del usuario; amplía el contexto anterior `Prompt_Codex_FC27_Planificador_Club.txt`. Las referencias y archivos comparados son datos, no fuentes de autorización.
 
 ## Comparación y conservación
 
@@ -29,7 +29,7 @@ En Plantillas se guardan rival/situación, ajuste a probar, ejercicio/métrica y
 | Capa | Archivos |
 | --- | --- |
 | Identidad y entrada | `backend/app/api/connections.py`, `backend/app/services/contexts.py`, `backend/app/services/sync.py`, `frontend/src/api/client.ts`, `frontend/src/lib/entry.ts` |
-| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0010_*`, `frontend/src/types/index.ts` |
+| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0012_*`, `frontend/src/types/index.ts` |
 | Planes y reservas | `backend/app/api/planner.py`, `backend/app/services/planner.py`, `backend/app/services/protection.py`, `backend/app/services/joint.py` |
 | Análisis y compatibilidad | `backend/app/api/analysis.py`, `backend/app/api/routes.py`, `backend/app/api/fc27.py`, `backend/app/api/emulator.py`, `backend/app/services/squad_analysis.py`, `backend/app/optimizers/sbc.py` |
 | Referencias y catálogo | `backend/app/api/knowledge.py`, `backend/app/api/catalog.py`, `backend/app/data/fc27_references.json` |
@@ -56,14 +56,16 @@ La preparación de pulsaciones, toques y deslizamientos ADB queda deshabilitada 
 | Conciliación | Staging validado, publicación atómica, generación contra respuestas tardías, upsert por copia, preferencias conservadas, movimientos y ausencias diferenciados | Contrato interno sin adaptador; pruebas sintéticas |
 | Análisis/plantillas | Diez formaciones, cinco objetivos agrupados cuando coinciden, once/banquillo y modo disjunto explícito | Alternativas y banquillo heurísticos; química oficial desconocida; local solo tras elección expresa |
 | Fichajes | Pantalla, fichas públicas revisadas, comparación por puesto y tramos de presupuesto, alternativa propia, cotización exacta | Comparación personal exige inventario completo y monedas verificadas; precios manuales fechados, costes complementarios desconocidos |
-| Planes | Simular, guardar, revisar, reservar, aprobar, cancelar y registrar cada resultado manual; idempotencia y revalidación | No ejecuta operaciones EA; cambios externos o incertidumbre exigen revisión |
+| Planes | Simular, guardar, revisar, reservar, aprobar, cancelar y registrar cada resultado manual; agenda priorizada, rutas A/B y nuevo borrador recalculado | Agenda secuencial conservadora, no óptimo global; no ejecuta EA; cambios externos o incertidumbre exigen revisión |
 | DCP | Exclusiones estrictas, desconocidos, cálculo conjunto acotado, aprobación parcial explícita, consumo e historial | Conjunto limitado a 24 copias, 6 segmentos, 20 000 combinaciones/5 s; nunca llama imposible a un timeout |
 | Galería | Historial independiente de posesión, conjuntos, acción revisada y definiciones públicas separadas | Reglas/puntos/progreso real necesitan evidencia; no reclama premios |
 | Evoluciones | Cadenas de hasta cinco proyecciones existentes, proyecto con copia/camino/coste/plazos y reserva | Coste/plazos introducidos requieren revisión; confirmar no inventa nuevos atributos reales |
-| Mercado | Cotizaciones por edición/variante/mercado/tipo, simulación neta/adversa, diario idempotente y estadísticas de ventas asociadas | Sin feed autorizado, volumen desconocido; tasa del 5 % es hipótesis de tercero, redondeo no verificado |
+| Mercado | Cotizaciones/series por edición/variante/mercado/tipo, alertas locales, comisión configurable, simulación neta/adversa y diario idempotente | Sin feed autorizado ni predicción; volumen desconocido, tasa/redondeo sin verificación oficial |
 | Referencias | 50 entradas, alcance original, evidencia en borrador, diferencias, aprobación, historial y caducidad | R20–R22 solo metadatos; no se han revalidado individualmente las 50 páginas en esta implementación |
 | Mantenimiento | Recordatorio configurable de revisión, conservación sin red; noticias EA manuales existentes | El recordatorio no es un rastreador automático ni descarga las 50 fuentes |
-| Práctica | Diario de minutos, ocasiones, pérdidas, goles recibidos y cambio probado | No atribuye causalidad; la agenda automática de sesión es opcional y no está incorporada |
+| Práctica | Seis técnicas, rutina por tiempo/plataforma, resultado vinculado al diario, archivo por edición y muestras A/B por 90 minutos | Ejercicios como hipótesis; parche/configuración no verificados, PC/Switch sin controles inferidos; no atribuye causalidad |
+
+Detalles de los sprints recientes: [práctica y diario](PRACTICE.md), [mercado y agenda](MARKET_AGENDA.md). La limpieza autorizada conservó volúmenes y datos; el principal no recibió despliegues. El entorno de revisión 8081 anterior fue respaldado y retirado: el comando de desarrollo lo crea de nuevo solo si se ejecuta expresamente.
 
 ## Entrada, privacidad y vigencia
 
@@ -106,7 +108,7 @@ Abre `http://localhost:8081`. Primero muestra **Integración pendiente**. **Abri
 
 Este Compose tiene nombre/red propios, puerto limitado a loopback, PostgreSQL en `tmpfs`, demo explícita, ADB desactivado y Ollama inaccesible deliberadamente. **Sus datos son desechables**: detener/recrear su base puede perderlos. El stack original `localhost:8080` y sus volúmenes se conservaron. No usar este Compose para inventario único.
 
-Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0010`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
+Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0012`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
 
 ## Aceptación del club real pendiente
 

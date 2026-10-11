@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 from app.api.catalog import router as catalog_router
 from app.api.knowledge import router as knowledge_router
 from app.api.practice import router as practice_router
+from app.api.market_insights import router as market_insights_router
+from app.api.agenda import router as agenda_router
 from app.api.planner import router as planner_router
 from app.api.connections import router as connections_router
 from app.api.routes import router
@@ -59,5 +61,7 @@ app.include_router(planner_router)
 
 app.include_router(knowledge_router)
 app.include_router(practice_router)
+app.include_router(market_insights_router)
+app.include_router(agenda_router)
 
 app.include_router(catalog_router)

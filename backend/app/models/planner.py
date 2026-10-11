@@ -223,3 +223,16 @@ class PracticeSession(ClubScoped, Base):
     agenda: Mapped[dict] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(20), default="planned")
     result: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class MarketAlert(ClubScoped, Base):
+    __tablename__ = 'market_alerts'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(8))
+    variant_id: Mapped[str] = mapped_column(String(120))
+    market: Mapped[str] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(30))
+    direction: Mapped[str] = mapped_column(String(10))
+    threshold: Mapped[int] = mapped_column(Integer)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

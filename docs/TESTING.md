@@ -10,7 +10,12 @@ Sprint 3: **171 Pytest/PostgreSQL, 25 Vitest y 14 Playwright** correctos mediant
 
 Sprint 4: **175 Pytest/PostgreSQL** (97,14 s), **25 Vitest** y build correctos. El primer E2E detectó dos selectores ambiguos; corregidos, `--scope frontend` repitió build/Vitest y **16 Playwright** (34,7 s), incluida práctica, vínculo al diario y aislamiento FC26/FC27. Revisión visual móvil realizada. Dump0009 restaurado y migrado a0011: 228 cartas, 228 entradas de Galería, cuatro planes y un partido antiguo conservado sin edición inventada. SQLite upgrade/check correcto. EA, hardware y despliegue principal siguen pendientes.
 
+Sprint 5: `--scope full` pasó con **182 Pytest/PostgreSQL** (103,39 s; un aviso httpx), **25 Vitest** y **20 Playwright** (41,6 s), build, salud, OpenAPI y Alembic. Tras traducir tipos de cotización y mostrar la hora observada se repitió `--scope frontend`: build/25 Vitest/20 Playwright (40,1 s) correctos. Revisadas capturas móviles de agenda y alertas. Cinco guardas del comando Docker correctas. El primer intento terminó con 175 pases y siete errores por OOM del PostgreSQL temporal de 256 MB mientras se restauraban dos bases adicionales; se separaron las cargas y la repetición completa pasó sin ampliar recursos ni tocar el principal.
+
+Migración 0011→0012 sobre datos restaurados: 228 cartas, 228 entradas de Galería, cuatro planes y una práctica conservados; `alembic check` correcto. El dump previo0011 también se restauró y contrastó en otra base desechable. No se repitieron GPU/Ollama, hardware, Safari ni EA; ninguna instancia principal fue migrada.
+
 ## Registro de la implementación inicial
+
 
 
 Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.

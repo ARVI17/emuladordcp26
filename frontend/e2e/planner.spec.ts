@@ -1,5 +1,58 @@
 import {test,expect,openLocal} from './fixtures'
 
+test('compara rutas y la agenda conserva una sola reserva posible por copia',async({page,request},testInfo)=>{
+ const name=`Agenda ${Date.now()}`
+ const created=await request.post('/api/players',{data:{name,rating:80,position:'MC',league:'Prueba',club:'Prueba',nationality:'CO',price:null}})
+ expect(created.ok()).toBeTruthy()
+ await openLocal(page)
+ await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await page.getByLabel('Copias exactas').fill(name)
+ await page.getByRole('button',{name:new RegExp(name)}).click()
+ await page.getByRole('button',{name:'Añadir acción a la propuesta'}).click()
+ const ids:number[]=[]
+ for(const route of ['A','B']){
+  await page.getByLabel('Nombre',{exact:true}).fill(name+' '+route)
+  await page.getByRole('button',{name:'Simular propuesta'}).click()
+  const saved=page.waitForResponse(r=>r.url().endsWith('/api/plans')&&r.request().method()==='POST')
+  await page.getByRole('button',{name:'Guardar borrador'}).click()
+  ids.push((await (await saved).json()).id)
+ }
+ await page.getByText('Agenda conjunta y rutas A/B',{exact:true}).click()
+ await page.getByRole('combobox',{name:'Ruta A',exact:true}).selectOption(String(ids[0]))
+ await page.getByRole('combobox',{name:'Ruta B',exact:true}).selectOption(String(ids[1]))
+ await page.getByRole('button',{name:'Comparar rutas guardadas'}).click()
+ await expect(page.getByText(/Copias compartidas: \d/)).toBeVisible()
+ await page.getByLabel('Prioridad de borradores (IDs separados por coma)').fill(String(ids[1]))
+ await page.getByRole('button',{name:'Calcular agenda local'}).click()
+ await expect(page.getByText(new RegExp('#'+ids[0]+'.*Copias comprometidas'))).toBeVisible()
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
+ await page.screenshot({path:testInfo.outputPath('joint-agenda.png')})
+})
+
+test('aplica comisión configurable y muestra alerta basada en cotización fechada',async({page,request},testInfo)=>{
+ const variant=`Serie ${Date.now()}`
+ const observed=new Date(Date.now()-60000).toISOString()
+ const quote=await request.post('/api/market/quotes',{data:{variant_id:variant,game_version:'FC27',market:'PC',kind:'listing',amount:900,observed_at:observed,expires_at:new Date(Date.now()+3600000).toISOString(),source_url:'https://example.com/synthetic',coverage:'Observación sintética E2E'}})
+ expect(quote.ok()).toBeTruthy()
+ await openLocal(page)
+ await page.getByRole('button',{name:'Mercado',exact:true}).click()
+ await page.getByLabel('Comisión supuesta (%)').fill('10')
+ await page.getByLabel('Otros costes supuestos').fill('100')
+ await page.getByRole('button',{name:'Calcular con hipótesis del 10 %'}).click()
+ await expect(page.getByText(/Beneficio estimado: -200/)).toBeVisible()
+ await page.getByLabel('Variante de la serie').fill(variant)
+ await page.getByRole('combobox',{name:'Mercado de la serie',exact:true}).selectOption('PC')
+ await page.getByRole('button',{name:'Consultar serie local'}).click()
+ await expect(page.getByText('1 observaciones.',{exact:true})).toBeVisible()
+ await page.getByRole('button',{name:'Guardar alerta local'}).click()
+ const alert=page.locator('article.profile-result').filter({hasText:variant})
+ await expect(alert.getByText('Umbral alcanzado',{exact:true})).toBeVisible()
+ await alert.getByRole('button',{name:/Desactivar alerta/}).click()
+ await expect(alert.getByText('Desactivada',{exact:true})).toBeVisible()
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
+ await page.screenshot({path:testInfo.outputPath('market-alert.png')})
+})
+
 test('planifica práctica por plataforma y vincula un partido de la misma edición',async({page},testInfo)=>{
  await openLocal(page)
  await page.getByRole('button',{name:'Planes',exact:true}).click()

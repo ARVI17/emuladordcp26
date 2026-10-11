@@ -40,7 +40,7 @@ Una instalación nueva crea un perfil vacío. **`SEED_DEMO=false` es el valor pr
 
 1. Crea un respaldo de tu instalación antes de actualizar.
 2. Actualiza el código y ejecuta `docker compose up --build -d`.
-3. Alembic llega a `0009`: conserva FC26/FC27 y sus historiales, y guarda lo heredado en un contexto local sin vincular.
+3. Alembic llega a `0012`: conserva FC26/FC27 y sus historiales, y guarda lo heredado en un contexto local sin vincular; añade tácticas, práctica y alertas locales.
 4. Cambia de edición desde la cabecera para consultar FC26. Importa tus cartas actuales con FC27 seleccionado.
 
 No cambies los nombres de los volúmenes ni uses `docker compose down -v` para actualizar. [Guía de actualización FC27](docs/FC27_UPGRADE.md).
@@ -134,7 +134,7 @@ Los scripts resuelven usuario, base y puerto desde la configuración efectiva de
 
 ## Desarrollo y pruebas
 
-El planificador se verificó localmente con **154 Pytest en PostgreSQL, 25 Vitest y 12 recorridos Playwright**, build de producción y migraciones a `0009`, usando datos desechables. Consulta [TESTING.md](docs/TESTING.md) para resultados, reproducción y límites; la conexión con el proveedor y el club real siguen pendientes.
+El planificador se verifica mediante `python scripts/verify_docker.py --scope full`: PostgreSQL aislado, build, Pytest, Vitest y Playwright móvil/escritorio sobre Nginx. Consulta el registro de cada sprint en [TESTING.md](docs/TESTING.md) para conteos y límites; la conexión con el proveedor y el club real siguen pendientes. [Práctica y diario](docs/PRACTICE.md) y [mercado/agenda A-B](docs/MARKET_AGENDA.md) describen las ampliaciones recientes.
 
 La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) verificó el código `ba9c17b`: **111 pruebas backend con PostgreSQL, 24 pruebas frontend y 6 recorridos Playwright en móvil/escritorio**, además de la migración de 132 cartas FC26, TypeScript/Vite/PWA y las configuraciones Compose base/GPU. La auditoría npm de producción terminó sin avisos; el árbol de desarrollo conserva el aviso documentado en [SECURITY.md](docs/SECURITY.md).
 
