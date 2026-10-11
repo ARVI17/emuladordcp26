@@ -1,4 +1,5 @@
 import {MatchDiary} from '../components/MatchDiary'
+import {PracticeAgenda} from '../components/PracticeAgenda'
 import {PlanningAnalysis} from '../components/PlanningAnalysis'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
@@ -21,7 +22,7 @@ export function PlannerPage(){
  const calculate=useMutation({mutationFn:()=>api<NonNullable<typeof preview>>('/plans/preview',{method:'POST',body:JSON.stringify(data)}),onSuccess:setPreview})
  const add=()=>{setActions([...actions,{kind,accept_irreversible_partial:acceptPartial,player_ids:players.map(p=>p.id),max_cost:cost,note:'',...(kind==='dcp'?{segment_id:Number(target)}:kind==='buy'||kind==='sell'?{quote_id:Number(target)}:kind==='evolution'?{definition_id:Number(target),path_id:path,start_before:startBefore?new Date(startBefore).toISOString():null,complete_before:completeBefore?new Date(completeBefore).toISOString():null}:{})}]);setPlayers([]);setPreview(null)}
  return <><SectionTitle title="Planes y revisión" subtitle="Guardar una propuesta, reservar cartas y confirmar resultados son acciones separadas."/>
-  <PlanningAnalysis/><MatchDiary/><Notice>Las acciones en EA se realizan manualmente. Una entrega real no se puede deshacer desde aquí; cancelar solo libera reservas locales.</Notice>
+  <PlanningAnalysis/><PracticeAgenda/><MatchDiary/><Notice>Las acciones en EA se realizan manualmente. Una entrega real no se puede deshacer desde aquí; cancelar solo libera reservas locales.</Notice>
   <section className="panel"><h3>Preparar propuesta</h3><div className="form-grid"><label>Nombre<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Presupuesto declarado<input type="number" min={0} value={budget} onChange={e=>setBudget(Number(e.target.value))}/></label><label>Monedas que conservar<input type="number" min={0} value={reserve} onChange={e=>setReserve(Number(e.target.value))}/></label><label>Acción<select value={kind} onChange={e=>{setKind(e.target.value);setTarget('')}}>{Object.entries(kinds).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><label>Coste máximo adicional<input type="number" min={0} value={cost} onChange={e=>setCost(Number(e.target.value))}/></label></div>
   {kind!=='buy'&&<PlayerPicker label="Copias exactas" selected={players} onChange={setPlayers}/>}
   {kind==='dcp'&&<label>Segmento<select value={target} onChange={e=>setTarget(e.target.value)}><option value="">Seleccionar</option>{challenges.data?.flatMap(c=>c.segments.filter(s=>!s.completed).map(s=><option key={s.id} value={s.id}>{c.name} · {s.name}</option>))}</select></label>}

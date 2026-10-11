@@ -204,6 +204,8 @@ class PublicDefinition(Base):
 class MatchRecord(ClubScoped, Base):
     __tablename__ = "match_records"
     id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(12), default="unverified")
+    practice_id: Mapped[int | None] = mapped_column(ForeignKey("practice_sessions.id"))
     played_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     tactic: Mapped[str] = mapped_column(String(120))
     minutes: Mapped[int] = mapped_column(Integer)
@@ -211,3 +213,13 @@ class MatchRecord(ClubScoped, Base):
     dangerous_losses: Mapped[int] = mapped_column(Integer)
     conceded: Mapped[int] = mapped_column(Integer)
     change_tested: Mapped[str] = mapped_column(String(300))
+
+
+class PracticeSession(ClubScoped, Base):
+    __tablename__ = "practice_sessions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    game_version: Mapped[str] = mapped_column(String(12))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    agenda: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(20), default="planned")
+    result: Mapped[dict] = mapped_column(JSON, default=dict)

@@ -8,7 +8,10 @@ Sprint 2: **167 Pytest/PostgreSQL** correctos, build, arranque, Alembic/HTTP y O
 
 Sprint 3: **171 Pytest/PostgreSQL, 25 Vitest y 14 Playwright** correctos mediante `--scope full`, build, salud y Alembic. Tras ajustar las etiquetas de química/disponibilidad se repitió `--scope frontend`: build, 25 Vitest y 14 Playwright correctos, con revisión visual móvil. Un dump desechable en `0009` se restauró y migró a `0010`, conservando 228 cartas, 228 entradas de Galería y cuatro planes. SQLite nuevo también pasó migración, `alembic check` y seed. Un arranque inicial detectó que la migración histórica crea columnas del modelo actual; se corrigió únicamente la nueva revisión `0010` y se repitieron las pruebas. Sin acceso EA, hardware ni despliegue principal.
 
+Sprint 4: **175 Pytest/PostgreSQL** (97,14 s), **25 Vitest** y build correctos. El primer E2E detectó dos selectores ambiguos; corregidos, `--scope frontend` repitió build/Vitest y **16 Playwright** (34,7 s), incluida práctica, vínculo al diario y aislamiento FC26/FC27. Revisión visual móvil realizada. Dump0009 restaurado y migrado a0011: 228 cartas, 228 entradas de Galería, cuatro planes y un partido antiguo conservado sin edición inventada. SQLite upgrade/check correcto. EA, hardware y despliegue principal siguen pendientes.
+
 ## Registro de la implementación inicial
+
 
 Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
 

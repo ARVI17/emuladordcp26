@@ -18,7 +18,9 @@ docker compose exec backend alembic current
 docker compose exec backend alembic check
 ```
 
-La revisión esperada es `0010`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+La revisión esperada es `0011`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+
+`0011` incorpora la agenda de práctica y separa el diario de partidos por edición. Conserva como `unverified` los registros antiguos salvo evidencia en un contexto ya verificado. Nunca deduce su edición del perfil local que puede haber cambiado. Se comprueba restaurando un dump desechable anterior y preservando sus conteos.
 
 `0006` añade contextos, sesiones, snapshots, mapeos externos, planes/reservas, mercado y conocimiento; `0007` conserva indicadores remotos desconocidos; `0008` separa definiciones públicas de progreso privado; `0009` conserva edición y mercado en el diario. Ninguna migra la demo a una cuenta vinculada. Los precios cero heredados, usados como desconocidos por el editor anterior, pasan a `null`; las nuevas entradas permiten cero explícito.
 

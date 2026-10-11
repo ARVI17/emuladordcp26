@@ -4,7 +4,7 @@ Referencia del código de la versión 2.0 en `emuladordcp26`. La API declara rut
 
 ## Ampliación del planificador (11 de octubre de 2026)
 
-El head es `0010`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación con PR #2, migraciones, comportamiento y dependencias pendientes. Los módulos nuevos son:
+El head es `0011`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación con PR #2, migraciones, comportamiento y dependencias pendientes. Los módulos nuevos son:
 
 | Capa | Archivos y contrato |
 | --- | --- |
@@ -14,6 +14,7 @@ El head es `0010`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación c
 | Planes/protecciones | `schemas/planner.py`, `services/planner.py`, `services/protection.py`, `api/planner.py`: `/plans`, review/reserve/approve/cancel y confirmación manual de pasos |
 | Cálculos | `services/joint.py` y `api/analysis.py`: `/club/profiles`, `/dcp/joint-preview`, `/transfers/compare`; sin mutación por simulación |
 | Tácticas privadas | `Squad.tactic`, `TacticNotes`, `/squads/{id}/tactics`, `TacticEditor`: rival, ajuste, práctica y referencias; guardado de once y banquillo con revisión vigente |
+| Práctica y diario | `api/practice.py`, `services/practice.py`, `PracticeAgenda`, `MatchDiary`: agenda persistida y muestras por edición; [contrato](PRACTICE.md) |
 | Mercado | `/market/quotes`, `/market/simulate`, `/market/journal`; cotizaciones revisadas y diario por contexto |
 | Catálogo/conocimiento | `api/catalog.py`, `api/knowledge.py`, `data/fc27_references.json`: definiciones compartidas sin progreso, evidencia versionada, recordatorio y `/matches` |
 | SPA | `lib/entry.ts`, páginas Connections/Planner/Transfers/Market/Knowledge, componentes PlanningAnalysis/MatchDiary/CatalogDefinitions |

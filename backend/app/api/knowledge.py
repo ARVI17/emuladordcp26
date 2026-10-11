@@ -1,17 +1,19 @@
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.entities import AppSetting, now
-from app.models.planner import KnowledgeRevision, MatchRecord
+from app.models.planner import KnowledgeRevision, MatchRecord, PracticeSession
 from app.schemas.api import InputModel
 from app.services.audit import record
 from app.services.contexts import utc
 from app.services.locks import resource_locks
+from app.services.editions import current_version
 
 router = APIRouter(tags=["Conocimiento público"])
 
@@ -113,13 +115,18 @@ class MatchInput(InputModel):
     dangerous_losses: int = Field(ge=0, le=100)
     conceded: int = Field(ge=0, le=100)
     change_tested: str = Field(min_length=1, max_length=300)
+    practice_id: int | None = Field(default=None, gt=0)
 
 
 @router.post("/matches", status_code=201)
 def add_match(payload: MatchInput, db: Session = Depends(get_db)):
     if payload.played_at.tzinfo is None or payload.played_at > now():
         raise HTTPException(422, "Revisa la fecha del partido")
-    row = MatchRecord(**payload.model_dump())
+    if payload.practice_id:
+        practice = db.get(PracticeSession, payload.practice_id)
+        if not practice or practice.game_version != current_version(db) or practice.status != 'completed':
+            raise HTTPException(422, 'Vincula una práctica completada del mismo club y edición')
+    row = MatchRecord(**payload.model_dump(), game_version=current_version(db))
     db.add(row)
     db.flush()
     record(db, "record_match", "match_record", row.id)
@@ -128,6 +135,17 @@ def add_match(payload: MatchInput, db: Session = Depends(get_db)):
 
 
 @router.get("/matches")
-def matches(db: Session = Depends(get_db)):
-    rows = list(db.scalars(select(MatchRecord).order_by(MatchRecord.id.desc()).limit(100)))
-    return {"items": [{key: getattr(r, key) for key in MatchInput.model_fields}|{"id": r.id} for r in rows], "sample_size": len(rows), "message": "Compara un cambio por vez; esta muestra no demuestra causalidad ni superioridad táctica."}
+def matches(edition: Literal['FC26', 'FC27', 'unverified'] | None = None, db: Session = Depends(get_db)):
+    edition = edition or current_version(db)
+    rows = list(db.scalars(select(MatchRecord).where(MatchRecord.game_version == edition).order_by(MatchRecord.played_at.desc(), MatchRecord.id.desc()).limit(101)))
+    truncated, rows = len(rows) > 100, rows[:100]
+    groups = {}
+    for r in rows:
+        key = (r.tactic, r.change_tested)
+        group = groups.setdefault(key, {'tactic': r.tactic, 'change_tested': r.change_tested, 'sample_size': 0, 'minutes': 0, 'chances': 0, 'dangerous_losses': 0, 'conceded': 0})
+        group['sample_size'] += 1
+        for field in ('minutes', 'chances', 'dangerous_losses', 'conceded'):
+            group[field] += getattr(r, field)
+    comparisons = [{**g, 'per_90': {k: round(g[k]*90/g['minutes'], 2) for k in ('chances', 'dangerous_losses', 'conceded')}} for g in groups.values()]
+    unknown = db.scalar(select(func.count()).select_from(MatchRecord).where(MatchRecord.game_version == 'unverified'))
+    return {'game_version': edition, 'items': [{key: getattr(r, key) for key in MatchInput.model_fields}|{'id': r.id, 'game_version': r.game_version} for r in rows], 'sample_size': len(rows), 'groups': comparisons, 'truncated': truncated, 'unverified_history_count': unknown, 'message': 'Últimos 100 partidos por edición, agrupados por táctica y único cambio. Tasas por 90 minutos; rivales y dificultad no están controlados. La muestra no demuestra causalidad ni superioridad táctica.'}

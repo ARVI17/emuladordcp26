@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.catalog import router as catalog_router
 from app.api.knowledge import router as knowledge_router
+from app.api.practice import router as practice_router
 from app.api.planner import router as planner_router
 from app.api.connections import router as connections_router
 from app.api.routes import router
@@ -57,5 +58,6 @@ async def private_cache(request: Request, call_next):
 app.include_router(planner_router)
 
 app.include_router(knowledge_router)
+app.include_router(practice_router)
 
 app.include_router(catalog_router)
