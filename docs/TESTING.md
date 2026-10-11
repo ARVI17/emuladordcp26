@@ -4,9 +4,11 @@
 
 Sprint 1, 11-oct-2026: `python scripts/verify_docker.py --scope full` pasó con **155 Pytest/PostgreSQL**, **25 Vitest**, **12 Playwright** sobre Nginx, build, migraciones/HTTP y limpieza del proyecto temporal. Cinco pruebas del comando rechazaron configuraciones peligrosas. El primer intento detectó una suposición fija de ADB en una prueba; se corrigió para comprobar activado/desactivado sin dispositivos y se repitió toda la ejecución. El stack principal conservó IDs y fechas de arranque. Procedimiento: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Evidencia privada en `state/sprints/`.
 
-## Registro de la implementación inicial
-
 Sprint 2: **167 Pytest/PostgreSQL** correctos, build, arranque, Alembic/HTTP y OpenAPI con 98 rutas. Se ejecutó `--scope backend`: Vitest/Playwright no se repitieron porque no cambió la interfaz. Lecturas, permisos, cuotas, cancelación y timeout se probaron exclusivamente con adaptadores sintéticos; cero acceso EA. El timeout real del ejecutor descarta también una respuesta que llega después del plazo. El comando retiró el stack temporal y verificó que el principal no se reinició.
+
+Sprint 3: **171 Pytest/PostgreSQL, 25 Vitest y 14 Playwright** correctos mediante `--scope full`, build, salud y Alembic. Tras ajustar las etiquetas de química/disponibilidad se repitió `--scope frontend`: build, 25 Vitest y 14 Playwright correctos, con revisión visual móvil. Un dump desechable en `0009` se restauró y migró a `0010`, conservando 228 cartas, 228 entradas de Galería y cuatro planes. SQLite nuevo también pasó migración, `alembic check` y seed. Un arranque inicial detectó que la migración histórica crea columnas del modelo actual; se corrigió únicamente la nueva revisión `0010` y se repitieron las pruebas. Sin acceso EA, hardware ni despliegue principal.
+
+## Registro de la implementación inicial
 
 Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
 

@@ -13,7 +13,7 @@ router = APIRouter(tags=["Análisis de club"])
 class SquadRecommendationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     formation: str = "4-3-3"
-    style: Literal["balanced", "attacking", "defensive"] = "balanced"
+    style: Literal["balanced", "attacking", "defensive", "possession", "wide"] = "balanced"
     locked_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=11)
     excluded_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=5000)
     bench_size: int = Field(default=7, ge=0, le=12)
@@ -46,8 +46,23 @@ def club_analysis(db: Annotated[Session, Depends(get_db)]):
 
 
 class ProfilesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     disjoint: bool = False
     bench_size: int = Field(default=7, ge=0, le=12)
+    locked_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=11)
+    excluded_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=5000)
+    include_loans: bool = True
+
+    @model_validator(mode="after")
+    def consistent_selection(self):
+        for ids in (self.locked_player_ids, self.excluded_player_ids):
+            if len(ids) != len(set(ids)):
+                raise ValueError("No repitas copias en una selección")
+        if set(self.locked_player_ids) & set(self.excluded_player_ids):
+            raise ValueError("Una carta no puede estar fijada y excluida")
+        if self.disjoint and self.locked_player_ids:
+            raise ValueError("Los fijados comunes requieren alternativas; no pueden repetirse en equipos disjuntos")
+        return self
 
 
 @router.post("/club/profiles")
@@ -61,11 +76,25 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
     version = current_version(db)
     players = list(db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))))
     protected = effective_protected_ids(db)
-    profiles = [("Principal equilibrada", "balanced"), ("Protección defensiva", "defensive"), ("Combinaciones por dentro", "possession"), ("Buscar gol", "attacking"), ("Sin gasto adicional", "balanced")]
+    profiles = [("Principal equilibrada", "balanced"), ("Protección defensiva", "defensive"), ("Ataque por bandas", "wide"), ("Combinaciones por dentro", "possession"), ("Sin gasto adicional", "balanced")]
     groups = []
-    excluded = []
+    pending = []
+    excluded = list(payload.excluded_player_ids)
     for name, style in profiles:
-        choices = [recommend_owned_squad(players, game_version=version, formation=formation, style=style, excluded_player_ids=excluded, bench_size=payload.bench_size, protected_ids=protected) for formation in FORMATIONS]
+        choices = []
+        for formation, slots in FORMATIONS.items():
+            wide_slots = sum(position in {"MD", "MI", "ED", "EI"} for position in slots)
+            if (style == "wide" and wide_slots < 2) or (style == "possession" and wide_slots):
+                continue
+            try:
+                choices.append(recommend_owned_squad(players, game_version=version, formation=formation, style=style,
+                    locked_player_ids=payload.locked_player_ids, excluded_player_ids=excluded,
+                    include_loans=payload.include_loans, bench_size=payload.bench_size, protected_ids=protected))
+            except ValueError:
+                continue
+        if not choices:
+            pending.append({"profile": name, "reason": "No se pudo verificar una formación con estas copias fijadas/excluidas; revisa elegibilidad e identidad"})
+            continue
         best = max(choices, key=lambda r: (len(r["lineup"]), sum(row["fit_score"] for row in r["lineup"])))
         signature = (best["formation"], style, tuple((r["slot"], r["player"]["id"]) for r in best["lineup"]))
         same = next((row for row in groups if row["signature"] == signature), None)
@@ -75,11 +104,14 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
             groups.append({"profiles": [name], "signature": signature, "squad": best,
                            "tactic_status": "local_hypothesis", "why": "Mayor cobertura legal y encaje ponderado entre las formaciones evaluadas",
                            "additional_cost": 0, "chemistry_status": "unavailable",
+                           "bench_missing": max(0, payload.bench_size-len(best["bench"])),
+                           "data_quality": {"cards_with_attributes": sum(bool(p.get("attributes")) for p in best["players"]+best["bench"]), "cards": len(best["players"])+len(best["bench"])},
                            "practice": "Prueba un solo cambio y registra ocasiones, pérdidas y goles concedidos en tu diario.",
                            "vulnerability": "El cálculo no modela animaciones, habilidad del rival ni cansancio; contrasta el equilibrio en partido."})
         if payload.disjoint:
             excluded.extend(p["id"] for p in best["players"]+best["bench"])
-    return {"binding": binding, "groups": [{k:v for k,v in g.items() if k != "signature"} for g in groups], "mode": "disjoint_heuristic" if payload.disjoint else "alternatives", "simulation": True}
+    return {"binding": binding, "groups": [{k:v for k,v in g.items() if k != "signature"} for g in groups],
+            "pending_profiles": pending, "mode": "disjoint_heuristic" if payload.disjoint else "alternatives", "simulation": True}
 
 
 class JointRequest(BaseModel):

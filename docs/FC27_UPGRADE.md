@@ -8,6 +8,8 @@ Las fuentes de referencia son el [FUT Deep Dive](https://www.ea.com/games/ea-spo
 
 ## Actualizar una instalación con datos
 
+`0010` añade `squads.tactic` sin eliminar plantillas, jugadores ni consumo. En instalaciones nuevas, la histórica `0001` puede haber creado esa columna desde el modelo actual; `0010` reconoce ese caso sin editar migraciones anteriores. Se contrastó también la actualización desde un dump real de pruebas en `0009`.
+
 Crea primero un dump con `scripts/backup.ps1` y comprueba que exista. Actualiza el código a la versión revisada y ejecuta:
 
 ```bash
@@ -16,7 +18,7 @@ docker compose exec backend alembic current
 docker compose exec backend alembic check
 ```
 
-La revisión esperada es `0009`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+La revisión esperada es `0010`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
 
 `0006` añade contextos, sesiones, snapshots, mapeos externos, planes/reservas, mercado y conocimiento; `0007` conserva indicadores remotos desconocidos; `0008` separa definiciones públicas de progreso privado; `0009` conserva edición y mercado en el diario. Ninguna migra la demo a una cuenta vinculada. Los precios cero heredados, usados como desconocidos por el editor anterior, pasan a `null`; las nuevas entradas permiten cero explícito.
 

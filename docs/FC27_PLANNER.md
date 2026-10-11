@@ -22,10 +22,14 @@ El trabajo siguió este orden: capacidades y aislamiento; identidad/conciliació
 
 ## Archivos principales
 
+Los sprints posteriores incorporan el [workflow Docker/Git](DEVELOPMENT_WORKFLOW.md), el [contrato de adaptadores](PROVIDER_CONTRACT.md) y tácticas privadas por plantilla. Los cinco perfiles incluyen ahora bandas e interior con formaciones compatibles, fijados/excluidos, cesiones y siete suplentes. Guardar envía también el banquillo y comprueba entrada, contexto y revisión; una propuesta antigua exige recalcular. No agrega compras: coste adicional cero, química oficial desconocida. Los equipos disjuntos no admiten fijados comunes.
+
+En Plantillas se guardan rival/situación, ajuste a probar, ejercicio/métrica y referencias. Duplicar conserva las notas; una copia no disponible no se duplica ni se etiqueta disponible. Las notas son hipótesis locales y no modifican tácticas en EA. La migración `0010` conserva los registros existentes y reconoce el caso de instalación nueva creado por la migración inicial histórica.
+
 | Capa | Archivos |
 | --- | --- |
 | Identidad y entrada | `backend/app/api/connections.py`, `backend/app/services/contexts.py`, `backend/app/services/sync.py`, `frontend/src/api/client.ts`, `frontend/src/lib/entry.ts` |
-| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0009_*`, `frontend/src/types/index.ts` |
+| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0010_*`, `frontend/src/types/index.ts` |
 | Planes y reservas | `backend/app/api/planner.py`, `backend/app/services/planner.py`, `backend/app/services/protection.py`, `backend/app/services/joint.py` |
 | Análisis y compatibilidad | `backend/app/api/analysis.py`, `backend/app/api/routes.py`, `backend/app/api/fc27.py`, `backend/app/api/emulator.py`, `backend/app/services/squad_analysis.py`, `backend/app/optimizers/sbc.py` |
 | Referencias y catálogo | `backend/app/api/knowledge.py`, `backend/app/api/catalog.py`, `backend/app/data/fc27_references.json` |
@@ -102,7 +106,7 @@ Abre `http://localhost:8081`. Primero muestra **Integración pendiente**. **Abri
 
 Este Compose tiene nombre/red propios, puerto limitado a loopback, PostgreSQL en `tmpfs`, demo explícita, ADB desactivado y Ollama inaccesible deliberadamente. **Sus datos son desechables**: detener/recrear su base puede perderlos. El stack original `localhost:8080` y sus volúmenes se conservaron. No usar este Compose para inventario único.
 
-Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0009`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
+Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0010`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
 
 ## Aceptación del club real pendiente
 

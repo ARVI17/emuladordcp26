@@ -642,3 +642,67 @@ def test_adapter_deadline_discards_a_late_result(client,monkeypatch):
         release.set()
     assert finished.wait(1)
     assert client.get('/players').json()['total']==0
+
+
+def test_five_profiles_honor_fixed_excluded_width_and_seven_substitutes(client):
+    with SessionLocal() as db:
+        fixed=db.scalar(select(Player.id).where(Player.position=='MC').order_by(Player.id))
+        excluded=db.scalar(select(Player.id).where(Player.position=='POR').order_by(Player.id))
+        revision=db.get(ClubContext,1).revision
+    response=client.post('/club/profiles',json={'locked_player_ids':[fixed],'excluded_player_ids':[excluded]})
+    assert response.status_code==200,response.text
+    result=response.json()
+    assert sum(len(g['profiles']) for g in result['groups'])==5 and result['pending_profiles']==[]
+    for group in result['groups']:
+        squad=group['squad']
+        ids=[p['id'] for p in squad['players']+squad['bench']]
+        assert fixed in [p['id'] for p in squad['players']] and excluded not in ids
+        assert len(ids)==len(set(ids))==18 and group['bench_missing']==0
+        wing_count=sum(row['position'] in {'ED','EI','MD','MI'} for row in squad['lineup'])
+        if squad['style']=='wide': assert wing_count>=2
+        if squad['style']=='possession': assert wing_count==0
+    with SessionLocal() as db: assert db.get(ClubContext,1).revision==revision
+
+
+def test_conflicting_profile_selection_and_impossible_fixed_are_explicit(client):
+    assert client.post('/club/profiles',json={'locked_player_ids':[1],'excluded_player_ids':[1]}).status_code==422
+    assert client.post('/club/profiles',json={'disjoint':True,'locked_player_ids':[1]}).status_code==422
+    response=client.post('/club/profiles',json={'locked_player_ids':[999999]})
+    assert response.status_code==200 and response.json()['groups']==[] and len(response.json()['pending_profiles'])==5
+
+
+def test_squad_saves_bench_tactics_and_rejects_stale_proposal(client):
+    result=client.post('/club/profiles',json={}).json()
+    squad=result['groups'][0]['squad']
+    binding={k:result['binding'][k] for k in ('entry_id','club_context_id','revision','snapshot_id','game_version')}
+    payload={'name':'Once con suplentes','formation':squad['formation'],
+        'player_ids':[p['id'] for p in squad['players']+squad['bench']],
+        'slots':[r['slot'] for r in squad['lineup']]+[f'BENCH-{i+1}' for i in range(7)],
+        'expected_binding':binding,'tactic':{'opponent':'Bloque bajo','practice_focus':'Contar pérdidas','reference_ids':['R24']}}
+    response=client.post('/squads',json=payload)
+    assert response.status_code==201,response.text
+    row=response.json(); identifier=row['id']
+    assert len(row['players'])==18 and sum(p['slot'].startswith('BENCH-') for p in row['players'])==7
+    assert row['tactic']['opponent']=='Bloque bajo'
+    assert client.patch(f'/squads/{identifier}/tactics',json={'reference_ids':['R99']}).status_code==422
+    assert client.patch(f'/squads/{identifier}/tactics',json={'opponent':'Presión alta','instructions':'Un cambio cada vez'}).status_code==200
+    copied=client.post(f'/squads/{identifier}/duplicate').json()
+    duplicate=next(s for s in client.get('/squads').json() if s['id']==copied['id'])
+    assert len(duplicate['players'])==18 and duplicate['tactic']['opponent']=='Presión alta'
+    card(client,name='Cambio posterior al análisis')
+    assert client.post('/squads',json=payload).status_code==409
+    fake_run(client)
+    assert client.patch(f'/squads/{identifier}/tactics',json={'opponent':'Otro club'}).status_code==404
+
+
+def test_unavailable_squad_copy_is_not_presented_as_available(client):
+    p=card(client)
+    created=client.post('/squads',json={'name':'Equipo parcial','player_ids':[p['id']],'slots':['MC-1']})
+    assert created.status_code==201
+    with SessionLocal() as db:
+        db.get(Player,p['id']).availability='uncertain'
+        db.commit()
+    row=next(s for s in client.get('/squads').json() if s['id']==created.json()['id'])
+    assert row['unavailable_players']==1 and not row['players'][0]['available']
+    assert client.post('/squads',json={'name':'No disponible','player_ids':[p['id']]}).status_code==422
+    assert client.post(f"/squads/{row['id']}/duplicate").json()['copied_players']==0

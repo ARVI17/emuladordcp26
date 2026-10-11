@@ -25,6 +25,7 @@ from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Ob
 from app.optimizers.sbc import solve, validate_solution
 from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
 from app.schemas.requirements import normalize_requirements
+from app.schemas.api import TacticNotes
 from app.services.audit import record
 from app.services.editions import current_version, ensure_profile
 from app.services.gallery import record_player
@@ -91,9 +92,9 @@ def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
 
 def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     active = [entry for entry in squad.players if not entry.player.deleted and entry.player.game_version == squad.game_version]
-    entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": True,
+    entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": entry.player.availability == "available",
                 "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
-    starters = [entry for entry in active if not entry.slot.startswith("BENCH-")]
+    starters = [entry for entry in active if not entry.slot.startswith("BENCH-") and entry.player.availability == "available"]
     expected = formation_slots(squad.formation) if squad.formation in FORMATIONS else []
     # Older saved squads numbered all slots globally (DFC-3, MC-7...). Count
     # positions rather than treating a legacy suffix as a missing footballer.
@@ -107,10 +108,11 @@ def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
             missing.append(slot)
     return {
         "id": squad.id, "game_version": squad.game_version, "name": squad.name, "formation": squad.formation,
-        "primary": squad.primary, "protected": squad.protected, "players": entries,
+        "primary": squad.primary, "protected": squad.protected, "players": entries, "tactic": squad.tactic,
+        "tactic_status": "local_hypothesis",
         "rating": calculate_rating([entry.player.rating for entry in starters]),
         "chemistry": sum(entry.player.chemistry for entry in starters), "chemistry_approximate": True,
-        "complete": len(starters) == 11 and len(expected) == 11 and not missing, "unavailable_players": len(squad.players) - len(active),
+        "complete": len(starters) == 11 and len(expected) == 11 and not missing, "unavailable_players": len(squad.players) - sum(entry.player.availability == "available" for entry in active),
         "missing_slots": missing,
     }
 
@@ -377,9 +379,13 @@ def create_squad(payload: SquadCreate, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         version = payload_version(payload, db)
+        from app.services.contexts import require_module
+        binding = require_module(db, "squads")
+        if payload.expected_binding and any(binding.get(key) != value for key, value in payload.expected_binding.model_dump().items()):
+            raise HTTPException(409, "El inventario o la entrada cambió; vuelve a calcular esta propuesta")
         if payload.formation not in FORMATIONS:
             raise HTTPException(422, "Formación no disponible")
-        players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False), Player.game_version == version)).all() if payload.player_ids else []
+        players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False), Player.game_version == version, Player.availability == "available")).all() if payload.player_ids else []
         if len(players) != len(payload.player_ids) or len(set(payload.player_ids)) != len(payload.player_ids):
             raise HTTPException(422, "Hay jugadores repetidos o no disponibles")
         identities = set()
@@ -407,7 +413,7 @@ def create_squad(payload: SquadCreate, db: DB):
                 raise HTTPException(422, str(exc)) from exc
             assignments = [(row["player"]["id"], row["slot"]) for row in result["lineup"]]
             assignments += [(player_id, f"BENCH-{number}") for number, player_id in enumerate(payload.player_ids[11:], 1)]
-        squad = Squad(name=payload.name, formation=payload.formation, game_version=version)
+        squad = Squad(name=payload.name, formation=payload.formation, game_version=version, tactic=payload.tactic.model_dump())
         db.add(squad)
         db.flush()
         for player_id, slot in assignments:
@@ -423,17 +429,26 @@ def duplicate_squad(squad_id: int, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         source = get_or_404(db, Squad, squad_id)
-        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version)
+        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version, tactic=dict(source.tactic or {}))
         db.add(copy)
         db.flush()
         copied = 0
         for entry in source.players:
-            if not entry.player.deleted and entry.player.game_version == source.game_version:
+            if not entry.player.deleted and entry.player.game_version == source.game_version and entry.player.availability == "available":
                 db.add(SquadPlayer(squad_id=copy.id, player_id=entry.player_id, slot=entry.slot))
                 copied += 1
         record(db, "duplicate", "squad", copy.id, {"source": squad_id, "available_players": copied})
         db.commit()
         return {"id": copy.id, "name": copy.name, "copied_players": copied}
+
+
+@router.patch("/squads/{squad_id}/tactics")
+def update_squad_tactics(squad_id: int, payload: TacticNotes, db: DB):
+    squad = get_or_404(db, Squad, squad_id)
+    squad.tactic = payload.model_dump()
+    record(db, "tactic_notes", "squad", squad.id, {"status": "local_hypothesis"})
+    db.commit()
+    return squad_data(squad, effective_protected_ids(db, squad.game_version))
 
 
 @router.post("/squads/{squad_id}/protect")

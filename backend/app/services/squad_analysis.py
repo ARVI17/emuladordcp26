@@ -121,6 +121,8 @@ def _fit(player: Player, position: str, style: str = "balanced") -> tuple[float,
                 weights[attribute] *= 1.4
             if style == "defensive" and attribute in {"defending", "physical"}:
                 weights[attribute] *= 1.4
+            if style == "wide" and position in {"MD", "MI", "ED", "EI", "LD", "LI"} and attribute in {"pace", "passing", "dribbling"}:
+                weights[attribute] *= 1.4
     attributes = player.attributes or {}
     observed = {key: float(attributes[key]) for key in weights if key in attributes and isinstance(attributes[key], (int, float)) and 0 <= attributes[key] <= 99}
     if observed:

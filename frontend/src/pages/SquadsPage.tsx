@@ -5,6 +5,8 @@ import {useSeason} from '../lib/season'
 import {invalidateClub} from '../lib/query'
 import type {Formation,Player,Squad,SquadRecommendation} from '../types'
 import {PlayerPicker} from '../components/PlayerPicker'
+import {TacticEditor} from '../components/TacticEditor'
+import {squadRequest} from '../lib/squads'
 import {Empty,ErrorBox,Loading,Notice,SectionTitle} from '../components/ui'
 
 const pitchRows=[['ED','SD','DC','EI'],['MCD','MD','MC','MI','MCO'],['LD','CAD','DFC','LI','CAI'],['POR']]
@@ -14,7 +16,7 @@ export function SquadsPage({initialFormation='4-3-3'}:{initialFormation?:string}
   const query=useQuery({queryKey:['squads',season],queryFn:()=>api<Squad[]>(`/squads?game_version=${season}`)})
   const formations=useQuery({queryKey:['formations'],queryFn:()=>api<{items:Formation[]}>('/squads/formations')})
   const recommend=useMutation({mutationFn:()=>api<SquadRecommendation>('/squads/recommend',{method:'POST',body:JSON.stringify({formation,style,locked_player_ids:locked.map(player=>player.id),excluded_player_ids:excluded.map(player=>player.id),bench_size:7,include_loans:includeLoans,include_unreviewed:false,use_alternate_positions:alternates})}),onSuccess:data=>{setRecommendation(data);setMessage('')}})
-  const create=useMutation({mutationFn:()=>api('/squads',{method:'POST',body:JSON.stringify({game_version:season,name,formation:recommendation?.formation,player_ids:recommendation?.lineup.map(item=>item.player.id)||[],slots:recommendation?.lineup.map(item=>item.slot)||[]})}),onSuccess:()=>{setMessage('Plantilla guardada. Puedes proteger el equipo completo.');void invalidateClub(qc)}})
+  const create=useMutation({mutationFn:()=>api('/squads',{method:'POST',body:JSON.stringify(squadRequest(name,recommendation!,recommendation?.binding))}),onSuccess:()=>{setMessage('Plantilla guardada. Puedes proteger el equipo completo.');void invalidateClub(qc)}})
   const duplicate=useMutation({mutationFn:(id:number)=>api(`/squads/${id}/duplicate`,{method:'POST'}),onSuccess:()=>invalidateClub(qc)})
   const protect=useMutation({mutationFn:(id:number)=>api(`/squads/${id}/protect`,{method:'POST'}),onSuccess:()=>invalidateClub(qc)})
   return <><SectionTitle title="Armar mi equipo" subtitle={`Combinaciones por atributos, posiciones y tus preferencias · ${season}`}/>
@@ -31,6 +33,6 @@ export function SquadsPage({initialFormation='4-3-3'}:{initialFormation?:string}
       <div className="button-row"><label>Nombre de la plantilla<input value={name} maxLength={100} onChange={event=>setName(event.target.value)}/></label><button className="primary" disabled={!recommendation.complete||create.isPending||!name.trim()} onClick={()=>create.mutate()}>{create.isPending?'Guardando…':'Guardar plantilla'}</button></div><ErrorBox error={create.error}/>
     </section>}
     {message&&<Notice>{message}</Notice>}<SectionTitle title="Plantillas guardadas"/>
-    {query.isLoading?<Loading/>:query.error?<ErrorBox error={query.error}/>:!query.data?.length?<Empty>Todavía no guardaste una plantilla de {season}.</Empty>:<div className="stack">{query.data.map(squad=><article className="panel" key={squad.id}><div className="split"><div><span className="eyebrow">{squad.primary?'PRINCIPAL':'PLANTILLA'}</span><h3>{squad.name}</h3><p>{squad.formation} · Media {squad.rating} · Química registrada {squad.chemistry}</p></div>{squad.protected&&<span className="safe-tag">Equipo protegido</span>}</div><div className="lineup">{squad.players.map(entry=><span key={entry.slot}><b>{entry.player.position}</b>{entry.player.name}<small>{entry.player.rating}</small></span>)}</div><div className="button-row"><button disabled={duplicate.isPending} onClick={()=>duplicate.mutate(squad.id)}>Duplicar</button><button disabled={protect.isPending} onClick={()=>protect.mutate(squad.id)}>{squad.protected?'Quitar protección del equipo':'Proteger equipo completo'}</button></div></article>)}</div>}<ErrorBox error={duplicate.error||protect.error}/>
+    {query.isLoading?<Loading/>:query.error?<ErrorBox error={query.error}/>:!query.data?.length?<Empty>Todavía no guardaste una plantilla de {season}.</Empty>:<div className="stack">{query.data.map(squad=><article className="panel" key={squad.id}><div className="split"><div><span className="eyebrow">{squad.primary?'PRINCIPAL':'PLANTILLA'}</span><h3>{squad.name}</h3><p>{squad.formation} · Media {squad.rating} · Química oficial no verificada</p></div>{squad.protected&&<span className="safe-tag">Equipo protegido</span>}</div><div className="lineup">{squad.players.map(entry=><span key={entry.slot}><b>{entry.slot.startsWith("BENCH-")?"SUP":entry.player.position}</b>{entry.player.name}<small>{entry.available===false?"No disponible":entry.player.rating}</small></span>)}</div><div className="button-row"><button disabled={duplicate.isPending} onClick={()=>duplicate.mutate(squad.id)}>Duplicar</button><button disabled={protect.isPending} onClick={()=>protect.mutate(squad.id)}>{squad.protected?'Quitar protección del equipo':'Proteger equipo completo'}</button></div><TacticEditor squad={squad}/></article>)}</div>}<ErrorBox error={duplicate.error||protect.error}/>
   </>
 }

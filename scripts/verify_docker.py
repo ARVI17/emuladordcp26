@@ -85,6 +85,9 @@ def main():
             step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e')
         result['status'] = 'PASSED'
     finally:
+        if result['status'] != 'PASSED':
+            with (report_dir/'services.log').open('wb') as log:
+                subprocess.run(compose+['logs', '--no-color', '--tail', '120'], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
         try: step('cleanup', 'down', '--timeout', '30')
         except Exception:
             result['status'] = 'FAILED'

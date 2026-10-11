@@ -155,12 +155,30 @@ class ProfileUpdate(PartialInput):
     risk_level: str | None = Field(default=None, pattern="^(bajo|medio|alto)$")
     preferences: dict[str, Any] | None = None
 
+class TacticNotes(InputModel):
+    style: str = Field(default="balanced", max_length=30)
+    opponent: str = Field(default="", max_length=120)
+    instructions: str = Field(default="", max_length=2000)
+    practice_focus: str = Field(default="", max_length=500)
+    reference_ids: list[Annotated[str, Field(pattern=r"^R(0[1-9]|[1-4][0-9]|50)$")]] = Field(default_factory=list, max_length=10)
+
+
+class SquadBinding(InputModel):
+    entry_id: int
+    club_context_id: int
+    revision: int
+    snapshot_id: int | None
+    game_version: GameVersion
+
+
 class SquadCreate(InputModel):
     game_version: GameVersion = "FC27"
     name: str = Field(min_length=1, max_length=100)
     formation: str = Field(default="4-3-3", min_length=1, max_length=20)
     player_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
     slots: list[str] | None = Field(default=None, max_length=23)
+    tactic: TacticNotes = Field(default_factory=TacticNotes)
+    expected_binding: SquadBinding | None = None
 
 class SegmentCreate(InputModel):
     name: str = Field(min_length=1, max_length=120)

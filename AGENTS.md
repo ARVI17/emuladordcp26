@@ -7,7 +7,7 @@ Este archivo es la entrada rápida para cualquier agente que trabaje en `emulado
 
 Lee [docs/FC27_PLANNER.md](docs/FC27_PLANNER.md) junto con el mapa. La entrada exige sesion/contexto y vigencia por dependencia; sin proveedor EA autorizado muestra **Integracion pendiente**. El modo local se elige expresamente. Reservas persistentes y aprobaciones no se pueden eludir desde rutas antiguas. Nunca habilites un proveedor ficticio ni una carga publica de snapshots verificados.
 
-Head `0009`: `0006` reconoce las dos variantes historicas de `0005` sin editarlas. El contexto 1 conserva registros sin vincular, nunca asignados a la primera cuenta. Las tablas personales usan ClubScoped; las mutaciones privadas requieren CSRF/entrada vigente. Restaurar exige local_simulation. Pulsaciones ADB deshabilitadas por falta de permiso aplicable; solo las pruebas mock sustituyen esa dependencia.
+Head `0010` (tacticas privadas de plantilla): `0006` reconoce las dos variantes historicas de `0005` sin editarlas. El contexto 1 conserva registros sin vincular, nunca asignados a la primera cuenta. Las tablas personales usan ClubScoped; las mutaciones privadas requieren CSRF/entrada vigente. Restaurar exige local_simulation. Pulsaciones ADB deshabilitadas por falta de permiso aplicable; solo las pruebas mock sustituyen esa dependencia.
 
 Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
 

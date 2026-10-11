@@ -1,5 +1,34 @@
 import {test,expect,openLocal} from './fixtures'
 
+test('guarda once y siete suplentes y conserva la táctica por rival',async({page,request},testInfo)=>{
+ test.setTimeout(60000)
+ await openLocal(page)
+ await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await page.getByRole('button',{name:'Comparar perfiles',exact:true}).click()
+ const card=page.locator('.profile-result').first()
+ await expect(card.getByRole('button',{name:'Guardar once y siete suplentes'})).toBeEnabled()
+ const name=`Perfiles ${Date.now()}`
+ await card.getByLabel('Nombre del equipo propuesto').fill(name)
+ const saved=page.waitForResponse(r=>r.url().endsWith('/api/squads')&&r.request().method()==='POST')
+ await card.getByRole('button',{name:'Guardar once y siete suplentes'}).click()
+ const response=await saved
+ expect(response.ok()).toBeTruthy()
+ const squad=await response.json()
+ expect(squad.players).toHaveLength(18)
+ await page.getByRole('button',{name:'Plantillas',exact:true}).click()
+ const panel=page.locator('article.panel').filter({has:page.getByRole('heading',{name,exact:true})})
+ await panel.getByText('Táctica y alternativa por rival',{exact:true}).click()
+ await panel.getByLabel('Rival o situación').fill('Presión alta de prueba')
+ await panel.getByLabel('Ajuste que voy a probar').fill('Buscar salida por banda; medir pérdidas')
+ await panel.getByRole('button',{name:'Guardar táctica local'}).click()
+ await expect(panel.getByText('Táctica guardada.',{exact:true})).toBeVisible()
+ const rows=await (await request.get('/api/squads')).json()
+ expect(rows.find((row:{id:number})=>row.id===squad.id).tactic.opponent).toBe('Presión alta de prueba')
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
+ await panel.screenshot({path:testInfo.outputPath('squad-tactics.png')})
+ await page.screenshot({path:testInfo.outputPath('tactics-viewport.png')})
+})
+
 test('al abrir no certifica datos locales como club conectado',async({page},testInfo)=>{
  await page.goto('/')
  await expect(page.getByRole('heading',{name:'Integración pendiente',exact:true})).toBeVisible()

@@ -76,6 +76,7 @@ class Squad(ClubScoped, Base):
     formation: Mapped[str] = mapped_column(String(20), default="4-3-3")
     primary: Mapped[bool] = mapped_column(Boolean, default=False)
     protected: Mapped[bool] = mapped_column(Boolean, default=False)
+    tactic: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     players: Mapped[list["SquadPlayer"]] = relationship(cascade="all, delete-orphan", back_populates="squad")
 
