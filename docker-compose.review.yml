@@ -15,14 +15,14 @@ services:
       timeout: 3s
       retries: 30
   backend:
-    image: emuladordcp26-planner-backend
+    image: ${VERIFY_BACKEND_IMAGE:-emuladordcp26-planner-backend}
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://planner_test:planner_test_only@database:5432/planner_review_test
       OLLAMA_URL: http://127.0.0.1:1
       ADB_ENABLED: 'false'
       SEED_DEMO: 'true'
-      CORS_ORIGINS: http://localhost:8081,http://127.0.0.1:8081
+      CORS_ORIGINS: http://localhost:${REVIEW_PORT:-8081},http://127.0.0.1:${REVIEW_PORT:-8081}
     depends_on:
       database:
         condition: service_healthy
@@ -42,7 +42,7 @@ services:
       retries: 20
   nginx:
     image: nginx:1.27-alpine
-    ports: ['127.0.0.1:8081:80']
+    ports: ['127.0.0.1:${REVIEW_PORT:-8081}:80']
     volumes: [./nginx/nginx.conf:/etc/nginx/nginx.conf:ro]
     depends_on:
       backend:

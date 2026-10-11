@@ -58,6 +58,7 @@ jobs:
           docker compose config --quiet
           docker compose -f docker-compose.yml -f docker-compose.gpu.yml config --quiet
           docker compose -f docker-compose.review.yml config --quiet
+          python -m unittest discover -s scripts/tests -q
   frontend:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,34 @@
+# Merge only with docker-compose.review.yml; scripts/verify_docker.py supplies a unique project.
+services:
+  test-database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: planner_unit_test
+      POSTGRES_USER: planner_test
+      POSTGRES_PASSWORD: planner_test_only
+    tmpfs: [/var/lib/postgresql/data]
+    mem_limit: 256m
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U planner_test -d planner_unit_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  backend-test:
+    image: ${VERIFY_BACKEND_IMAGE:?Run scripts/verify_docker.py}
+    entrypoint: [python, -m, pytest, -q]
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://planner_test:planner_test_only@test-database:5432/planner_unit_test
+      ADB_ENABLED: 'false'
+      OLLAMA_URL: http://127.0.0.1:1
+    profiles: [test]
+    mem_limit: 512m
+    depends_on:
+      test-database:
+        condition: service_healthy
+  frontend-test:
+    build:
+      context: ./frontend
+      target: build
+    command: [npm, test, --, --run]
+    profiles: [test]
+    mem_limit: 512m

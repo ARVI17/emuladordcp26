@@ -11,6 +11,14 @@ Head `0009`: `0006` reconoce las dos variantes historicas de `0005` sin editarla
 
 Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
 
+## Flujo permanente por sprints
+
+Trabaja con un agente y 1–3 objetivos funcionales por sprint. Antes de editar revisa Git, ramas/PR, este archivo y el mapa. Conserva cambios ajenos. Después de cada sprint con código: pruebas relevantes y Docker aislado, `git diff --check`, revisión de secretos, commit, push a la rama de trabajo y comparación del SHA remoto. Actualiza la PR en borrador, sin fusionar ni desplegar el stack principal. Un fallo pendiente se informa como WIP, nunca como prueba aprobada.
+
+Usa `python scripts/verify_docker.py --scope full` para PostgreSQL, migraciones, HTTP, build, Vitest y Playwright con Nginx. Los scopes `backend` y `frontend` reducen únicamente las suites que no corresponden al cambio. El comando crea su propio proyecto y elimina solo sus contenedores al terminar, sin borrar volúmenes. Nunca ejecutes Pytest destructivo contra la base habitual.
+
+`state/ENTORNO_LOCAL.md` y `state/sprints/` contienen evidencia privada ignorada; `.env`, dumps, logs, sesiones e inventarios reales no se publican. Conserva nombres y volúmenes principales. Migrar la instancia real exige respaldo restaurado en entorno separado, autorización específica y recuperación documentada. Las reglas del repositorio no conceden permisos nuevos. Consulta [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md).
+
 ## Propósito y estado real
 
 `emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. Conserva el motor ADB, deshabilitado en producción por falta de permiso aplicable. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.

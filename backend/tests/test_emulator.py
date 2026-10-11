@@ -9,11 +9,18 @@ def feasible_solution(client):
     result = client.post(f"/segments/{segment['id']}/optimize", json={"max_solutions":1}).json()["solutions"][0]
     return segment["id"], result["player_ids"]
 
-def test_adb_degrades_without_device(client):
+@pytest.mark.parametrize("enabled", [False, True])
+def test_adb_degrades_without_device(client, monkeypatch, enabled):
+    from app.core.config import settings
+    calls = []
+    monkeypatch.setattr(settings, "adb_enabled", enabled)
+    monkeypatch.setattr(AdbBridge, "devices", lambda self: calls.append("devices") or [])
     response = client.get("/emulator/status")
     assert response.status_code == 200
-    assert response.json()["enabled"] is True
-    assert isinstance(response.json()["devices"], list)
+    assert response.json()["enabled"] is enabled
+    assert response.json()["available"] is False
+    assert response.json()["devices"] == []
+    assert calls == (["devices"] if enabled else [])
 
 def test_invalid_adb_address_is_rejected_before_connection(client):
     response = client.post("/emulator/connect", json={"address":"localhost;rm -rf /"})

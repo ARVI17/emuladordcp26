@@ -1,5 +1,11 @@
 # Pruebas del planificador FC27
 
+## Flujo reproducible por sprints
+
+Sprint 1, 11-oct-2026: `python scripts/verify_docker.py --scope full` pasó con **155 Pytest/PostgreSQL**, **25 Vitest**, **12 Playwright** sobre Nginx, build, migraciones/HTTP y limpieza del proyecto temporal. Cinco pruebas del comando rechazaron configuraciones peligrosas. El primer intento detectó una suposición fija de ADB en una prueba; se corrigió para comprobar activado/desactivado sin dispositivos y se repitió toda la ejecución. El stack principal conservó IDs y fechas de arranque. Procedimiento: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Evidencia privada en `state/sprints/`.
+
+## Registro de la implementación inicial
+
 Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
 
 | Verificacion actual | Resultado |
