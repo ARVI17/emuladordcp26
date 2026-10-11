@@ -2,7 +2,7 @@
 
 ## Alcance de esta versión
 
-La versión 2.0 añade edición activa FC27, archivo FC26, metadatos de cartas, análisis del club, propuestas en cinco formaciones, Galería histórica, evolución por caminos/cadenas y DCP por puntuación revisada. Las definiciones cambiantes pueden editarse o importarse sin desplegar otra versión del código.
+La versión 2.0 añade edición activa FC27, archivo FC26, metadatos de cartas, análisis del club, Galería histórica, evolución por caminos/cadenas y DCP por puntuación revisada. Esta revisión amplía las propuestas a diez formaciones y añade los planes descritos en [FC27_PLANNER.md](FC27_PLANNER.md). Las definiciones cambiantes pueden editarse o importarse sin desplegar otra versión del código.
 
 Las fuentes de referencia son el [FUT Deep Dive](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y la [actualización del lanzamiento](https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update) de EA. Las referencias incluidas se revisaron el **10 de octubre de 2026 UTC**. `backend/app/data/fc27_content.json` guarda fecha, enlaces y tabla base de puntuación; la app no infiere bonificaciones desconocidas ni descarga datos privados.
 

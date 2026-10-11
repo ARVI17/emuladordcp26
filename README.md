@@ -134,6 +134,8 @@ Los scripts resuelven usuario, base y puerto desde la configuración efectiva de
 
 ## Desarrollo y pruebas
 
+El planificador se verificó localmente con **154 Pytest en PostgreSQL, 25 Vitest y 12 recorridos Playwright**, build de producción y migraciones a `0009`, usando datos desechables. Consulta [TESTING.md](docs/TESTING.md) para resultados, reproducción y límites; la conexión con el proveedor y el club real siguen pendientes.
+
 La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) verificó el código `ba9c17b`: **111 pruebas backend con PostgreSQL, 24 pruebas frontend y 6 recorridos Playwright en móvil/escritorio**, además de la migración de 132 cartas FC26, TypeScript/Vite/PWA y las configuraciones Compose base/GPU. La auditoría npm de producción terminó sin avisos; el árbol de desarrollo conserva el aviso documentado en [SECURITY.md](docs/SECURITY.md).
 
 Consulta [TESTING.md](docs/TESTING.md) para comandos, alcance de la evidencia y pruebas pendientes con el stack Docker completo, PowerShell y hardware Companion. Todos los inventarios de prueba son ficticios y desechables.
