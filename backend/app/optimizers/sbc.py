@@ -9,7 +9,7 @@ from app.services.rating import calculate_rating, minimum_rating_sum
 @dataclass
 class Solution:
     player_ids: list[int]
-    total_cost: int
+    total_cost: int | None
     rating: int
     chemistry: int
     valid: bool
@@ -25,7 +25,7 @@ class Solution:
 
 def _cost(player: Player, minimum_rating: int) -> int:
     """Local preservation score, deliberately separate from monetary value."""
-    value = player.price
+    value = player.price if player.price is not None else 1_000_000
     value += 1500 if player.tradable else 0
     value += max(0, player.rating - minimum_rating) * 650
     value += player.usefulness * 120
@@ -43,6 +43,12 @@ def validate_solution(players: list[Player], requirements: dict, *, current_scor
     except ValueError as exc:
         return [f"Requisitos inválidos: {exc}"]
     errors: list[str] = []
+    if any(p.game_version != 'FC27' or p.validation_status not in ('documented', 'provider_verified') for p in players):
+        errors.append('Solo se admiten variantes FC27 documentadas')
+    if any(p.protected or p.starter or getattr(p, "is_evolution", False) or getattr(p, "favorite", False) for p in players):
+        errors.append("Titulares, favoritos, Evos y cartas protegidas no se pueden consumir")
+    if any(getattr(p, "availability", "available") not in {None, "available"} for p in players):
+        errors.append("Hay cartas ausentes o comprometidas")
     ids = [p.id for p in players]
     if len(ids) != len(set(ids)):
         errors.append("No se permiten jugadores repetidos")
@@ -60,7 +66,7 @@ def validate_solution(players: list[Player], requirements: dict, *, current_scor
     if set(requirements.get("excluded_player_ids", [])) & set(ids):
         errors.append("Incluye jugadores excluidos")
     max_value = requirements.get("max_total_value")
-    if max_value is not None and sum(p.price for p in players) > max_value:
+    if max_value is not None and (any(p.price is None for p in players) or sum(p.price or 0 for p in players) > max_value):
         errors.append("Valor máximo excedido")
     if requirements["kind"] == "score":
         limit = requirements.get("max_items_per_submission", 23)
@@ -114,7 +120,7 @@ def _make_solution(chosen: list[Player], requirements: dict, current_score: int)
     projected = current_score + contribution
     remaining = max(0, requirements.get("target_score", 0) - projected) if score_mode else 0
     return Solution(
-        player_ids=[p.id for p in chosen], total_cost=sum(p.price for p in chosen),
+        player_ids=[p.id for p in chosen], total_cost=None if any(p.price is None for p in chosen) else sum(p.price for p in chosen),
         rating=calculate_rating([p.rating for p in chosen], requirements.get("rating_strategy", "floor_average")),
         chemistry=sum(p.chemistry for p in chosen), valid=True, violations=[],
         optimization_score=sum(_cost(p, minimum) for p in chosen),
@@ -127,15 +133,18 @@ def solve(players: list[Player], requirements: dict, allow_protected_ids: set[in
     from ortools.sat.python import cp_model
 
     requirements = normalize_requirements(requirements)
-    allowed = allow_protected_ids or set()
+    allowed = set()  # Exceptions require exact reviewed actions, never a solver switch.
     excluded = set(requirements.get("excluded_player_ids", [])) | (exclude_ids or set())
     protected = effective_protected_ids or set()
     candidates = [
         p for p in players
-        if not p.deleted and p.id not in excluded and not getattr(p, "is_loan", False)
+        if not p.deleted and not p.starter and not getattr(p, "is_evolution", False) and not getattr(p, "favorite", False) and getattr(p, "availability", "available") in {None, "available"} and p.id not in excluded and not getattr(p, "is_loan", False)
         and getattr(p, "data_reviewed", True) is not False
+        and p.game_version == 'FC27' and p.validation_status in ('documented', 'provider_verified')
         and (not (p.protected or p.id in protected) or p.id in allowed)
     ]
+    if requirements.get("max_total_value") is not None:
+        candidates = [p for p in candidates if p.price is not None]
     score_mode = requirements["kind"] == "score"
     if score_mode:
         if current_score >= requirements["target_score"]:

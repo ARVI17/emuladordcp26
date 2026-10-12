@@ -263,3 +263,7 @@ tr:last-child td {border-bottom:0}
 .pitch-player summary {font-size:9px;min-height:25px;padding:5px 0;color:#c5daca}
 .pitch-player details p {font-size:10px;line-height:1.45;color:#c5daca;text-align:left}
 .pagination>div {display:flex;align-items:center;gap:9px}
+
+.status-list{display:grid;grid-template-columns:minmax(100px,1fr) 2fr;gap:12px}.status-list dd{margin:0;overflow-wrap:anywhere}.panel{overflow-wrap:anywhere}.panel .button-row{flex-wrap:wrap}.panel input,.panel textarea,.panel select{max-width:100%}.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px}
+
+.panel fieldset{min-inline-size:0;border:0;padding:0}.profile-result{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border,#273448)}

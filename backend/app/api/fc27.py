@@ -13,7 +13,7 @@ from app.schemas.api import GameVersion
 from app.schemas.fc27 import (ContentImportRequest, EvolutionInput, EvolutionPreview, GalleryRecordRequest,
                              GalleryScoreUpdate, GallerySetInput)
 from app.services.audit import record
-from app.services.content import builtin_content, fetch_news
+from app.services.content import builtin_content, fetch_news, active_article
 from app.services.editions import current_version
 from app.services.evolutions import definition_data, preview_path
 from app.services.gallery import (base_for_gallery, entry_data, item_key, owned_index, record_player,
@@ -135,7 +135,7 @@ def gallery_sets(game_version: GameVersion | None = None, db: Session = Depends(
 def store_set(db, payload, version, existing=None):
     values = payload.model_dump(exclude={"game_version", "slug"})
     slug = payload.slug or (existing.slug if existing else slug_for(payload.name))
-    conflict = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == slug))
+    conflict = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == slug).execution_options(include_pending_definitions=True))
     if conflict is not None and (existing is None or conflict.id != existing.id): raise HTTPException(409, "Ya existe un conjunto con este identificador")
     if existing is None:
         existing = GallerySet(game_version=version, slug=slug, **values)
@@ -192,7 +192,7 @@ def evolutions(game_version: GameVersion | None = None, db: Session = Depends(ge
 def store_evolution(db, payload, version, existing=None):
     values = payload.model_dump(exclude={"game_version", "slug"})
     slug = payload.slug or (existing.slug if existing else slug_for(payload.name))
-    conflict = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == slug))
+    conflict = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == slug).execution_options(include_pending_definitions=True))
     if conflict is not None and (existing is None or conflict.id != existing.id): raise HTTPException(409, "Ya existe una evolución con este identificador")
     if existing is None:
         existing = EvolutionDefinition(game_version=version, slug=slug, **values)
@@ -268,12 +268,15 @@ def content(game_version: GameVersion | None = None, db: Session = Depends(get_d
     version = version_of(db, game_version)
     result = builtin_content(version)
     news = db.get(AppSetting, f"content_news_{version}")
-    manifest = db.get(AppSetting, f"content_manifest_{version}")
-    result.update(last_checked=None, refresh_error=None, last_import=manifest.value if manifest else None)
+    manifest = db.get(AppSetting, f"content_manifest_{db.info.get('club_context_id', 1)}_{version}")
+    result.update(last_checked=None, refresh_error=None, last_import=manifest.value if manifest else None, pending_articles=0)
     if news:
         result.update(last_checked=news.value.get("last_checked"), refresh_error=news.value.get("refresh_error"))
-        seen = {article["url"] for article in news.value.get("articles", [])}
-        result["articles"] = [*news.value.get("articles", []), *[article for article in result["articles"] if article["url"] not in seen]]
+        candidates = news.value.get('articles', [])
+        articles = [a for a in candidates if active_article(a)]
+        result['pending_articles'] = len(candidates)-len(articles)
+        seen = {article['url'] for article in articles}
+        result['articles'] = [*articles, *[a for a in result['articles'] if a['url'] not in seen]]
     return result
 
 
@@ -302,7 +305,9 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
     if manifest.game_version != current_version(db): raise HTTPException(409, "El paquete pertenece a otra edición")
     serialized = json.dumps(manifest.model_dump(mode="json"), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     if len(serialized.encode()) > 2_000_000: raise HTTPException(413, "El paquete supera 2 MB")
-    digest = hashlib.sha256(serialized.encode()).hexdigest()
+    from app.api.routes import _import_secret
+    import hmac
+    digest = hmac.new(_import_secret(db), f"{db.info.get('club_context_id', 1)}:{serialized}".encode(), "sha256").hexdigest()
     for collection in (manifest.sets, manifest.evolutions):
         slugs = [item.slug or slug_for(item.name) for item in collection]
         if len(slugs) != len(set(slugs)): raise HTTPException(422, "El paquete contiene identificadores repetidos")
@@ -317,20 +322,20 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
     with resource_locks(db, "inventory"):
         db.expire_all()
         if version != current_version(db): raise HTTPException(409, "La edición activa cambió después de la vista previa")
-        setting = db.get(AppSetting, f"content_manifest_{version}")
+        setting = db.get(AppSetting, f"content_manifest_{db.info.get('club_context_id', 1)}_{version}")
         receipt_key = "_content_" + digest
         if db.get(AppSetting, receipt_key) is not None:
             return {"preview": False, "already_imported": True, **summary}
         for item in manifest.sets:
-            existing = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == (item.slug or slug_for(item.name))))
+            existing = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == (item.slug or slug_for(item.name))).execution_options(include_pending_definitions=True))
             store_set(db, item, version, existing)
         for item in manifest.evolutions:
-            existing = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == (item.slug or slug_for(item.name))))
+            existing = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == (item.slug or slug_for(item.name))).execution_options(include_pending_definitions=True))
             store_evolution(db, item, version, existing)
         value = {"preview_hash": digest, "published_at": manifest.published_at.isoformat(), "source_url": manifest.source_url,
                  "imported_at": datetime.now(timezone.utc).isoformat(), "sets": len(manifest.sets), "evolutions": len(manifest.evolutions)}
         if setting: setting.value = value
-        else: db.add(AppSetting(key=f"content_manifest_{version}", value=value))
+        else: db.add(AppSetting(key=f"content_manifest_{db.info.get('club_context_id', 1)}_{version}", value=value))
         db.add(AppSetting(key=receipt_key, value={"game_version": version, "imported_at": value["imported_at"]}))
         record(db, "import_reviewed_content", "content", None, value)
         db.commit()

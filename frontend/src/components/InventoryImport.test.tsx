@@ -7,7 +7,7 @@ import type {ImportPreview} from '../types'
 
 vi.mock('../api/client',async()=>({...await vi.importActual('../api/client'),api:vi.fn()}))
 const mocked=vi.mocked(api)
-const preview=(name:string,token:string):ImportPreview=>({total:1,preview:[player({name})],requires_confirmation:true,content_hash:`hash-${token}`,preview_token:token})
+const preview=(name:string,token:string):ImportPreview=>({total:1,preview:[{...player({name}),tradable:false,is_loan:false,is_evolution:false}],requires_confirmation:true,content_hash:`hash-${token}`,preview_token:token})
 const select=(file:File)=>fireEvent.change(screen.getByLabelText('CSV o Excel'),{target:{files:[file]}})
 function open(){renderClub(<InventoryImport/>);fireEvent.click(screen.getByText('Importar y exportar inventario'))}
 beforeEach(()=>{mocked.mockReset()})
@@ -44,7 +44,7 @@ describe('importación vinculada a la revisión',()=>{
     expect(body.get('confirm')).toBe('true')
     expect(screen.getByLabelText('CSV o Excel')).toBeDisabled()
     await act(async()=>importing.resolve({imported:1}))
-    expect(await screen.findByText('Se importaron 1 cartas en FC27.')).toBeInTheDocument()
+    expect(await screen.findByText('Activadas: 1. En cuarentena: 0. Las pendientes no participan en el club.')).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:'Confirmar importación'})).not.toBeInTheDocument()
   })
   it('explica una repetición idempotente sin anunciar nuevas cartas',async()=>{

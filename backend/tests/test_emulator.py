@@ -9,11 +9,18 @@ def feasible_solution(client):
     result = client.post(f"/segments/{segment['id']}/optimize", json={"max_solutions":1}).json()["solutions"][0]
     return segment["id"], result["player_ids"]
 
-def test_adb_degrades_without_device(client):
+@pytest.mark.parametrize("enabled", [False, True])
+def test_adb_degrades_without_device(client, monkeypatch, enabled):
+    from app.core.config import settings
+    calls = []
+    monkeypatch.setattr(settings, "adb_enabled", enabled)
+    monkeypatch.setattr(AdbBridge, "devices", lambda self: calls.append("devices") or [])
     response = client.get("/emulator/status")
     assert response.status_code == 200
-    assert response.json()["enabled"] is True
-    assert isinstance(response.json()["devices"], list)
+    assert response.json()["enabled"] is enabled
+    assert response.json()["available"] is False
+    assert response.json()["devices"] == []
+    assert calls == (["devices"] if enabled else [])
 
 def test_invalid_adb_address_is_rejected_before_connection(client):
     response = client.post("/emulator/connect", json={"address":"localhost;rm -rf /"})
@@ -126,9 +133,9 @@ def test_inventory_scan_requires_review_and_explicit_import(client, monkeypatch)
     imported = client.post(f"/emulator/scans/{scan['id']}/import", json={"players":players,"candidate_ids":[1],"confirmation":f"REEMPLAZAR DEMO {scan['id']}","archive_demo":True})
     assert imported.status_code == 200
     assert imported.json()["imported"] == 1
-    assert imported.json()["demo_archived"] == 132
+    assert imported.json()["demo_archived"] == 0  # Documented synthetic fixtures are not demo rows.
     available = client.get("/players?limit=500").json()
-    assert available["total"] == 1 and available["items"][0]["name"] == "Jugador Real"
+    assert available["total"] == 133 and any(p["name"] == "Jugador Real" for p in available["items"])
 
 def test_inventory_scan_imports_reviewed_candidates_in_partial_batches(client, monkeypatch):
     class FakeBridge:
@@ -224,7 +231,11 @@ def test_inventory_scan_can_continue_after_bounded_thousand_candidates(client, m
         captured = client.post(f"/emulator/scans/{scan['id']}/capture")
         assert captured.status_code == 200
     full = captured.json()["scan"]
-    assert full["captured_pages"] == 50 and len(full["candidates"]) == 1000
+    assert full["captured_pages"] == 50 and full["candidate_count"] == 1000 and len(full["candidates"]) == 20
+    last = client.get(f"/emulator/scans/{scan['id']}?offset=980").json()
+    assert len(last["candidates"]) == 20 and last["candidates"][0]["candidate_id"] == 981
+    summary = client.get('/emulator/scans').json()[0]
+    assert summary['candidates'] == [] and summary['candidate_count'] == 1000
     continuation = client.post(f"/emulator/scans/{scan['id']}/continue")
     assert continuation.status_code == 201
     assert continuation.json()["captured_pages"] == 0 and continuation.json()["candidates"] == []

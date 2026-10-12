@@ -8,6 +8,9 @@ from app.services.gallery import snapshot_player
 
 
 def definition_data(definition):
+    from app.services.definition_validation import is_documented, pending_result
+    if not is_documented(definition):
+        return pending_result(definition)
     return {field: getattr(definition, field) for field in ("id", "game_version", "slug", "name", "description", "requirements", "paths", "expires_at", "source_url", "rules_reviewed")}
 
 
@@ -16,6 +19,9 @@ def preview_path(player, definition, path):
     requirements = EvolutionRequirements.model_validate(definition.requirements)
     upgrades = EvolutionUpgrades.model_validate(path["upgrades"])
     violations = []
+    from app.services.definition_validation import is_documented
+    if not is_documented(definition):
+        violations.append('Pendiente de evidencia vigente de las reglas FC27.')
     if not definition.rules_reviewed:
         violations.append("Las reglas de esta evolución todavía no están revisadas.")
     if card.get("game_version") != definition.game_version:

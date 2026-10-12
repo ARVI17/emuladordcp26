@@ -57,6 +57,8 @@ jobs:
         run: |
           docker compose config --quiet
           docker compose -f docker-compose.yml -f docker-compose.gpu.yml config --quiet
+          docker compose -f docker-compose.review.yml config --quiet
+          python -m unittest discover -s scripts/tests -q
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -86,15 +88,16 @@ jobs:
       - name: Real API and desktop/mobile flows on a disposable database
         shell: bash
         env:
+          PYTHONPATH: .
           DATABASE_URL: sqlite+pysqlite:////tmp/fc27-e2e.db
           SEED_DEMO: 'true'
           ADB_ENABLED: 'false'
           PLAYWRIGHT_DISPOSABLE_DB: '1'
+          CORS_ORIGINS: http://127.0.0.1:5173
         run: |
           cd backend
           alembic upgrade head
-          python -m app.db.bootstrap
-          uvicorn app.main:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/fc27-api.log" 2>&1 &
+          uvicorn --app-dir tests e2e_app:app --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/fc27-api.log" 2>&1 &
           api_pid=$!
           trap 'kill "$api_pid" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do

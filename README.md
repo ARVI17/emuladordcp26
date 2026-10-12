@@ -2,7 +2,11 @@
 
 Asistente local y no oficial para **analizar tus jugadores, armar plantillas, planificar DCP y llevar una Galería del club**. Incluye evoluciones con caminos y cadenas simuladas, noticias públicas y paquetes de contenido revisables. React/TypeScript, FastAPI, PostgreSQL y OR-Tools; chat local opcional con Ollama y lectura asistida de Companion por ADB.
 
-El repositorio conserva el nombre `emuladordcp26` y los nombres de sus volúmenes para que actualizar no separe tu instalación de sus datos. **FC27 es la edición inicial; los datos existentes de FC26 se conservan como archivo separado.**
+El repositorio conserva el nombre `emuladordcp26` y sus volúmenes. **FC27 es la única edición pública.** El histórico permanece oculto y protegido; no hay selector ni conversión automática. [Admisión, cuarentena y evidencia](docs/FC27_EXCLUSIVE.md).
+
+**Revisión del planificador, 11 de octubre de 2026:** la entrada comprueba sesión, contexto y capacidades. La conexión EA muestra **Integración pendiente**: falta autorización/documentación para este proyecto. Solo la elección explícita de **Abrir registro local** habilita simulaciones con datos locales. Incluye planes revisables, reservas de cartas/monedas, cinco perfiles de plantilla, fichajes condicionados a datos verificados, mercado/diario y 50 referencias. [Implementación, comparación y límites](docs/FC27_PLANNER.md).
+
+Para probar esta rama con datos desechables y sin usar los volúmenes normales: `docker compose -f docker-compose.review.yml up --build -d`, luego abre `http://localhost:8081`. La base de revisión usa memoria temporal; no guardes datos únicos en ella.
 
 ## Qué puedes hacer
 
@@ -10,14 +14,14 @@ El repositorio conserva el nombre `emuladordcp26` y los nombres de sus volúmene
 | --- | --- |
 | Club | Crear, editar, buscar y paginar cartas; importar CSV/XLSX con revisión; registrar atributos, posiciones alternativas, PlayStyles, roles, cesiones, evolución, holográficos y puntuación revisada. |
 | Análisis | Ver cobertura por posición, referentes, huecos y datos pendientes. La recomendación explica qué información utilizó. |
-| Plantillas | Proponer once y siete suplentes en cinco formaciones; elegir enfoque, fijar/excluir jugadores y usar posiciones alternativas. Guardar y proteger equipos completos. |
+| Plantillas | Once y siete suplentes entre once formaciones documentadas mientras su revisión esté vigente; cinco objetivos, fijados/excluidos y protecciones. |
 | Galería | Registrar adquisiciones locales, conservar cartas que ya no están disponibles, crear conjuntos con filtros/etiquetas y evaluar grados cuando hay reglas y puntos revisados. |
 | Evoluciones | Registrar requisitos y caminos, simular hasta cinco evoluciones encadenadas con topes y comprobar elegibilidad sin modificar las cartas. |
 | DCP | Resolver requisitos tradicionales o puntuación revisada, gestionar entregas parciales, proteger jugadores y restaurar una entrega local desde su historial. |
-| Novedades | Consultar referencias públicas de EA, actualizar titulares e importar versiones revisadas de conjuntos/evoluciones sin editar código. |
-| Companion | Leer candidatos revisables y requisitos, inspeccionar capturas y preparar un DCP tradicional mediante un plan ADB expresamente autorizado. |
+| Novedades | Artículos FC27 fechados, descubrimiento de enlaces pendientes y paquetes de reglas conservados como borradores hasta acreditar su contenido. |
+| Companion | Lecturas manuales revisables, requisitos e inspección; máximo 20 formularios por bloque. Envío de pulsaciones deshabilitado por falta de permiso aplicable. |
 
-Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni usa una API autenticada del club. La preparación ADB termina antes de entregar el DCP; la confirmación del inventario local y la entrega en el juego son acciones distintas.
+Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni usa una API autenticada del club. Las confirmaciones registran decisiones/resultados locales; no ejecutan operaciones en EA. La sesión local no sustituye autenticación multiusuario.
 
 ## Empezar
 
@@ -30,14 +34,14 @@ docker compose up --build -d
 
 Abre [la aplicación](http://localhost:8080), [la documentación HTTP](http://localhost:8080/api/docs) o [el health check](http://localhost:8080/health).
 
-Una instalación nueva crea un perfil vacío. **`SEED_DEMO=false` es el valor predeterminado.** Los 132 jugadores demostrativos son ficticios y solo se cargan si se solicita la demo antes de crear el primer perfil. El seed no rellena ni reemplaza una base que ya tenga perfil. Para probar con demo, usa una instalación desechable configurada desde su primer arranque con `SEED_DEMO=true`.
+Una instalación nueva crea un perfil vacío y referencias documentales, sin cartas propias. El arranque normal no carga demo, incluso si conserva una variable `SEED_DEMO` heredada. Los fixtures sintéticos pertenecen exclusivamente al entorno de pruebas desechable.
 
 ### Si ya utilizabas FC26
 
 1. Crea un respaldo de tu instalación antes de actualizar.
 2. Actualiza el código y ejecuta `docker compose up --build -d`.
-3. Alembic aplica la revisión `0005`: conserva el inventario y el historial antiguo bajo FC26 y activa FC27.
-4. Cambia de edición desde la cabecera para consultar FC26. Importa tus cartas actuales con FC27 seleccionado.
+3. Alembic llega a `0014`: conserva cartas, saldos y reglas históricas. Las copias y definiciones sin evidencia vigente quedan fuera de las funciones activas, sin borrarse.
+4. Abre el registro manual FC27. Revisa las declaraciones en cuarentena contra el catálogo exacto; una marca manual no certifica una variante ni recupera saldos históricos.
 
 No cambies los nombres de los volúmenes ni uses `docker compose down -v` para actualizar. [Guía de actualización FC27](docs/FC27_UPGRADE.md).
 
@@ -50,7 +54,7 @@ No cambies los nombres de los volúmenes ni uses `docker compose down -v` para a
 5. Pulsa **Proponer once y suplentes**. Revisa las explicaciones y los huecos. Solo una propuesta completa puede guardarse como equipo.
 6. Protege el equipo para que sus cartas queden fuera de los DCP. Esta protección se suma a las protecciones individuales.
 
-Formaciones: **4-3-3, 4-4-2, 4-2-3-1, 4-1-2-1-2 y 3-5-2**. El encaje es una heurística local basada en media, atributos registrados y pequeños ajustes; la química suma los valores registrados por carta. No representa una garantía de rendimiento ni la fórmula completa del juego. [Detalles del optimizador](docs/OPTIMIZER.md).
+Las formaciones disponibles proceden del catálogo documentado FC27. 4-3-3 y 4-3-3 Holding son opciones distintas. El encaje es una heurística local; la química oficial permanece sin verificar. [Detalles del optimizador](docs/OPTIMIZER.md).
 
 ### Formato de importación
 
@@ -69,13 +73,13 @@ La revisión queda vinculada al archivo y a la edición. Cambiar cualquiera exig
 
 **Galería** conserva el registro local de cartas obtenidas. Las cesiones no se registran; una evolución requiere identificar su carta base. Las cartas históricas cuentan para colecciones, pero no vuelven a estar disponibles para jugar o entregar. Al corregir la identidad de una carta, su entrada se reconcilia para evitar duplicar la colección.
 
-Las puntuaciones deben revisarse. La referencia base incluida no calcula por sí sola todas las bonificaciones de rareza u holográficos. Sin puntos y reglas completos se muestran pendientes, no un grado supuesto. La app no acredita recompensas ni modifica la Galería de EA.
+Las puntuaciones deben comprobarse en el juego. La tabla base no acreditada se retiró. Sin puntos y reglas completos se muestra estado pendiente; la app no acredita recompensas ni modifica la Galería de EA.
 
 **Evoluciones** permite introducir requisitos, caminos y topes, y comparar una cadena sobre una carta registrada. Si faltan atributos necesarios para verificarla, la simulación lo indica y se detiene. No aplica mejoras al inventario ni al juego.
 
-**Novedades** incluye referencias verificadas el 10 de octubre de 2026. Actualizar noticias consulta páginas públicas de EA; si fallan o cambian de formato, conserva la última lista. Los conjuntos y evoluciones se actualizan mediante un paquete JSON revisado. La fecha y procedencia quedan registradas. No hay un catálogo automático completo de todos los DCP, campañas, precios o evoluciones en vivo.
+**Novedades** muestra artículos con edición, publicación y revisión vigentes. Los enlaces descubiertos sin esos datos quedan pendientes. Los paquetes importados conservan borradores y no acreditan reglas automáticamente. No hay catálogo completo de desafíos, precios o evoluciones en vivo.
 
-Fuentes de las novedades de FC27: [FUT Deep Dive de EA](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y [actualización del lanzamiento de EA](https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update). El esquema de paquetes y ejemplos están en [FC27_UPGRADE.md](docs/FC27_UPGRADE.md).
+Fuentes incorporadas: [FUT Deep Dive de EA](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y [actualización de lanzamiento de EA](https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-fut-developer-launch-update). El esquema de paquetes está en [FC27_UPGRADE.md](docs/FC27_UPGRADE.md).
 
 ## Configuración local
 
@@ -129,6 +133,8 @@ scripts/restore.ps1 -BackupFile backups/archivo.dump
 Los scripts resuelven usuario, base y puerto desde la configuración efectiva de Compose. Restaurar crea un dump previo, detiene el backend, restaura en una transacción y vuelve a iniciarlo. Prueba primero con una instalación desechable. `make reset` borra volúmenes y nunca es un paso de actualización.
 
 ## Desarrollo y pruebas
+
+El planificador se verifica mediante `python scripts/verify_docker.py --scope full`: PostgreSQL aislado, build, Pytest, Vitest y Playwright móvil/escritorio sobre Nginx. Consulta el registro de cada sprint en [TESTING.md](docs/TESTING.md) para conteos y límites; la conexión con el proveedor y el club real siguen pendientes. [Práctica y diario](docs/PRACTICE.md) y [mercado/agenda A-B](docs/MARKET_AGENDA.md) describen las ampliaciones recientes.
 
 La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) verificó el código `ba9c17b`: **111 pruebas backend con PostgreSQL, 24 pruebas frontend y 6 recorridos Playwright en móvil/escritorio**, además de la migración de 132 cartas FC26, TypeScript/Vite/PWA y las configuraciones Compose base/GPU. La auditoría npm de producción terminó sin avisos; el árbol de desarrollo conserva el aviso documentado en [SECURITY.md](docs/SECURITY.md).
 

@@ -1,0 +1,40 @@
+# Merge only with docker-compose.review.yml; scripts/verify_docker.py supplies a unique project.
+services:
+  backend:
+    command: [sh, -c, "alembic upgrade head && exec uvicorn --app-dir tests e2e_app:app --host 0.0.0.0 --port 8000"]
+    environment:
+      PLAYWRIGHT_DISPOSABLE_DB: '1'
+  test-database:
+    image: postgres:16-alpine
+    command: [postgres, -c, shared_buffers=32MB, -c, max_wal_size=64MB, -c, min_wal_size=32MB, -c, checkpoint_timeout=30s]
+    environment:
+      POSTGRES_DB: planner_unit_test
+      POSTGRES_USER: planner_test
+      POSTGRES_PASSWORD: planner_test_only
+    tmpfs: [/var/lib/postgresql/data]
+    # PostgreSQL files/WAL also count against this limit because tests use tmpfs.
+    mem_limit: 512m
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U planner_test -d planner_unit_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  backend-test:
+    image: ${VERIFY_BACKEND_IMAGE:?Run scripts/verify_docker.py}
+    entrypoint: [python, -m, pytest, -q]
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://planner_test:planner_test_only@test-database:5432/planner_unit_test
+      ADB_ENABLED: 'false'
+      OLLAMA_URL: http://127.0.0.1:1
+    profiles: [test]
+    mem_limit: 512m
+    depends_on:
+      test-database:
+        condition: service_healthy
+  frontend-test:
+    build:
+      context: ./frontend
+      target: build
+    command: [npm, test, --, --run]
+    profiles: [test]
+    mem_limit: 512m

@@ -1,4 +1,7 @@
 .env
+state/
+*.dump
+*.sql.gz
 __pycache__/
 *.py[cod]
 .pytest_cache/

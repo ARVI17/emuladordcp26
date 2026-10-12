@@ -1,0 +1,15 @@
+import {useState} from 'react'
+import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
+import {api} from '../api/client'
+import {ErrorBox} from './ui'
+type Rule={key:string;kind:string;name:string;body:Record<string,unknown>}
+type PublicRule={id:number;kind:string;game_version:string;slug:string;revision:number;body:{name:string};source_url:string}
+export function CatalogDefinitions(){
+ const qc=useQueryClient(),[selected,setSelected]=useState(''),[slug,setSlug]=useState(''),[revision,setRevision]=useState(1),[source,setSource]=useState(''),[phrase,setPhrase]=useState('')
+ const own=useQuery({queryKey:['private-definitions'],queryFn:()=>api<Rule[]>('/catalog/private-definitions')})
+ const shared=useQuery({queryKey:['public-definitions'],queryFn:()=>api<PublicRule[]>('/catalog/definitions')})
+ const rule=own.data?.find(r=>r.key===selected)
+ const publish=useMutation({mutationFn:()=>api('/catalog/definitions',{method:'POST',body:JSON.stringify({kind:rule?.kind,slug,revision,body:rule?.body,source_url:source,observed_at:new Date().toISOString(),confirmation:phrase})}),onSuccess:()=>{setPhrase('');void qc.invalidateQueries({queryKey:['public-definitions']})}})
+ const use=useMutation({mutationFn:(id:number)=>api(`/catalog/definitions/${id}/use`,{method:'POST'}),onSuccess:()=>void qc.invalidateQueries()})
+ return <details className="panel"><summary>Definiciones compartidas de DCP, Galería y evoluciones</summary><p>Las reglas pueden reutilizarse entre tus clubes. El inventario, las entregas y el progreso siguen separados. Revisa la fuente antes de guardar una definición pública.</p><div className="form-grid"><label>Definición local revisada<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Seleccionar</option>{own.data?.map(r=><option key={r.key} value={r.key}>{r.name} · {r.kind}</option>)}</select></label><label>Nombre corto del registro<input value={slug} pattern="[a-z0-9-]+" placeholder="conjunto-liga" onChange={e=>setSlug(e.target.value)}/></label><label>Revisión<input type="number" min={1} value={revision} onChange={e=>setRevision(Number(e.target.value))}/></label><label>Fuente pública<input type="url" value={source} onChange={e=>setSource(e.target.value)}/></label></div>{rule&&<details><summary>Revisar reglas que se compartirán</summary><pre className="code-editor">{JSON.stringify(rule.body,null,2)}</pre></details>}<label>Escribe REGISTRAR DEFINICION PUBLICA<input value={phrase} onChange={e=>setPhrase(e.target.value)}/></label><button disabled={!rule||publish.isPending} onClick={()=>publish.mutate()}>Guardar reglas compartidas</button><ErrorBox error={own.error||shared.error||publish.error||use.error}/><ul>{shared.data?.map(r=><li key={r.id}>{r.body.name} · {r.game_version} · revisión {r.revision} <a href={r.source_url} target="_blank" rel="noreferrer">Fuente</a> <button disabled={use.isPending} onClick={()=>use.mutate(r.id)}>Añadir a este club</button></li>)}</ul>{shared.data?.length===0&&<p>No hay definiciones compartidas. Crear una privada no la publica automáticamente.</p>}</details>
+}

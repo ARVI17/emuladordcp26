@@ -13,7 +13,8 @@ def test_player_crud_and_protection(client):
     player_id = created.json()["id"]
     assert client.patch(f"/players/{player_id}", json={"rating":85}).json()["rating"] == 85
     assert client.post(f"/players/{player_id}/protect").json()["protected"] is True
-    assert client.delete(f"/players/{player_id}").json()["ok"] is True
+    assert client.delete(f"/players/{player_id}").status_code == 409
+    assert client.get("/players?search=Prueba%20Local").json()["total"] == 1
 
 def test_squad_create_duplicate_and_protect(client):
     recommended = client.post("/squads/recommend").json()
@@ -39,9 +40,9 @@ def test_csv_preview_confirm_and_export(client):
     assert preview.status_code == 200 and preview.json()["total"] == 1
     files = {"file": ("club.csv", io.BytesIO(csv_data.encode()), "text/csv")}
     confirmed = client.post("/players/import", data={"confirm":"true", "preview_token":preview.json()["preview_token"]}, files=files)
-    assert confirmed.json()["imported"] == 1
+    assert confirmed.json()["imported"] == 0 and confirmed.json()["quarantined"] == 1
     exported = client.get("/players/export?format=csv")
-    assert exported.status_code == 200 and b"Importado" in exported.content
+    assert exported.status_code == 200 and b"Importado" not in exported.content
 
 def test_works_without_ollama(client):
     status = client.get("/ai/status").json()
@@ -51,4 +52,4 @@ def test_works_without_ollama(client):
     assert "continúan funcionando" in answer["answer"]
     history = client.get("/ai/history").json()
     assert [item["role"] for item in history] == ["user", "assistant"]
-    assert history[0]["content"] == "Resume mi club"
+    assert history[0]["content"] == "Resumen de mi club FC27"

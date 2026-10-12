@@ -4,6 +4,14 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from app.api.catalog import router as catalog_router
+from app.api.variants import router as variants_router
+from app.api.knowledge import router as knowledge_router
+from app.api.practice import router as practice_router
+from app.api.market_insights import router as market_insights_router
+from app.api.agenda import router as agenda_router
+from app.api.planner import router as planner_router
+from app.api.connections import router as connections_router
 from app.api.routes import router
 from app.api.emulator import router as emulator_router
 from app.api.emulator import recover_interrupted_automation
@@ -17,10 +25,12 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await run_in_threadpool(recover_interrupted_automation)
+    from app.services.providers import recover_reads
+    await run_in_threadpool(recover_reads)
     yield
 
 app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan, docs_url="/docs", redoc_url=None, root_path="/api")
-app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"], allow_headers=["Content-Type"])
+app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"], allow_headers=["Content-Type", "X-CSRF-Token", "X-App-Entry"])
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_: Request, exc: RequestValidationError):
@@ -39,3 +49,21 @@ app.include_router(router)
 app.include_router(emulator_router)
 app.include_router(analysis_router)
 app.include_router(fc27_router)
+
+app.include_router(connections_router)
+
+@app.middleware("http")
+async def private_cache(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+app.include_router(planner_router)
+
+app.include_router(knowledge_router)
+app.include_router(practice_router)
+app.include_router(market_insights_router)
+app.include_router(agenda_router)
+
+app.include_router(catalog_router)
+app.include_router(variants_router)

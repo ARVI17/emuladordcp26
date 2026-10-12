@@ -1,3 +1,5 @@
+import {PendingDefinitions} from '../components/PendingDefinitions'
+import {invalidateClub} from '../lib/query'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api,dateTimeInput,shortDate} from '../api/client'
@@ -19,11 +21,11 @@ export function EvolutionsPage(){
   const season=useSeason(),qc=useQueryClient(),[player,setPlayer]=useState<Player[]>([]),[steps,setSteps]=useState<{evolution_id:number;path_id:string}[]>([]),[editor,setEditor]=useState<Evolution|'new'|null>(null),[message,setMessage]=useState('')
   const query=useQuery({queryKey:['evolutions',season],queryFn:()=>api<Evolution[]>(`/evolutions?game_version=${season}`)})
   const simulate=useMutation({mutationFn:()=>api<EvolutionPreview>('/evolutions/preview',{method:'POST',body:JSON.stringify({player_id:player[0]?.id,steps})})})
-  const save=useMutation({mutationFn:(value:EvolutionInput)=>api(typeof editor==='object'&&editor?`/evolutions/${editor.id}`:'/evolutions',{method:typeof editor==='object'&&editor?'PATCH':'POST',body:JSON.stringify(value)}),onSuccess:()=>{setEditor(null);setMessage('Definición guardada.');qc.invalidateQueries({queryKey:['evolutions']});simulate.reset()}})
+  const save=useMutation({mutationFn:(value:EvolutionInput)=>api(typeof editor==='object'&&editor?`/evolutions/${editor.id}`:'/evolutions',{method:typeof editor==='object'&&editor?'PATCH':'POST',body:JSON.stringify(value)}),onSuccess:()=>{setEditor(null);setMessage('Borrador guardado; requiere evidencia FC27 vigente antes de simular.');void invalidateClub(qc);simulate.reset()}})
   const remove=useMutation({mutationFn:(id:number)=>api(`/evolutions/${id}`,{method:'DELETE'}),onSuccess:(_,id)=>{setSteps(previous=>previous.filter(step=>step.evolution_id!==id));simulate.reset();qc.invalidateQueries({queryKey:['evolutions']})}})
   const updateSteps=(next:typeof steps)=>{setSteps(next);simulate.reset()}
   const result=simulate.data
-  return <><SectionTitle title="Planificador de evoluciones" subtitle={`Compara rutas antes de tomar una decisión · ${season}`} action={<button className="compact" onClick={()=>{save.reset();setEditor('new')}}>+ Evolución</button>}/>
+  return <><PendingDefinitions/><SectionTitle title="Planificador de evoluciones" subtitle={`Compara rutas antes de tomar una decisión · ${season}`} action={<button className="compact" onClick={()=>{save.reset();setEditor('new')}}>+ Evolución</button>}/>
     <section className="panel evolution-intro"><span className="eyebrow">PROYECTA TU PRÓXIMA CARTA</span><h3>Una secuencia de hasta cinco evoluciones, revisada paso a paso.</h3><p>Comprueba requisitos, posiciones, atributos y PlayStyles. La simulación conserva tu inventario actual y no ejecuta compras ni evoluciones en el juego.</p></section>
     {editor&&<EvolutionEditor key={editor==='new'?'new':editor.id} initial={editor==='new'?undefined:editor} onSave={value=>save.mutate(value)} onCancel={()=>setEditor(null)} pending={save.isPending} error={save.error}/>}{message&&<Notice>{message}</Notice>}
     {query.isLoading?<Loading/>:query.error?<ErrorBox error={query.error}/>:!query.data?.length?<Empty>Registra una evolución revisada o importa un paquete de reglas desde Novedades.</Empty>:<>

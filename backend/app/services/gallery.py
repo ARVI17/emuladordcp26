@@ -26,7 +26,7 @@ def item_key(player):
 
 
 def snapshot_player(player):
-    return {key: getattr(player, key, None) for key in PlayerCreate.model_fields}
+    return {key: getattr(player, key, None) for key in PlayerCreate.model_fields} | {'validation_status': player.validation_status, 'variant_evidence': player.validation_evidence}
 
 
 def base_for_gallery(db, player):
@@ -49,7 +49,7 @@ def reviewed_score(snapshot):
 def record_player(db, player, *, score_changed=False):
     """Part of the caller's transaction. Never records an action in EA's service."""
     db.flush()
-    if int(player.game_version[2:]) < 27 or player.is_loan:
+    if player.game_version != 'FC27' or player.is_loan or player.validation_status not in ('documented', 'provider_verified'):
         return None
     base = base_for_gallery(db, player)
     if base is None:
@@ -61,11 +61,13 @@ def record_player(db, player, *, score_changed=False):
     key = item_key(base)
     entry = db.scalar(select(GalleryEntry).where(GalleryEntry.game_version == base.game_version, GalleryEntry.item_key == key))
     matched_alias = False
-    if entry is None:
+    if entry is None and not base.card_id:
         entry = next((candidate for candidate in db.scalars(select(GalleryEntry).where(GalleryEntry.game_version == base.game_version))
                       if key in candidate.snapshot.get("identity_keys", [])), None)
         matched_alias = entry is not None
     old_entry = db.scalar(select(GalleryEntry).where(GalleryEntry.game_version == base.game_version, GalleryEntry.player_id == base.id))
+    if old_entry and base.card_id and old_entry.snapshot.get('card_id') != base.card_id:
+        old_entry = None  # Different documented variants keep independent history.
     if entry is None:
         entry = old_entry
     aliases = set(entry.snapshot.get("identity_keys", [])) if entry else set()
@@ -108,7 +110,7 @@ def record_player(db, player, *, score_changed=False):
 def owned_index(players):
     result = defaultdict(list)
     for player in players:
-        if not player.deleted and not player.is_loan and not player.is_evolution:
+        if not player.deleted and not player.is_loan and not player.is_evolution and getattr(player, "availability", "available") in {None, "available", "unavailable"}:
             result[item_key(player)].append(player.id)
     return result
 
@@ -200,6 +202,9 @@ def evaluate_set(gallery_set, entries, owned=None):
 
 
 def set_data(gallery_set, entries=None, owned=None):
+    from app.services.definition_validation import is_documented, pending_result
+    if not is_documented(gallery_set):
+        return pending_result(gallery_set)
     result = {field: getattr(gallery_set, field) for field in ("id", "game_version", "slug", "name", "description", "category", "rules", "tags", "grade_thresholds", "reward", "source_url", "rules_reviewed")}
     if entries is not None:
         result["evaluation"] = evaluate_set(gallery_set, entries, owned)

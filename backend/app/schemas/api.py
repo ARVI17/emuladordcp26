@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
 
-GameVersion = Annotated[str, Field(pattern=r"^FC[2-9][0-9]$")]
+GameVersion = Literal["FC27"]
 PlayerID = Annotated[StrictInt, Field(ge=1)]
 ATTRIBUTE_KEYS = {"pace", "shooting", "passing", "dribbling", "defending", "physical", "diving", "handling", "kicking", "reflexes", "speed", "positioning"}
 POSITION_ALIASES = {"GK":"POR", "RB":"LD", "CB":"DFC", "LB":"LI", "RWB":"CAD", "LWB":"CAI", "CDM":"MCD", "CM":"MC", "CAM":"MCO", "RM":"MD", "LM":"MI", "RW":"ED", "LW":"EI", "ST":"DC", "CF":"SD"}
@@ -32,9 +32,12 @@ class PlayerBase(InputModel):
     rare: bool = False
     special: bool = False
     tradable: bool = False
-    price: int = Field(default=0, ge=0, le=100_000_000)
+    price: int | None = Field(default=None, ge=0, le=100_000_000)
     chemistry: int = Field(default=0, ge=0, le=3)
     protected: bool = False
+    favorite: bool = False
+    notes: str = Field(default="", max_length=2000)
+    athlete_id: str | None = Field(default=None, min_length=1, max_length=120)
     starter: bool = False
     squad_role: str = Field(default="club", min_length=1, max_length=20)
     usefulness: int = Field(default=0, ge=0, le=100)
@@ -93,7 +96,7 @@ class PartialInput(InputModel):
     @model_validator(mode="before")
     @classmethod
     def reject_explicit_nulls(cls, values):
-        nullable = {"card_id", "base_card_id", "gallery_score", "skill_moves", "weak_foot"}
+        nullable = {"athlete_id", "price", "card_id", "base_card_id", "gallery_score", "skill_moves", "weak_foot"}
         if isinstance(values, dict):
             invalid = [key for key, value in values.items() if value is None and key not in nullable]
             if invalid:
@@ -115,6 +118,9 @@ class PlayerUpdate(PartialInput):
     price: int | None = Field(default=None, ge=0, le=100_000_000)
     chemistry: int | None = Field(default=None, ge=0, le=3)
     protected: bool | None = None
+    favorite: bool | None = None
+    notes: str | None = Field(default=None, max_length=2000)
+    athlete_id: str | None = Field(default=None, min_length=1, max_length=120)
     starter: bool | None = None
     squad_role: str | None = Field(default=None, min_length=1, max_length=20)
     usefulness: int | None = Field(default=None, ge=0, le=100)
@@ -149,12 +155,30 @@ class ProfileUpdate(PartialInput):
     risk_level: str | None = Field(default=None, pattern="^(bajo|medio|alto)$")
     preferences: dict[str, Any] | None = None
 
+class TacticNotes(InputModel):
+    style: str = Field(default="balanced", max_length=30)
+    opponent: str = Field(default="", max_length=120)
+    instructions: str = Field(default="", max_length=2000)
+    practice_focus: str = Field(default="", max_length=500)
+    reference_ids: list[Annotated[str, Field(pattern=r"^R(0[1-9]|[1-4][0-9]|50)$")]] = Field(default_factory=list, max_length=10)
+
+
+class SquadBinding(InputModel):
+    entry_id: int
+    club_context_id: int
+    revision: int
+    snapshot_id: int | None
+    game_version: GameVersion
+
+
 class SquadCreate(InputModel):
     game_version: GameVersion = "FC27"
     name: str = Field(min_length=1, max_length=100)
     formation: str = Field(default="4-3-3", min_length=1, max_length=20)
     player_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
     slots: list[str] | None = Field(default=None, max_length=23)
+    tactic: TacticNotes = Field(default_factory=TacticNotes)
+    expected_binding: SquadBinding | None = None
 
 class SegmentCreate(InputModel):
     name: str = Field(min_length=1, max_length=120)

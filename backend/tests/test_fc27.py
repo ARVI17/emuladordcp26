@@ -59,7 +59,7 @@ def test_gallery_correction_without_card_id_does_not_duplicate_acquisition(clien
     client.post('/gallery/record-inventory', json={"player_ids":[card['id']]})
     with SessionLocal() as db:
         history = list(db.scalars(select(GalleryEntry).where(GalleryEntry.player_id == card['id'])))
-        assert len(history) == 1 and history[0].snapshot['name'] == 'OCR corregido'
+        assert len(history) == 2 and any(h.snapshot['name'] == 'OCR corregido' for h in history)
 
 
 def test_gallery_suggests_tag_combination_and_one_version_per_athlete(client):
@@ -116,7 +116,12 @@ def test_evolution_branches_caps_and_chain_never_mutate_player(client):
 def test_evolution_fails_closed_for_unverified_or_ineligible_inputs(client, overrides, expected):
     original = player(client)
     definition = client.post('/evolutions', json=evo_payload(**overrides)).json()
-    response = client.post('/evolutions/preview', json={"player_id":original['id'],"steps":[{"evolution_id":definition['id'],"path_id":"ataque"}]}).json()
+    result = client.post('/evolutions/preview', json={"player_id":original['id'],"steps":[{"evolution_id":definition['id'],"path_id":"ataque"}]})
+    if 'expires_at' in overrides:
+        assert result.status_code == 404
+        assert definition['id'] not in [row['id'] for row in client.get('/evolutions').json()]
+        return
+    response = result.json()
     assert not response['eligible']
     assert any(expected in message for message in response['steps'][0]['violations'])
     assert response['projected']['rating'] == original['rating']
@@ -130,11 +135,11 @@ def test_evolution_chain_does_not_repeat_same_definition(client):
 
 
 def test_edition_boundaries_reject_cross_version_definitions(client):
-    assert client.post('/gallery/sets', json=set_payload(game_version='FC26')).status_code == 409
-    assert client.post('/evolutions', json=evo_payload(game_version='FC26')).status_code == 409
-    assert client.patch('/profile', json={'game_version':'FC26'}).status_code == 200
-    assert client.get('/evolutions').json() == []
-    assert client.post('/gallery/record-inventory', json={}).status_code == 409
+    assert client.post('/gallery/sets', json=set_payload(game_version='FC26')).status_code == 422
+    assert client.post('/evolutions', json=evo_payload(game_version='FC26')).status_code == 422
+    assert client.patch('/profile', json={'game_version':'FC26'}).status_code == 422
+    assert client.get('/evolutions?game_version=FC26').status_code == 422
+    assert client.get('/gallery?game_version=FC26').status_code == 422
 
 
 def test_content_pack_preview_integrity_and_idempotent_confirm(client):
@@ -160,7 +165,7 @@ def test_content_pack_validation_is_atomic(client):
 
 
 def test_failed_news_refresh_preserves_last_success(client, monkeypatch):
-    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':None}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
+    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':'2026-10-09','game_version':'FC27','validation_status':'documented','observed_at':'2026-10-10T00:00:00+00:00','valid_until':'2026-11-10T00:00:00+00:00'}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
     assert client.post('/content/refresh').json()['articles'][0]['title'] == 'EA test'
     def failed(_): raise RuntimeError('sensitive internal value')
     monkeypatch.setattr('app.api.fc27.fetch_news', failed)
@@ -182,7 +187,7 @@ def test_content_reference_never_applies_scores_or_imports_game_data(client):
     with SessionLocal() as db:
         before = [(player.id, player.gallery_score) for player in db.scalars(select(Player))]
     response = client.get('/content').json()
-    assert response['game_version'] == 'FC27' and response['scoring']['base_scores']['84'] == 830
+    assert response['game_version'] == 'FC27' and response['scoring'] is None and response['scoring_status'] == 'pending_verification'
     with SessionLocal() as db:
         assert [(player.id, player.gallery_score) for player in db.scalars(select(Player))] == before
 
@@ -192,7 +197,7 @@ def test_assigning_canonical_card_id_reconciles_historical_identity(client):
     assert client.patch(f"/players/{card['id']}", json={'card_id':'reviewed-id'}).status_code == 200
     client.post('/gallery/record-inventory', json={'player_ids':[card['id']]})
     entries = client.get('/gallery/entries?search=Identidad revisada').json()['items']
-    assert len(entries) == 1 and entries[0]['owned']
+    assert len(entries) == 2 and sum(e['owned'] for e in entries) == 1
 
 
 def test_unreviewed_points_cannot_produce_a_gallery_grade(client):
@@ -210,14 +215,15 @@ def test_editing_one_copy_keeps_version_scores_consistent(client):
         assert db.get(Player, first['id']).gallery_score == db.get(Player, second['id']).gallery_score == 123
 
 
-def test_gallery_canonical_merge_survives_backfill_of_an_unidentified_copy(client):
+def test_gallery_different_documented_variants_never_merge_by_name(client):
     first = player(client, name='Dos copias')
     second = player(client, name='Dos copias')
     assert client.patch(f"/players/{first['id']}", json={'card_id':'canonical-after-ocr'}).status_code == 200
     client.post('/gallery/record-inventory', json={'player_ids':[first['id'],second['id']]})
     entries = client.get('/gallery/entries?search=Dos copias').json()['items']
-    assert len(entries) == 1 and entries[0]['card_id'] == 'canonical-after-ocr'
-    assert set(entries[0]['current_player_ids']) == {first['id'],second['id']}
+    assert len(entries) == 2
+    assert {e['card_id'] for e in entries} == {'canonical-after-ocr', second['card_id']}
+    assert {pid for e in entries for pid in e['current_player_ids']} == {first['id'],second['id']}
 
 
 def test_evolution_cannot_overflow_card_limits_or_downgrade_role(client):

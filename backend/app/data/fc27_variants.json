@@ -1,0 +1,30 @@
+{
+  "observed_at": "2026-10-12T00:08:00Z",
+  "valid_until": "2026-11-10T00:00:00Z",
+  "source": "FUT.GG: fichas individuales consultadas; evidencia documental, no certificación EA ni posesión",
+  "items": [
+    ["R27", "245956", "Christiane Endler", 85, "POR", "Rare"],
+    ["R28", "203376", "Virgil van Dijk", 88, "DFC", "Rare"],
+    ["R29", "236479", "Mapi León", 88, "DFC", "Rare"],
+    ["R30", "243715", "William Saliba", 88, "DFC", "Rare"],
+    ["R32", "67336110", "Lucy Bronze", 86, "DFC", "Team of the week"],
+    ["R33", "67361009", "Nuno Mendes", 89, "LI", "Destined for Glory"],
+    ["R34", "265674", "Selma Bacha", 86, "LI", "Rare"],
+    ["R36", "237289", "Patri Guijarro", 88, "MCD", "Rare"],
+    ["R37", "239053", "Federico Valverde", 87, "MC", "Rare"],
+    ["R38", "251854", "Pedri", 90, "MC", "Rare"],
+    ["R39", "241667", "Aitana Bonmatí", 90, "MC", "Rare"],
+    ["R40", "252371", "Jude Bellingham", 90, "MCO", "Rare"],
+    ["R41", "256630", "Florian Wirtz", 86, "MCO", "Rare"],
+    ["R42", "246669", "Bukayo Saka", 87, "ED", "Rare"],
+    ["R43", "227102", "Caroline Graham Hansen", 89, "ED", "Rare"],
+    ["R44", "238794", "Vini Jr.", 89, "EI", "Rare"],
+    ["R45", "269404", "Salma Paralluelo", 87, "EI", "Rare"],
+    ["R46", "239085", "Erling Haaland", 91, "DC", "Rare"],
+    ["R47", "228093", "Marcus Thuram", 85, "DC", "Rare"],
+    ["R48", "231747", "Kylian Mbappé", 91, "DC", "Rare"],
+    ["R49", "67372876", "Sophia Wilson", 89, "DC", "Team of the week"],
+    ["R50", "258980", "Alessia Russo", 88, "DC", "Rare"]
+  ],
+  "pending": {"R26": "Ficha exacta no accesible", "R31": "Ficha exacta no accesible", "R35": "Ficha exacta no accesible"}
+}

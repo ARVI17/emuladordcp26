@@ -1,6 +1,33 @@
 # Mapa técnico · Club Lab FC27
 
+Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `api/variants.py` y `VariantReview.tsx`; migración `0013`. [Contrato y procedencia](FC27_EXCLUSIVE.md). El filtro ORM exige evidencia vigente antes de agregar, paginar o cargar relaciones de cartas. El arranque normal crea perfil vacío y referencias documentales; el inventario sintético solo existe en el arnés de pruebas.
+
+Definiciones activas: `services/definition_validation.py`, mixin `DefinitionEvidence`, migración `0014`, resumen `/catalog/pending` y `PendingDefinitions.tsx`. Los cambios de reglas invalidan evidencia; los borradores no llegan a optimización ni a los totales activos. `Profile.origin` y `Squad.origin` conservan los valores legados fuera de las vistas normales.
+
+`/settings` solo devuelve información técnica seleccionada. La escritura genérica de ajustes está reservada: no permite sustituir cachés de noticias, manifiestos o evidencia. Las rutas específicas conservan su propia validación. El chat usa la política `fc27_grounded_v1`; contenido, formaciones y prácticas se ocultan al vencer su revisión.
+
 Referencia del código de la versión 2.0 en `emuladordcp26`. La API declara rutas sin `/api`; Nginx añade ese prefijo externamente y FastAPI usa `root_path="/api"`. Swagger es el inventario completo de contratos. Las reglas de trabajo están en [AGENTS.md](../AGENTS.md).
+
+## Ampliación del planificador (11 de octubre de 2026)
+
+El head es `0014`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación con PR #2, migraciones, comportamiento y dependencias pendientes. Los módulos nuevos son:
+
+| Capa | Archivos y contrato |
+| --- | --- |
+| Contextos/sesiones | `models/planner.py`, `services/contexts.py`, `api/connections.py`: cookie HttpOnly/CSRF, entradas, logout, aislamiento y cobertura/vigencia por módulo |
+| Conciliación | `services/sync.py`: contrato interno sin adaptador EA; snapshots/mapeos de copia y publicación atómica |
+| Adaptadores de lectura | `services/providers.py`: registro vacío en producción, entrada/lectura/cancelación, límites y errores; [contrato](PROVIDER_CONTRACT.md) |
+| Planes/protecciones | `schemas/planner.py`, `services/planner.py`, `services/protection.py`, `api/planner.py`: `/plans`, review/reserve/approve/cancel y confirmación manual de pasos |
+| Cálculos | `services/joint.py` y `api/analysis.py`: `/club/profiles`, `/dcp/joint-preview`, `/transfers/compare`; sin mutación por simulación |
+| Tácticas privadas | `Squad.tactic`, `TacticNotes`, `/squads/{id}/tactics`, `TacticEditor`: rival, ajuste, práctica y referencias; guardado de once y banquillo con revisión vigente |
+| Práctica y diario | `api/practice.py`, `services/practice.py`, `PracticeAgenda`, `MatchDiary`: agenda persistida y muestras por edición; [contrato](PRACTICE.md) |
+| Mercado | `/market/quotes`, `/market/simulate`, `/market/journal`; cotizaciones revisadas y diario por contexto |
+| Series/agenda | `api/market_insights.py`, `api/agenda.py`, `services/agenda.py`, `MarketHistory`, `ClubAgenda`: alertas manuales, comparación y orden de propuestas; [contrato](MARKET_AGENDA.md) |
+| Catálogo/conocimiento | `api/catalog.py`, `api/knowledge.py`, `data/fc27_references.json`: definiciones compartidas sin progreso, evidencia versionada, recordatorio y `/matches` |
+| SPA | `lib/entry.ts`, páginas Connections/Planner/Transfers/Market/Knowledge, componentes PlanningAnalysis/MatchDiary/CatalogDefinitions |
+| Verificación | `tests/test_planner.py`, `benchmarks/planner.py`, `e2e/planner.spec.ts`, `docker-compose.review.yml` |
+
+`ClubScoped` aplica filtros ORM y valida escrituras en sesiones HTTP; los adaptadores internos deben usar el contexto verificado. Los settings técnicos y el catálogo público se comparten dentro de la instalación. El contexto 1 conserva registros sin vincular, nunca se asigna a una cuenta EA por iniciar sesión. La API privada requiere `X-App-Entry`; las mutaciones también `X-CSRF-Token`. `/app/session` y `/app/entries` inician el flujo. No se usa una sesión EA ni se expone un cargador público de snapshots verificados.
 
 ## Capas y límites
 
@@ -52,6 +79,8 @@ Se conservan `emuladordcp26_internal`, `emuladordcp26_postgres_data`, `emuladord
 | `.github/workflows/ci.yml` | Migración de datos FC26, PostgreSQL, pruebas y compilación. |
 
 ## Datos y edición
+
+**Actualización de alcance:** solo FC27 está disponible públicamente; se retiró el selector y el acceso histórico. Los registros anteriores permanecen aislados. Véase [FC27_EXCLUSIVE.md](FC27_EXCLUSIVE.md); las descripciones multiedición anteriores son compatibilidad interna.
 
 `Profile.game_version` controla la edición activa. Las consultas explícitas con edición se validan; las mutaciones comprueban que el objeto pertenece a la edición activa. El selector frontend limpia el estado de trabajo y usa claves de consulta con edición. La selección pertenece al perfil local compartido, no a una sesión multiusuario.
 

@@ -1,4 +1,92 @@
-# Pruebas y estado de verificación
+# Pruebas del planificador FC27
+
+## Contenido y límites FC27 (sprint 9)
+
+`python scripts/verify_docker.py --scope full` pasó en el proyecto desechable `bdacad27b7`: **212 Pytest/PostgreSQL** (157,03 s), **26 Vitest** y **24 Playwright** móvil/escritorio (aprox. 1 min). Build TypeScript/Vite/PWA, arranque, salud, OpenAPI y Alembic0014/check correctos. Se revisó la captura móvil de Novedades. El principal conservó contenedores/arranques; la limpieza temporal terminó sin borrar volúmenes.
+
+Seis pruebas nuevas sin arnés de acreditación ejercitan prosa adversaria del modelo, historial no acreditado, noticias sin fecha/de otra edición/vencidas, formaciones distintas y caducadas, compatibilidad desconocida de Companion, 50 referencias sin posesión y caducidad de prácticas. El recorrido de navegador comprueba contenido pendiente, consulta FC27 y rechazo de otra edición. Las pruebas de puentes existentes solo simulan compatibilidad en una base desechable.
+
+La primera ejecución completa detectó una prueba basada en el antiguo dibujo 4-3-3: 211 pases y un fallo. El caso de mediocampista polivalente se corrigió para usar 4-3-3 Holding. Una repetición iniciada antes de completar ese ajuste se detuvo y limpió; no se cuenta como pase. Después pasó el conjunto completo indicado arriba. La comprobación final `--scope backend`, proyecto `31192b8ab5`, volvió a pasar **212 pruebas** (158,92 s), build, arranque, salud, OpenAPI y Alembic/check tras cerrar ajustes internos, recuentos de reservas y respuestas caducadas. Frontend y navegador no se repitieron porque ese último ajuste solo afectó al backend. Se conserva un aviso de deprecación httpx/Starlette.
+
+No se probó conexión EA, dispositivo real, Safari ni inferencia GPU/Ollama. La integración y compatibilidad siguen pendientes. No hubo migración de datos únicos, despliegue principal ni merge. El CI de `5bca18e` (sprint8) terminó correctamente en ambos eventos; los resultados del commit de este sprint se registran en su PR.
+
+## Definiciones acreditadas (sprint 8)
+
+Docker completo: **205 Pytest/PostgreSQL** (151,71 s), **26 Vitest**, **22 Playwright** y build/HTTP/OpenAPI/Alembic0014 correctos. Ocho pruebas de frontera omiten el arnés documental. El E2E repetido también envía un DCP sin evidencia y comprueba que solo aparece el aviso de pendientes. El arnés de navegador acredita definiciones exclusivamente con la cabecera explícita de preparación de fixtures; los formularios y casos de frontera siguen la admisión real.
+
+Un intento previo pasó 203 casos y falló al escoger un perfil sintético sin ordenar en PostgreSQL. Se retiró la activación innecesaria del saldo demo en fixtures. Migración y restauración: 228 cartas, 228 entradas de Galería y cuatro planes conservados; dump0013 recuperado en una base distinta. El WAL y shared_buffers del PostgreSQL desechable se ajustaron dentro de512MB; principal intacto.
+
+CI del sprint7 pasó backend y falló al arrancar Uvicorn porque no encontraba `app`; el workflow ahora declara `PYTHONPATH`. El estado remoto del siguiente commit debe comprobarse antes de afirmar pase de CI. El pase local Docker no sustituye esa comprobación.
+
+## Estado vigente: catálogo y cuarentena (sprint 7)
+
+Docker aislado: **197 Pytest/PostgreSQL** (122,67 s), **26 Vitest**, **22 Playwright** móvil/escritorio sobre Nginx (50,6 s), build, salud, OpenAPI y Alembic0013/check correctos. Las suites frontend se repitieron tras ajustar dos contratos antiguos de mensajes/variantes. El principal conservó IDs y arranques. El límite de PostgreSQL de pruebas pasó a512MB tras un OOM registrado; no se cambió el principal.
+
+Migración poblada y recuperación:228cartas,228entradasGalería y4planes conservados; dump previo0012 restaurado en otra base. Cinco guardas del comando Docker correctas; revisión visual del catálogo móvil. No se probaron Safari, GPU/Ollama ni hardware/EA.
+
+La preparación general emplea evidencia sintética únicamente en bases desechables. Seis pruebas `catalog_boundary` y el recorrido de cuarentena omiten la autocertificación de fixtures. El entrypoint E2E vigente es `PLAYWRIGHT_DISPOSABLE_DB=1 uvicorn --app-dir tests e2e_app:app`; el arranque normal `app.main` nunca admite ese arnés ni crea demo. Procedimiento actual: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Los resultados y comandos multiedición siguientes son registro histórico; no habilitan un selector ni sustituyen este flujo.
+
+## Flujo reproducible por sprints
+
+Sprint 1, 11-oct-2026: `python scripts/verify_docker.py --scope full` pasó con **155 Pytest/PostgreSQL**, **25 Vitest**, **12 Playwright** sobre Nginx, build, migraciones/HTTP y limpieza del proyecto temporal. Cinco pruebas del comando rechazaron configuraciones peligrosas. El primer intento detectó una suposición fija de ADB en una prueba; se corrigió para comprobar activado/desactivado sin dispositivos y se repitió toda la ejecución. El stack principal conservó IDs y fechas de arranque. Procedimiento: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Evidencia privada en `state/sprints/`.
+
+Sprint 2: **167 Pytest/PostgreSQL** correctos, build, arranque, Alembic/HTTP y OpenAPI con 98 rutas. Se ejecutó `--scope backend`: Vitest/Playwright no se repitieron porque no cambió la interfaz. Lecturas, permisos, cuotas, cancelación y timeout se probaron exclusivamente con adaptadores sintéticos; cero acceso EA. El timeout real del ejecutor descarta también una respuesta que llega después del plazo. El comando retiró el stack temporal y verificó que el principal no se reinició.
+
+Sprint 3: **171 Pytest/PostgreSQL, 25 Vitest y 14 Playwright** correctos mediante `--scope full`, build, salud y Alembic. Tras ajustar las etiquetas de química/disponibilidad se repitió `--scope frontend`: build, 25 Vitest y 14 Playwright correctos, con revisión visual móvil. Un dump desechable en `0009` se restauró y migró a `0010`, conservando 228 cartas, 228 entradas de Galería y cuatro planes. SQLite nuevo también pasó migración, `alembic check` y seed. Un arranque inicial detectó que la migración histórica crea columnas del modelo actual; se corrigió únicamente la nueva revisión `0010` y se repitieron las pruebas. Sin acceso EA, hardware ni despliegue principal.
+
+Sprint 4: **175 Pytest/PostgreSQL** (97,14 s), **25 Vitest** y build correctos. El primer E2E detectó dos selectores ambiguos; corregidos, `--scope frontend` repitió build/Vitest y **16 Playwright** (34,7 s), incluida práctica, vínculo al diario y aislamiento FC26/FC27. Revisión visual móvil realizada. Dump0009 restaurado y migrado a0011: 228 cartas, 228 entradas de Galería, cuatro planes y un partido antiguo conservado sin edición inventada. SQLite upgrade/check correcto. EA, hardware y despliegue principal siguen pendientes.
+
+Sprint 5: `--scope full` pasó con **182 Pytest/PostgreSQL** (103,39 s; un aviso httpx), **25 Vitest** y **20 Playwright** (41,6 s), build, salud, OpenAPI y Alembic. Tras traducir tipos de cotización y mostrar la hora observada se repitió `--scope frontend`: build/25 Vitest/20 Playwright (40,1 s) correctos. Revisadas capturas móviles de agenda y alertas. Cinco guardas del comando Docker correctas. El primer intento terminó con 175 pases y siete errores por OOM del PostgreSQL temporal de 256 MB mientras se restauraban dos bases adicionales; se separaron las cargas y la repetición completa pasó sin ampliar recursos ni tocar el principal.
+
+Migración 0011→0012 sobre datos restaurados: 228 cartas, 228 entradas de Galería, cuatro planes y una práctica conservados; `alembic check` correcto. El dump previo0011 también se restauró y contrastó en otra base desechable. No se repitieron GPU/Ollama, hardware, Safari ni EA; ninguna instancia principal fue migrada.
+
+## Registro de la implementación inicial
+
+
+
+Ejecucion local del **11 de octubre de 2026**, worktree `agent/fc27-club-planner`. Datos exclusivamente desechables. El registro anterior de PR #2 se conserva mas abajo y no se atribuye a este cambio.
+
+| Verificacion actual | Resultado |
+| --- | --- |
+| Pytest completo, PostgreSQL 16 aislado | **154 passed**, 1 aviso httpx/Starlette, 121,18 s; ninguno omitido |
+| Vitest | **25 passed en 11 archivos** |
+| TypeScript/Vite/PWA en imagen Docker | Build correcto |
+| Playwright por Nginx/API/PostgreSQL reales | **12 passed**, 29,1 s, Chromium iPhone 13 y escritorio 1280 x 900 |
+| Migraciones desde 0005 Companion y 0005 FC27 | Ambas a **0009**, alembic check sin cambios, conservadas 132 cartas FC26 y 132 FC27 respectivamente |
+| Migracion de consumo/historial | Conserva 132 cartas, carta 1 eliminada logicamente, consumed_by_submission_id=1, entrega propietaria y Galeria |
+| Dump/restauracion PostgreSQL desechable | pg_dump -Fc / pg_restore --exit-on-error: head 0009, 132 cartas restauradas |
+| SQLite desechable del flujo CI | upgrade head 0009, alembic check y bootstrap correctos |
+| Degradacion | Revision sin Ollama ni dispositivo ADB; modulos principales utilizables |
+| Compose y stack de revisión | Configuraciones válidas, cuatro servicios healthy, head 0009 y alembic check sin cambios |
+| HTTP y contratos | Health 200 en 8081 y en el original 8080; OpenAPI de revisión válido, 97 rutas |
+| Proveedor EA / club del usuario / hardware | **No probados: acceso autorizado y dispositivo pendientes** |
+
+Los E2E cubren entrada pendiente, modo local expreso, navegacion/layout, plantillas/Galeria, mercado, 50 referencias y reserva/cancelacion sin consumo. Solo el diagnostico ADB sustituye su estado; las mutaciones del planificador usan la API real. Capturas revisadas de entrada, plan y vistas heredadas. Artefactos locales en `frontend/test-results/`, sin versionar.
+
+`test_planner.py` usa lecturas remotas **sinteticas**: relecturas/dos copias/movimientos, parcial, cuenta/logout/expiracion, rollback al fallar commit, preferencias, frescura por modulo y cuotas. Cubre reservas concurrentes de cartas/monedas, rutas antiguas, dos pasos/cambio externo, aprobacion caducada/alterada/repetida, perdida parcial, incertidumbre, variante/mercado/edicion/precio incorrectos, homonimos/calidad de atributos, disjuntos y catalogo/progreso separado. Una enumeracion independiente obtiene coste DCP conjunto 3 frente a 101 de elecciones separadas; timeout no afirma imposibilidad.
+
+## Reproducir sin tocar datos normales
+
+Pytest recrea tablas. Se uso exclusivamente `TEST_DATABASE_URL` con contenedor `emuladordcp26-planner-test-db`, red `emuladordcp26_planner_test`, base `planner_test`. Migraciones en otras bases `planner_migration_*`; dumps en `backups/`.
+
+```powershell
+# Requiere esa base exclusivamente desechable.
+docker run --rm --network emuladordcp26_planner_test --mount "type=bind,source=$PWD/backend,target=/app" -e TEST_DATABASE_URL=postgresql+psycopg://planner_test:planner_test_only@emuladordcp26-planner-test-db:5432/planner_test --entrypoint python emuladordcp26-planner-backend -m pytest -q
+
+docker compose -f docker-compose.review.yml up --build -d
+docker compose -f docker-compose.review.yml exec backend alembic current
+docker compose -f docker-compose.review.yml exec backend alembic check
+docker compose -f docker-compose.review.yml build frontend-e2e
+docker compose -f docker-compose.review.yml run --rm frontend-e2e
+```
+
+Build: `npm run build`. Vitest: `npm test -- --run` en imagen de build montando `frontend/src`. Revision en localhost:8081; el stack original localhost:8080 no se migro ni reconstruyo. No se probaron scripts PowerShell de restauracion, GPU/inferencia Ollama, Safari ni operaciones EA.
+
+## Medicion acotada
+
+`python -m benchmarks.planner` genera cartas solo en memoria. Con 512 MB, comparar diez formaciones equilibradas tardo **0,529 s para 132 copias** y **1,569 s para 1000**: diez onces completos, optimal en ambos casos. Excluye HTTP, proveedor, DB, otros estilos e inventarios. Objetivo de referencia: menos de cinco segundos para esa muestra de 1000 cartas; no es SLA ni una aceleracion porcentual sin linea base.
+
+# Registro histórico de PR #2
 
 Esta página distingue pruebas ejecutadas de verificaciones pendientes. La [CI del 10 de octubre de 2026 UTC](https://github.com/ARVI17/emuladordcp26/actions/runs/38020243563) terminó correctamente sobre el código [ba9c17b47c67ab4a9dadedd1de87d647db20496e](https://github.com/ARVI17/emuladordcp26/commit/ba9c17b47c67ab4a9dadedd1de87d647db20496e). Los resultados usan datos desechables; no describen una ejecución de producción ni garantizan comportamiento en un dispositivo Companion real.
 
@@ -153,3 +241,7 @@ Primero compruebe que `/api/emulator/status` degrada sin dispositivo y el resto 
 Para un plan tradicional, compruebe frase incorrecta, cambios de carta/calibración, preparación, ejecución y cancelación. Inspeccione que ningún paso incluya la pulsación final de entrega. Los score deben rechazarse antes de generar preparación automática. La preparación puede cambiar la selección visible en el dispositivo; use datos y una pantalla que permitan revisar esos efectos.
 
 Siguen pendientes el build/arranque del stack Docker completo, el E2E a través de su Nginx, backup/restauración reales mediante PowerShell, Safari y un teléfono/emulador con Companion y un club EA real. Esos resultados deben añadirse cuando se ejecuten, indicando versión de Companion, resolución, entorno y cualquier fallo observado. Los datos de las comprobaciones registradas son ficticios y no demuestran una sincronización ni una entrega real en EA.
+
+## Frontera exclusivamente FC27
+
+Docker aislado: 191 Pytest/PostgreSQL, 25 Vitest y 20 Playwright (móvil/escritorio), build, health, OpenAPI y Alembic correctos. Se incluyen perfiles históricos, relaciones mixtas y rechazo de rutas de archivo. Datos antiguos conservados; stack principal sin cambios. Dos ejecuciones previas detectaron contratos de pruebas obsoletos y un 500 al acceder a un segmento histórico; corregidos antes del pase completo.

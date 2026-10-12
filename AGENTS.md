@@ -2,11 +2,36 @@
 
 Este archivo es la entrada rápida para cualquier agente que trabaje en `emuladordcp26`. Lee también [`docs/PROJECT_MAP.md`](docs/PROJECT_MAP.md) antes de cambiar arquitectura, datos o contratos HTTP.
 
+
+## Estado del planificador (11 de octubre de 2026)
+
+**Alcance vigente: exclusivamente FC27.** No ofrecer selector histórico ni leer, mutar o recomendar otra edición en rutas públicas. Conservar datos anteriores ocultos; las pruebas mixtas usan únicamente PostgreSQL desechable. Toda variante requiere evidencia FC27; revisión manual no equivale a validación oficial. [Contrato de exclusividad](docs/FC27_EXCLUSIVE.md). Esta regla sustituye las referencias históricas a un selector multiedición que aparecen más abajo.
+
+Lee [docs/FC27_PLANNER.md](docs/FC27_PLANNER.md) junto con el mapa. La entrada exige sesion/contexto y vigencia por dependencia; sin proveedor EA autorizado muestra **Integracion pendiente**. El modo local se elige expresamente. Reservas persistentes y aprobaciones no se pueden eludir desde rutas antiguas. Nunca habilites un proveedor ficticio ni una carga publica de snapshots verificados.
+
+Head `0014` (evidencia de definiciones y origen de perfiles): `0006` reconoce las dos variantes historicas de `0005` sin editarlas. El contexto 1 conserva registros sin vincular, nunca asignados a la primera cuenta. Las tablas personales usan ClubScoped; las mutaciones privadas requieren CSRF/entrada vigente. Restaurar exige local_simulation. Pulsaciones ADB deshabilitadas por falta de permiso aplicable; solo las pruebas mock sustituyen esa dependencia.
+
+DCP, objetivos, conjuntos, evoluciones y publicaciones exigen evidencia vigente de FC27. La marca manual de revisión no la sustituye. Los borradores conservados se resumen en `/catalog/pending`; cambiar reglas invalida su evidencia. Las protecciones históricas no se eliminan al ocultar plantillas o cartas pendientes.
+
+Contenido y formaciones exigen vigencia documental; no publiques enlaces descubiertos como noticias verificadas ni repongas tablas de puntos sin evidencia. El chat solo muestra resúmenes redactados por el servidor; Ollama selecciona enfoques y nunca aporta texto factual libre. Companion tiene compatibilidad pendiente: sus importaciones van a cuarentena incluso si coinciden con el catálogo. Las dependencias sintéticas de compatibilidad/permisos son exclusivas de pruebas; nunca las actives en producción.
+
+El arranque normal no carga demo. `validation_status` y el catálogo vigente limitan SQL/alias/relaciones; no elimines ese filtro para recuperar cartas pendientes. La revisión se hace en cuarentena, con evidencia de variante y sin alterar protecciones. El arnés sintético de `tests/e2e_app.py` es exclusivo de bases desechables y no debe incorporarse al entrypoint normal.
+
+Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
+
+## Flujo permanente por sprints
+
+Trabaja con un agente y 1–3 objetivos funcionales por sprint. Antes de editar revisa Git, ramas/PR, este archivo y el mapa. Conserva cambios ajenos. Después de cada sprint con código: pruebas relevantes y Docker aislado, `git diff --check`, revisión de secretos, commit, push a la rama de trabajo y comparación del SHA remoto. Actualiza la PR en borrador, sin fusionar ni desplegar el stack principal. Un fallo pendiente se informa como WIP, nunca como prueba aprobada.
+
+Usa `python scripts/verify_docker.py --scope full` para PostgreSQL, migraciones, HTTP, build, Vitest y Playwright con Nginx. Los scopes `backend` y `frontend` reducen únicamente las suites que no corresponden al cambio. El comando crea su propio proyecto y elimina solo sus contenedores al terminar, sin borrar volúmenes. Nunca ejecutes Pytest destructivo contra la base habitual.
+
+`state/ENTORNO_LOCAL.md` y `state/sprints/` contienen evidencia privada ignorada; `.env`, dumps, logs, sesiones e inventarios reales no se publican. Conserva nombres y volúmenes principales. Migrar la instancia real exige respaldo restaurado en entorno separado, autorización específica y recuperación documentada. Las reglas del repositorio no conceden permisos nuevos. Consulta [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md).
+
 ## Propósito y estado real
 
-`emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. También prepara combinaciones tradicionales mediante pulsaciones ADB asistidas. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
+`emuladordcp26` (Club Lab FC27) es una aplicación local y no oficial para administrar inventario revisado por edición, analizar jugadores, recomendar plantillas, mantener Galería histórica, simular evoluciones por caminos, actualizar contenido revisable, gestionar objetivos y simular/confirmar/restaurar DCP tradicionales o por puntos. Conserva el motor ADB, deshabilitado en producción por falta de permiso aplicable. La solución usa una SPA React, una API FastAPI, PostgreSQL, OR-Tools, un puente ADB y un chat opcional con Ollama, todo orquestado con Docker Compose.
 
-El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, proponer inventario/requisitos, enviar toques y deslizamientos manuales, y ejecutar un plan revisable que busca y agrega los jugadores de una solución DCP. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
+El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono o emulador Android iniciado por el usuario, capturar/inspeccionar su pantalla, proponer inventario/requisitos, conservar planes revisables. Las rutas de toques, deslizamientos y ejecución rechazan acciones en producción. No instala ni inicia el emulador en el host, no se conecta a una API autenticada de EA y nunca automatiza el botón final de entrega, compras, ventas, inicio de sesión ni credenciales. En el entorno actual no hay ningún dispositivo/emulador conectado.
 
 ## Inicio rápido
 
@@ -106,7 +131,7 @@ El entrypoint ejecuta `alembic upgrade head`, `app.db.bootstrap` y Uvicorn. Por 
 - `backend/app/services/audit.py`: creación de eventos de auditoría dentro de la transacción llamante.
 - `backend/app/db/session.py`: engine y sesiones.
 - `backend/app/db/seed.py`: demo idempotente.
-- `backend/alembic/versions/`: esquema reproducible; head actual `0005` (`fc27_club`).
+- `backend/alembic/versions/`: esquema reproducible; head actual `0009` (`trade_edition_market`).
 - `frontend/src/App.tsx`: navegación/edición; vistas en `pages/`, componentes en `components/` y utilidades en `lib/`.
 - `frontend/src/api/client.ts`: prefijo `/api`, errores y formatos locales.
 - `frontend/src/types/index.ts`: contratos TypeScript consumidos por la UI.
@@ -186,7 +211,7 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 - Actualiza `frontend/src/types/index.ts` cuando cambie una respuesta y mantén validación Zod/Pydantic coherente.
 - Conserva navegación y controles utilizables en ancho móvil; el E2E usa emulación iPhone 13.
 - El tema sí se persiste en `localStorage`; los datos del dominio pertenecen a PostgreSQL.
-- La pantalla activa `CompanionPage` consulta estado/lecturas cada 5 s y planes cada 2,5 s; conserva estas actualizaciones o proporciona un reemplazo explícito para reflejar progreso/cancelación.
+- `CompanionPage` consulta estado cada 10 s y planes cada 2,5 s. Las lecturas de inventario se solicitan manualmente, sin sondeo ni observación automática; la revisión mantiene como máximo 20 formularios. No reconstruyas miles de controles ni confundas actualizar la base local con sincronizar Companion.
 
 ### Docker, secretos y archivos
 

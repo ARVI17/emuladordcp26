@@ -2,11 +2,13 @@
 
 ## Alcance de esta versión
 
-La versión 2.0 añade edición activa FC27, archivo FC26, metadatos de cartas, análisis del club, propuestas en cinco formaciones, Galería histórica, evolución por caminos/cadenas y DCP por puntuación revisada. Las definiciones cambiantes pueden editarse o importarse sin desplegar otra versión del código.
+La versión vigente solo ofrece FC27 y conserva otras ediciones ocultas, con metadatos de cartas, análisis del club, Galería histórica, evolución por caminos/cadenas y DCP por puntuación revisada. Esta revisión utiliza formaciones documentadas vigentes y añade los planes descritos en [FC27_PLANNER.md](FC27_PLANNER.md). Las definiciones pueden conservarse como borradores; activarlas requiere acreditar la fuente, reglas exactas y vigencia. Las migraciones 0013/0014 preservan datos legados sin declararlos verificados. Consulta [FC27_EXCLUSIVE.md](FC27_EXCLUSIVE.md).
 
-Las fuentes de referencia son el [FUT Deep Dive](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y la [actualización del lanzamiento](https://www.ea.com/es/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-launch-update) de EA. Las referencias incluidas se revisaron el **10 de octubre de 2026 UTC**. `backend/app/data/fc27_content.json` guarda fecha, enlaces y tabla base de puntuación; la app no infiere bonificaciones desconocidas ni descarga datos privados.
+Las fuentes incorporadas son el [FUT Deep Dive](https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive) y la [actualización del lanzamiento](https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-fut-developer-launch-update) de EA, revisadas el **12 de octubre de 2026 UTC**. `backend/app/data/fc27_content.json` conserva fechas, enlaces y vigencia. La tabla base no acreditada se retiró; no se infieren bonificaciones ni se descargan datos privados.
 
 ## Actualizar una instalación con datos
+
+`0010` añade `squads.tactic` sin eliminar plantillas, jugadores ni consumo. En instalaciones nuevas, la histórica `0001` puede haber creado esa columna desde el modelo actual; `0010` reconoce ese caso sin editar migraciones anteriores. Se contrastó también la actualización desde un dump real de pruebas en `0009`.
 
 Crea primero un dump con `scripts/backup.ps1` y comprueba que exista. Actualiza el código a la versión revisada y ejecuta:
 
@@ -16,7 +18,17 @@ docker compose exec backend alembic current
 docker compose exec backend alembic check
 ```
 
-La revisión esperada es `0005`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+La revisión esperada es `0014`. Mantén `emuladordcp26_postgres_data` y los demás nombres técnicos existentes. No borres volúmenes ni cambies `POSTGRES_DB` para pasar a FC27.
+
+`0011` incorpora la agenda de práctica y separa el diario de partidos por edición. Conserva como `unverified` los registros antiguos salvo evidencia en un contexto ya verificado. Nunca deduce su edición del perfil local que puede haber cambiado. Se comprueba restaurando un dump desechable anterior y preservando sus conteos.
+
+`0012` añade alertas locales de umbral por edición/variante/mercado/tipo. No cambia cotizaciones ni saldos. La recuperación conserva el procedimiento de restauración a esquema/código concordantes; no se aplica automáticamente a la instancia principal.
+
+`0006` añade contextos, sesiones, snapshots, mapeos externos, planes/reservas, mercado y conocimiento; `0007` conserva indicadores remotos desconocidos; `0008` separa definiciones públicas de progreso privado; `0009` conserva edición y mercado en el diario. Ninguna migra la demo a una cuenta vinculada. Los precios cero heredados, usados como desconocidos por el editor anterior, pasan a `null`; las nuevas entradas permiten cero explícito.
+
+Hay dos revisiones históricas llamadas `0005`: la de FC27 y la de `candidate_count` en Companion. `0006` inspecciona el esquema: si falta `players.game_version`, ejecuta el puente FC27 existente antes de ampliar contextos. Ambas rutas se comprobaron en PostgreSQL desechable, sin modificar las migraciones aplicadas. El conteo del escáner se conserva. No copies el archivo de la otra `0005` sobre una instalación aplicada.
+
+El downgrade que eliminaría contextos está bloqueado; recuperar una versión anterior requiere restaurar el respaldo en el esquema/código correspondientes. Para una revisión aislada usa `docker-compose.review.yml`; no apliques una rama sin revisar a los datos únicos. Consulta [FC27_PLANNER.md](FC27_PLANNER.md).
 
 La migración:
 
@@ -30,11 +42,11 @@ La migración:
 
 Si el backend no arranca, conserva el volumen y revisa los logs. `0005` no ofrece un downgrade destructivo: volver al código anterior exige restaurar el respaldo anterior en un entorno apropiado. No ejecutes `make reset` como solución a una migración.
 
-Una nueva instalación usa `SEED_DEMO=false`. Si se solicita una demo desde el primer arranque, contiene 132 jugadores ficticios y ejemplos locales; no representa las cartas reales de FC27.
+El arranque normal no carga demo. Los fixtures ficticios se limitan a bases desechables y nunca representan cartas del propietario.
 
 ## Datos actuales del club
 
-Después de la migración, el inventario FC27 estará vacío hasta que registres tus cartas reales. Puedes introducirlas, importar CSV/XLSX o revisar una lectura de Companion. El selector de edición permite volver a consultar FC26.
+Después de la migración, el inventario FC27 estará vacío hasta que registres tus cartas reales. Puedes introducirlas, importar CSV/XLSX o revisar una lectura de Companion. No hay selector histórico: otras ediciones se conservan ocultas. Las declaraciones FC27 sin variante acreditada quedan en cuarentena.
 
 Para recomendaciones útiles revisa, además de media/posición, posiciones alternativas, atributos, estilos, roles y estado de cesión. Para Galería/DCP por puntos registra `gallery_score` verificado. Un valor desconocido debe permanecer vacío. Las cartas antiguas FC26 no se vuelven FC27 solo por compartir nombre.
 
@@ -84,7 +96,7 @@ Este es un **ejemplo local**, no un conjunto oficial ni una tabla de recompensas
 }
 ```
 
-El conjunto puede evaluarse para cobertura, pero no recibirá un grado supuesto: el ejemplo no proporciona umbrales ni confirma reglas. Añade solo los puntos/bonificaciones/umbrales que quieras utilizar y hayas comprobado.
+El ejemplo se conserva como borrador pendiente: no acredita reglas, umbrales ni vigencia. La evaluación requiere evidencia documental técnica; una casilla o URL no la sustituye.
 
 ### Ejemplo mínimo: evolución personalizada con tope
 
