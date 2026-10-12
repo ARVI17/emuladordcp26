@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Lectura asistida: [ASSISTED_READING.md](ASSISTED_READING.md), `models/assisted.py`, `schemas/assisted.py`, `services/assisted.py`, `services/guided.py`, `api/assisted.py` y `api/guided.py`. Migración `0017`; captura web voluntaria, candidatas OCR revisadas y contextos separados, admisión independiente de catálogo/proveedor, principal protegida, DCP no consumptivo y guía de plantilla para objetivos. `AssistedWorkspace` mantiene el indicador al navegar; `VisualReview`, `AssistedDcp` y `GuidedPlans` usan la API existente.
+
 Objetivos: [OBJECTIVE_SQUADS.md](OBJECTIVE_SQUADS.md), `schemas/objective_planning.py`, `services/objective_squads.py`, `services/objective_planning.py` y `api/objective_planning.py`. Migración `0016`; transcripciones manuales separadas de evidencia documental, CP-SAT más validador independiente, progreso desconocido/declarado y alternativas nuevas con comprobante firmado. `ObjectiveSquadsPage` y `ObjectiveRuleEditor` conectan Centro FC y Plantillas.
 
 Interfaz y navegación: [INTERFACE.md](INTERFACE.md), `lib/navigation.ts`, `AccountHeader`, `AppNavigation`, `HomePage`, `ContextHelp` y `shell.css`. Rutas hash, estado de cuenta observado y fechas configurables.

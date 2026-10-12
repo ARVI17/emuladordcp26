@@ -1,10 +1,10 @@
 # Limitaciones conocidas
 
-Estado del 11 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
+Estado del 12 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
 
 ## Club real y contexto
 
-No hay acceso EA autorizado para esta aplicación. Faltan aprobación, protocolo, permisos, identidad/copia, cobertura/paginación, cuotas y frescura documentadas. La sesión local y una importación revisada no verifican una cuenta. Al entrar se muestra **Integración pendiente**; las simulaciones locales requieren elegirlas expresamente. No se realizaron pruebas contra cuenta/proveedor/hardware reales.
+No hay acceso EA autorizado para esta aplicación. Faltan aprobación, protocolo, permisos, identidad/copia, cobertura/paginación, cuotas y frescura documentadas. La sesión local y una importación revisada no verifican una cuenta. La conexión oficial muestra **Integración pendiente**. El [modo de lectura asistida](ASSISTED_READING.md) permite compartir una pestaña o adjuntar capturas, revisar OCR y usar observaciones propias en análisis, DCP y propuestas de objetivos. Una guía manual compara el resultado visual de una plantilla alternativa sin ejecutar acciones EA. La cobertura sigue siendo parcial; una lectura personal y el selector real del navegador siguen pendientes de validación. No se realizaron pruebas contra cuenta/proveedor/hardware reales.
 
 El reconciliador es un contrato interno probado con fixtures, sin adaptador ni cargador público de instantáneas verificadas. Una futura integración debe demostrar sus garantías antes de utilizarlo. La frescura máxima de 15 minutos es un límite del producto; no una promesa de actualización de EA. Las migraciones y fixtures usan sesiones internas sin los filtros HTTP: no deben exponerse al cliente.
 

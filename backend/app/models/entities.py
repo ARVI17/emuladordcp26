@@ -257,3 +257,4 @@ class EvolutionDefinition(DefinitionEvidence, ClubScoped, Base):
 # Register all tables in the shared metadata (including Alembic and fixtures).
 from app.models import planner  # noqa: E402,F401
 from app.models import catalog  # noqa: E402,F401
+from app.models import assisted  # noqa: E402,F401

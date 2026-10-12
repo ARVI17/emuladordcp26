@@ -1,5 +1,19 @@
 # Pruebas del planificador FC27
 
+## Lectura visual y aplicación manual guiada (12-oct-2026)
+
+La captura es deliberada (`getDisplayMedia` sin audio o imagen adjunta), con OCR local, revisión y propiedad visual separada del catálogo/proveedor. El recorrido de navegador crea una imagen de texto sintético y la procesa con Tesseract real: cartas → revisión → principal protegida → objetivo revisado → solver → guía aprobada → resultado declarado → lectura posterior → conciliación idempotente. Se ejecutó en Chromium móvil y escritorio; las capturas sintéticas fueron revisadas y no hubo desbordamiento horizontal.
+
+El pase integral `ee34a6c7bf` superó **278 Pytest/PostgreSQL, 38 Vitest y 30 Playwright**, compilación, arranque, health/OpenAPI y Alembic **0017**/check. Tras revisar la reapertura de una captura se añadió una regresión: un borrador de una sesión terminada puede releerse sin renovar ni duplicar evidencia revisada. El pase final `9fb6a5908f` superó **15 Pytest de lectura asistida, 38 Vitest y los 30 Playwright**, con build y migración correctos, tras incorporar esa regresión y los textos finales de interfaz. También pasaron **8 pruebas de guardas Docker** y `docker compose config --quiet`.
+
+Los casos nuevos cubren rechazo de permiso, ilegibilidad/pantalla sensible/otra edición, nulos, páginas repetidas, copias ambiguas, cambio de contexto, caducidad, revisión concurrente, reservas, DCP sin protegidas, principal inmutable al guardar alternativas, cancelación/fallo con resultado desconocido y recibos repetidos sin doble registro. El OCR que confundía `EI` con `El` conserva el original y exige revisión; no acredita esa posición automáticamente.
+
+Los primeros intentos descubrieron mutabilidad JSON en IDs revisados, consulta recursiva a un contexto expirado y un snapshot de Galería con fechas no serializables; se corrigieron. También se ajustaron selectores de navegador y la alternativa ante permiso denegado. Esos intentos fallidos no se cuentan como pases. Un aviso de deprecación compartido de Starlette/TestClient permanece.
+
+Los verificados usaron proyectos Compose desechables, PostgreSQL propio y Nginx en loopback 8082. Se cerraron sus recursos y se conservaron IDs/arranques del principal y todos los volúmenes. La preparación de imágenes limpias y el ensayo de respaldo/migración/reinicio/recuperación guardan evidencia privada en `state/assisted-release/`; no despliegan 8080.
+
+No se probó una captura del club personal, el selector del sistema operativo, Safari, autenticación remota ni escritura EA. La guía cubre preparación manual de una plantilla alternativa; DCP solo simula y Galería conserva historia local. El permiso del navegador se solicita de nuevo al compartir. [Uso y límites](ASSISTED_READING.md).
+
 ## Presupuesto conjunto y preparación de imágenes (12-oct-2026)
 
 Las tres pruebas nuevas del conjunto verifican límite global, prioridad explícita, segmentos completos, exclusión de precios desconocidos bajo presupuesto, protección obligatoria y ausencia de consumo. Pasaron dentro del mismo ensayo final `0b98eba56f`: **264 Pytest, 34 Vitest y 28 Playwright**, con Nginx y PostgreSQL aislados. Los cambios del generador de objetivos y del presupuesto estaban presentes en esa imagen; se publican en commits separados por capa.

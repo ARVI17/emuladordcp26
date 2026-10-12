@@ -56,7 +56,7 @@ def gallery_summary(game_version: GameVersion | None = None, db: Session = Depen
     entries, players, owned = gallery_rows(db, version)
     sets = list(db.scalars(select(GallerySet).where(GallerySet.game_version == version).order_by(GallerySet.name)))
     recorded = {key for entry in entries for key in [entry.item_key, *entry.snapshot.get("identity_keys", [])]}
-    eligible = [player for player in players if not player.deleted and not player.is_loan and not player.is_evolution]
+    eligible = [player for player in players if not player.deleted and base_for_gallery(db, player) is player]
     missing_evos = [player for player in players if not player.deleted and player.is_evolution and not player.is_loan
                     and base_for_gallery(db, player) is None and not any(entry.snapshot.get("card_id") == player.base_card_id for entry in entries if player.base_card_id)]
     return {"game_version": version, "entries_count": len(entries), "eligible_owned_count": len(eligible),

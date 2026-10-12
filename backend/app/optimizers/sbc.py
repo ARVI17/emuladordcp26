@@ -46,7 +46,7 @@ def validate_solution(players: list[Player], requirements: dict, *, current_scor
     errors: list[str] = []
     if any(missing_for_dcp(p, requirements) for p in players):
         errors.append('Faltan datos observados para verificar estos requisitos')
-    if any(p.game_version != 'FC27' or p.validation_status not in ('documented', 'provider_verified') for p in players):
+    if any(p.game_version != 'FC27' or p.validation_status not in ('documented', 'provider_verified', 'visual_reviewed') for p in players):
         errors.append('Solo se admiten variantes FC27 documentadas')
     if any(p.protected or p.starter or getattr(p, "is_evolution", False) or getattr(p, "favorite", False) for p in players):
         errors.append("Titulares, favoritos, Evos y cartas protegidas no se pueden consumir")
@@ -144,7 +144,7 @@ def solve(players: list[Player], requirements: dict, allow_protected_ids: set[in
         if not p.deleted and not p.starter and not getattr(p, "is_evolution", False) and not getattr(p, "favorite", False) and getattr(p, "availability", "available") in {None, "available"} and p.id not in excluded and not getattr(p, "is_loan", False)
         and getattr(p, "data_reviewed", True) is not False
         and not missing_for_dcp(p, requirements)
-        and p.game_version == 'FC27' and p.validation_status in ('documented', 'provider_verified')
+        and p.game_version == 'FC27' and p.validation_status in ('documented', 'provider_verified', 'visual_reviewed')
         and (not (p.protected or p.id in protected) or p.id in allowed)
     ]
     if requirements.get("max_total_value") is not None:

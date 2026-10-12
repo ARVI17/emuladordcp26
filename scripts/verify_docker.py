@@ -45,10 +45,18 @@ def validate(config, project):
 def verify():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scope', choices=['full', 'backend', 'frontend'], default='full')
+    parser.add_argument('--pytest-path', action='append', default=[], help='Focused test file under backend/tests; omit for the full suite')
+    parser.add_argument('--browser-spec', action='append', default=[], help='Focused spec under frontend/e2e; omit for all browser tests')
     parser.add_argument('--build-environment', choices=['test', 'local'], default='test',
                         help='Image provenance only; both choices use disposable isolated services and never deploy the main stack')
     parser.add_argument('--port', type=int, default=8082)
     args = parser.parse_args()
+    for prefix, selected, extension in [('backend/tests', args.pytest_path, '.py'), ('frontend/e2e', args.browser_spec, '.spec.ts')]:
+        root = (ROOT/prefix).resolve()
+        for name in selected:
+            candidate = (ROOT/prefix/name).resolve()
+            if not candidate.is_relative_to(root) or not candidate.is_file() or not name.endswith(extension):
+                parser.error('Selected test must be an existing file inside '+prefix)
     if not 1024 <= args.port <= 65535 or args.port in {8080, 8081, 55432}:
         parser.error('Choose a separate unprivileged port (default 8082)')
     project = 'emuladordcp26-check-' + uuid.uuid4().hex[:10]
@@ -80,7 +88,7 @@ def verify():
         return [(c['Id'], c['State']['Status'], c['State']['StartedAt']) for c in json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True))]
     before = main_state()
     volumes_before = subprocess.check_output(docker+['volume', 'ls', '-q'], text=True).split()
-    result = {'project': project, 'scope': args.scope, 'git_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'steps': [], 'status': 'FAILED'}
+    result = {'project': project, 'scope': args.scope, 'selected_pytest': args.pytest_path or 'all', 'selected_browser': args.browser_spec or 'all', 'git_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'steps': [], 'status': 'FAILED'}
     def step(name, *arguments):
         started = time.monotonic()
         with (report_dir/(name+'.log')).open('wb') as log:
@@ -103,10 +111,10 @@ def verify():
         result['served_build'] = back
         step('migration-current', 'exec', '-T', 'backend', 'alembic', 'current')
         step('migration-check', 'exec', '-T', 'backend', 'alembic', 'check')
-        if args.scope in {'full', 'backend'}: step('pytest', 'run', '--rm', '--no-deps', 'backend-test')
+        if args.scope in {'full', 'backend'}: step('pytest', 'run', '--rm', '--no-deps', 'backend-test', *['tests/'+p for p in args.pytest_path])
         if args.scope in {'full', 'frontend'}:
             step('vitest', 'run', '--rm', '--no-deps', 'frontend-test')
-            step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e')
+            step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e', *(['npm','run','test:e2e','--',*args.browser_spec] if args.browser_spec else []))
         result['status'] = 'PASSED'
     finally:
         # Finish owned cleanup even if the user presses Ctrl+C a second time.
