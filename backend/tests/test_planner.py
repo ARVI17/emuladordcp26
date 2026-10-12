@@ -319,7 +319,11 @@ def test_wrong_market_edition_and_stale_quote_rejected(client):
     publish(run,remote())
     for market,edition,age in [('Console','FC27',0),('PC','FC26',0),('PC','FC27',48)]:
         observed=now()-timedelta(hours=age,seconds=2)
-        quote=client.post('/market/quotes',json={'variant_id':'version-x','market':market,'game_version':edition,'amount':100,'kind':'listing','source_url':'https://example.com/evidence','observed_at':observed.isoformat(),'expires_at':(observed+timedelta(hours=1)).isoformat(),'coverage':'Dato sintético para pruebas'}).json()
+        quote=client.post('/market/quotes',json={'variant_id':'version-x','market':market,'game_version':edition,'amount':100,'kind':'listing','source_url':'https://example.com/evidence','observed_at':observed.isoformat(),'expires_at':(observed+timedelta(hours=1)).isoformat(),'coverage':'Dato sintético para pruebas'})
+        if edition != 'FC27':
+            assert quote.status_code == 422
+            continue
+        quote = quote.json()
         result=client.post('/plans/preview',json={'name':'Compra revisada','budget':1000,'actions':[{'kind':'buy','quote_id':quote['id'],'max_cost':100}]})
         assert result.status_code==409
 
@@ -507,9 +511,9 @@ def test_journal_profit_idempotence_and_edition_market_boundaries(client):
     assert client.post('/market/journal',json=sale).status_code==201
     journal=client.get('/market/journal').json()
     assert journal['realized_profit']==450 and journal['closed_sample']==1 and journal['average_hours_to_sale']>=1
-    assert client.patch('/profile',json={'game_version':'FC26'}).status_code==200
-    assert client.get('/market/journal').json()['items']==[]
-    assert client.post('/market/journal',json=sale).status_code==409
+    assert client.patch('/profile',json={'game_version':'FC26'}).status_code==422
+    assert client.get('/market/journal?game_version=FC26').status_code==422
+    assert client.get('/market/journal').json()['realized_profit']==450
 
 
 def wired_adapter(client, monkeypatch, read=None, initial=False):

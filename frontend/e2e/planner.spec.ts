@@ -81,12 +81,8 @@ test('planifica práctica por plataforma y vincula un partido de la misma edici�
  await expect(page.getByText(/A: 1 partidos, 45 minutos. Por 90 min: 6 ocasiones/)).toBeVisible()
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
  await page.screenshot({path:testInfo.outputPath('practice-diary.png')})
- await page.getByLabel('Temporada').selectOption('FC26')
- await page.getByText('Diario de partidos y práctica',{exact:true}).click()
- await expect(page.getByLabel('Práctica relacionada').locator('option')).toHaveCount(1)
- await expect(page.getByText(new RegExp(name))).toHaveCount(0)
- await page.getByLabel('Temporada').selectOption('FC27')
- await expect(page.getByText('Archivo FC 26 · Su inventario y progreso se mantienen separados de FC 27.')).toHaveCount(0)
+ await expect(page.getByLabel('Temporada activa')).toHaveCount(0)
+ await expect(page.getByText('FC 26', {exact:true})).toHaveCount(0)
 })
 
 test('guarda once y siete suplentes y conserva la táctica por rival',async({page,request},testInfo)=>{

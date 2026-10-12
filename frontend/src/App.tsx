@@ -5,10 +5,10 @@ import {KnowledgePage} from './pages/KnowledgePage'
 import {openEntry,type EntryState} from './lib/entry'
 import {ConnectionsPage} from './pages/ConnectionsPage'
 import {useEffect,useRef,useState,type ReactNode} from 'react'
-import {useIsMutating,useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
+import {useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from './api/client'
 import {ErrorBox,Loading} from './components/ui'
-import {SeasonContext,seasonLabel} from './lib/season'
+import {SeasonContext} from './lib/season'
 import type {Page} from './lib/navigation'
 import type {GameVersion,Profile} from './types'
 import {ClubPage} from './pages/ClubPage'
@@ -45,7 +45,7 @@ const dependencies:Partial<Record<Page,string>>={inicio:'analysis',club:'analysi
 function storedTheme(){try{return localStorage.getItem('theme')!=='light'}catch{return true}}
 
 export default function App(){
-  const qc=useQueryClient(),pendingMutations=useIsMutating()
+  const qc=useQueryClient()
   const [page,setPage]=useState<Page>('inicio'),[dark,setDark]=useState(storedTheme),[initialFormation,setInitialFormation]=useState('4-3-3')
   const [entry,setEntry]=useState<EntryState>(),[entryError,setEntryError]=useState<unknown>(),[entering,setEntering]=useState(true)
   const entryGeneration=useRef(0),mode=useRef<'live'|'local'>('live')
@@ -54,13 +54,9 @@ export default function App(){
   const freshness=useQuery({queryKey:['entry-state',entry?.entry_id],enabled:!!entry&&entry.mode==='live',refetchInterval:60000,queryFn:()=>api<EntryState>(`/club-contexts/${entry!.club_context_id}/sync-state`)})
   const effectiveEntry=freshness.data||entry
   const profile=useQuery({queryKey:['profile'],enabled:!!entry&&!entering,queryFn:()=>api<Profile>('/profile')})
-  const season:GameVersion=profile.data?.game_version==='FC26'?'FC26':'FC27'
-  const changeSeason=useMutation({
-    mutationFn:(game_version:GameVersion)=>api<Profile>('/profile',{method:'PATCH',body:JSON.stringify({game_version})}),
-    onSuccess:async(data)=>{await qc.cancelQueries();qc.setQueryData(['profile'],data);await qc.invalidateQueries({predicate:query=>query.queryKey[0]!=='profile'})},
-  })
+  const season:GameVersion='FC27'
   useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light';try{localStorage.setItem('theme',dark?'dark':'light')}catch{/* El tema sigue funcionando sin almacenamiento. */}},[dark])
-  useEffect(()=>{document.title=`${seasonLabel(season)} Club Lab`;document.getElementById('contenido')?.scrollIntoView?.({block:'start'})},[page,season])
+  useEffect(()=>{document.title='Club Lab FC27';document.getElementById('contenido')?.scrollIntoView?.({block:'start'})},[page,season])
   const pages:Record<Page,ReactNode>={
     fichajes:<TransfersPage entry={effectiveEntry}/>,planes:<PlannerPage/>,mercado:<MarketPage/>,referencias:<KnowledgePage/>,
     conexiones:<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')} onSelect={(id,next)=>void enter(next,'switch',id)}/>,
@@ -73,9 +69,9 @@ export default function App(){
   }
   return <SeasonContext.Provider value={season}><div className="app-shell">
     <a className="skip-link" href="#contenido">Saltar al contenido</a>
-    <header className="topbar"><div className="brand"><span className="brand-mark" aria-hidden="true">F<span>27</span></span><div><span className="eyebrow">TU CLUB. TUS DECISIONES.</span><h1>{seasonLabel(season)} Club Lab</h1></div></div><div className="header-controls"><label className="season-control"><span>Temporada</span><select aria-label="Temporada activa" disabled={pendingMutations>0||profile.isLoading||!profile.data} value={season} onChange={event=>changeSeason.mutate(event.target.value as GameVersion)}><option value="FC27">FC 27</option><option value="FC26">FC 26 · archivo</option></select></label><span className="local-pill"><span aria-hidden="true">●</span> Local</span></div></header>
+    <header className="topbar"><div className="brand"><span className="brand-mark" aria-hidden="true">F<span>27</span></span><div><span className="eyebrow">TU CLUB. TUS DECISIONES.</span><h1>Club Lab FC27</h1></div></div><div className="header-controls"><span className="local-pill"><span aria-hidden="true">●</span> Local</span></div></header>
     <nav className="bottom-nav" aria-label="Navegación principal">{navigation.map(item=><button key={item.id} className={page===item.id?'active':''} onClick={()=>setPage(item.id)} aria-current={page===item.id?'page':undefined}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button>)}</nav>
-    <main id="contenido" className="content" tabIndex={-1}><ErrorBox error={changeSeason.error}/>{entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>setPage('conexiones')}>Ver conexión</button></div>}{season==='FC26'&&<div className="season-banner">Archivo FC 26 · Su inventario y progreso se mantienen separados de FC 27.</div>}{entering?<Loading/>:!entry||(entry.mode==='live'&&!!dependencies[page]&&!effectiveEntry?.modules[dependencies[page]!]?.ready)?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')} onSelect={(id,next)=>void enter(next,'switch',id)}/>:profile.isLoading||changeSeason.isPending?<Loading/>:profile.error?<><ErrorBox error={profile.error}/><button onClick={()=>profile.refetch()}>Reintentar conexión local</button></>:<div className="page-content" key={`${page}-${season}`}>{pages[page]}</div>}</main>
+    <main id="contenido" className="content" tabIndex={-1}>{entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>setPage('conexiones')}>Ver conexión</button></div>}{entering?<Loading/>:!entry||(entry.mode==='live'&&!!dependencies[page]&&!effectiveEntry?.modules[dependencies[page]!]?.ready)?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')} onSelect={(id,next)=>void enter(next,'switch',id)}/>:profile.isLoading?<Loading/>:profile.error?<><ErrorBox error={profile.error}/><button onClick={()=>profile.refetch()}>Reintentar conexión local</button></>:<div className="page-content" key={`${page}-${season}`}>{pages[page]}</div>}</main>
     <footer className="app-footer">Club Lab · Datos locales · Revisa tus decisiones antes de aplicarlas en el juego.</footer>
   </div></SeasonContext.Provider>
 }

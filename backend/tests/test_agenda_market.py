@@ -23,7 +23,7 @@ def alert(client, **extra):
 def test_series_filters_identity_kind_edition_and_keeps_dated_sources(client):
     old = quote(client, amount=120, observed_at=(now()-timedelta(hours=26)).isoformat(), expires_at=(now()-timedelta(hours=25)).isoformat())
     newest = quote(client)
-    for fields in ({'market': 'PC'}, {'game_version': 'FC26'}, {'kind': 'observed_sale'}, {'variant_id': 'different'}):
+    for fields in ({'market': 'PC'}, {'kind': 'observed_sale'}, {'variant_id': 'different'}):
         quote(client, **fields)
     result = client.get('/market/series?variant_id=variant-test&market=Console&kind=listing').json()
     assert [r['id'] for r in result['points']] == [old, newest]
@@ -44,9 +44,7 @@ def test_alerts_no_data_trigger_stale_disabled_and_context_isolation(client):
         db.commit()
     assert client.get('/market/alerts').json()['items'][0]['status'] == 'stale'
     assert client.patch(f"/market/alerts/{row['id']}", json={'enabled': False}).json()['status'] == 'disabled'
-    client.patch('/profile', json={'game_version': 'FC26'})
-    assert client.get('/market/alerts').json()['items'] == []
-    assert client.patch(f"/market/alerts/{row['id']}", json={'enabled': True}).status_code == 404
+    assert client.patch('/profile', json={'game_version': 'FC26'}).status_code == 422
     fake_run(client)
     assert client.get('/market/alerts').json()['items'] == []
     assert client.get('/market/series?variant_id=variant-test').json()['points'] == []

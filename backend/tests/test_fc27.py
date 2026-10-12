@@ -130,11 +130,11 @@ def test_evolution_chain_does_not_repeat_same_definition(client):
 
 
 def test_edition_boundaries_reject_cross_version_definitions(client):
-    assert client.post('/gallery/sets', json=set_payload(game_version='FC26')).status_code == 409
-    assert client.post('/evolutions', json=evo_payload(game_version='FC26')).status_code == 409
-    assert client.patch('/profile', json={'game_version':'FC26'}).status_code == 200
-    assert client.get('/evolutions').json() == []
-    assert client.post('/gallery/record-inventory', json={}).status_code == 409
+    assert client.post('/gallery/sets', json=set_payload(game_version='FC26')).status_code == 422
+    assert client.post('/evolutions', json=evo_payload(game_version='FC26')).status_code == 422
+    assert client.patch('/profile', json={'game_version':'FC26'}).status_code == 422
+    assert client.get('/evolutions?game_version=FC26').status_code == 422
+    assert client.get('/gallery?game_version=FC26').status_code == 422
 
 
 def test_content_pack_preview_integrity_and_idempotent_confirm(client):

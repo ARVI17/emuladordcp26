@@ -1,4 +1,4 @@
-export type GameVersion = 'FC26' | 'FC27'
+export type GameVersion = 'FC27'
 export type AttributeKey = 'pace'|'shooting'|'passing'|'dribbling'|'defending'|'physical'|'diving'|'handling'|'kicking'|'reflexes'|'speed'|'positioning'
 export type Player = {
   id:number; name:string; rating:number; position:string; league:string; club:string; nationality:string;

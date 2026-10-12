@@ -6,12 +6,13 @@ from app.models.entities import AppSetting, Profile
 DEFAULT_GAME_VERSION = "FC27"
 
 def current_version(db) -> str:
-    return db.scalar(select(Profile.game_version).order_by(Profile.id).limit(1)) or DEFAULT_GAME_VERSION
+    # Historical profiles are preserved, never used to select the public product.
+    return DEFAULT_GAME_VERSION
 
 def ensure_profile(db) -> Profile:
     from app.services.contexts import ensure_local_context
     ensure_local_context(db)
-    profile = db.scalar(select(Profile).order_by(Profile.id).limit(1))
+    profile = db.scalar(select(Profile).where(Profile.game_version == DEFAULT_GAME_VERSION).order_by(Profile.id).limit(1))
     if profile is None:
         context = db.info.get("context")
         profile = Profile(name="Mi club", game_version=context.game_version if context and context.verified else DEFAULT_GAME_VERSION, coins=0, max_budget=0)

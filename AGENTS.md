@@ -5,6 +5,8 @@ Este archivo es la entrada rápida para cualquier agente que trabaje en `emulado
 
 ## Estado del planificador (11 de octubre de 2026)
 
+**Alcance vigente: exclusivamente FC27.** No ofrecer selector histórico ni leer, mutar o recomendar otra edición en rutas públicas. Conservar datos anteriores ocultos; las pruebas mixtas usan únicamente PostgreSQL desechable. Toda variante requiere evidencia FC27; revisión manual no equivale a validación oficial. [Contrato de exclusividad](docs/FC27_EXCLUSIVE.md). Esta regla sustituye las referencias históricas a un selector multiedición que aparecen más abajo.
+
 Lee [docs/FC27_PLANNER.md](docs/FC27_PLANNER.md) junto con el mapa. La entrada exige sesion/contexto y vigencia por dependencia; sin proveedor EA autorizado muestra **Integracion pendiente**. El modo local se elige expresamente. Reservas persistentes y aprobaciones no se pueden eludir desde rutas antiguas. Nunca habilites un proveedor ficticio ni una carga publica de snapshots verificados.
 
 Head `0012` (alertas locales de mercado): `0006` reconoce las dos variantes historicas de `0005` sin editarlas. El contexto 1 conserva registros sin vincular, nunca asignados a la primera cuenta. Las tablas personales usan ClubScoped; las mutaciones privadas requieren CSRF/entrada vigente. Restaurar exige local_simulation. Pulsaciones ADB deshabilitadas por falta de permiso aplicable; solo las pruebas mock sustituyen esa dependencia.

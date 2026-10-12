@@ -74,6 +74,8 @@ Se conservan `emuladordcp26_internal`, `emuladordcp26_postgres_data`, `emuladord
 
 ## Datos y edición
 
+**Actualización de alcance:** solo FC27 está disponible públicamente; se retiró el selector y el acceso histórico. Los registros anteriores permanecen aislados. Véase [FC27_EXCLUSIVE.md](FC27_EXCLUSIVE.md); las descripciones multiedición anteriores son compatibilidad interna.
+
 `Profile.game_version` controla la edición activa. Las consultas explícitas con edición se validan; las mutaciones comprueban que el objeto pertenece a la edición activa. El selector frontend limpia el estado de trabajo y usa claves de consulta con edición. La selección pertenece al perfil local compartido, no a una sesión multiusuario.
 
 | Entidades | Contenido |

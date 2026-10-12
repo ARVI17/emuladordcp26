@@ -39,13 +39,7 @@ def test_practice_completion_link_and_context_edition_isolation(client):
     assert finish(client, row).status_code == 200
     assert finish(client, row).status_code == 409
     assert match(client, practice_id=row['id']).status_code == 201
-    assert client.patch('/profile', json={'game_version': 'FC26'}).status_code == 200
-    assert client.get('/practice/sessions').json() == []
-    assert client.get('/practice/catalog').json()['drills'] == {}
-    assert client.get('/matches').json()['sample_size'] == 0
-    assert match(client, practice_id=row['id']).status_code == 422
-    assert client.post('/practice/sessions', json={'focus': 'runs', 'minutes': 15, 'platform': 'Xbox'}).status_code == 409
-    assert client.patch('/profile', json={'game_version': 'FC27'}).status_code == 200
+    assert client.patch('/profile', json={'game_version': 'FC26'}).status_code == 422
     assert client.get('/matches').json()['sample_size'] == 1
     fake_run(client)
     assert client.get('/practice/sessions').json() == []
@@ -64,14 +58,14 @@ def test_match_groups_use_minutes_keep_unknown_history_and_reject_future(client)
         db.add(old)
         db.commit()
     result = client.get('/matches').json()
-    assert result['sample_size'] == 3 and result['unverified_history_count'] == 1
+    assert result['sample_size'] == 3 and result['unverified_history_count'] == 0
     group = next(g for g in result['groups'] if g['change_tested'] == 'Cambio temprano')
     assert group['sample_size'] == 2 and group['minutes'] == 90
     assert group['per_90'] == {'chances': 6.0, 'dangerous_losses': 4.0, 'conceded': 1.0}
-    assert client.get('/matches?edition=unverified').json()['sample_size'] == 1
-    assert client.patch('/profile', json={'game_version': 'FC26'}).status_code == 200
-    assert match(client).status_code == 201
-    assert client.get('/matches').json()['sample_size'] == 1
+    assert client.get('/matches?edition=unverified').status_code == 422
+    assert client.get('/matches?edition=FC26').status_code == 422
+    with SessionLocal() as db:
+        assert db.scalar(select(MatchRecord).where(MatchRecord.game_version == 'unverified')) is not None
     assert client.get('/matches?edition=FC27').json()['sample_size'] == 3
 
 

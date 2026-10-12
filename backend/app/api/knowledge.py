@@ -135,7 +135,7 @@ def add_match(payload: MatchInput, db: Session = Depends(get_db)):
 
 
 @router.get("/matches")
-def matches(edition: Literal['FC26', 'FC27', 'unverified'] | None = None, db: Session = Depends(get_db)):
+def matches(edition: Literal['FC27'] | None = None, db: Session = Depends(get_db)):
     edition = edition or current_version(db)
     rows = list(db.scalars(select(MatchRecord).where(MatchRecord.game_version == edition).order_by(MatchRecord.played_at.desc(), MatchRecord.id.desc()).limit(101)))
     truncated, rows = len(rows) > 100, rows[:100]
@@ -147,5 +147,5 @@ def matches(edition: Literal['FC26', 'FC27', 'unverified'] | None = None, db: Se
         for field in ('minutes', 'chances', 'dangerous_losses', 'conceded'):
             group[field] += getattr(r, field)
     comparisons = [{**g, 'per_90': {k: round(g[k]*90/g['minutes'], 2) for k in ('chances', 'dangerous_losses', 'conceded')}} for g in groups.values()]
-    unknown = db.scalar(select(func.count()).select_from(MatchRecord).where(MatchRecord.game_version == 'unverified'))
+    unknown = 0  # Historical records remain stored, without public access/counts.
     return {'game_version': edition, 'items': [{key: getattr(r, key) for key in MatchInput.model_fields}|{'id': r.id, 'game_version': r.game_version} for r in rows], 'sample_size': len(rows), 'groups': comparisons, 'truncated': truncated, 'unverified_history_count': unknown, 'message': 'Últimos 100 partidos por edición, agrupados por táctica y único cambio. Tasas por 90 minutos; rivales y dificultad no están controlados. La muestra no demuestra causalidad ni superioridad táctica.'}

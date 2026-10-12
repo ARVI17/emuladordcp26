@@ -106,7 +106,8 @@ def test_versions_of_one_athlete_cannot_occupy_two_slots_or_the_bench():
 
 
 def test_edition_review_and_loan_filters_are_explicit():
-    players = [card(1, "POR", game_version="FC26"), card(2, "LD", data_reviewed=False), card(3, "LI", is_loan=True)]
+    players = [card(1, "POR"), card(2, "LD", data_reviewed=False), card(3, "LI", is_loan=True)]
+    players[0].game_version = "FC26"  # Historical ORM fixture; never public input.
     result = recommend_owned_squad(players, game_version="FC27", include_loans=False)
     assert result["players"] == [] and result["bench"] == []
     assert len(result["gaps"]) == 11
@@ -302,23 +303,22 @@ def test_restore_prevalidates_all_card_owners_before_changing_any_card(client):
 
 
 def test_active_edition_isolates_lists_recommendation_confirmation_and_history(client):
-    legacy = create_card(client, name="Solo FC27")
-    legacy_segment = create_segment(client, {"squad_size": 1})
-    assert client.patch("/profile", json={"game_version": "FC26"}).status_code == 200
-    other = create_card(client, name="Solo FC26")
-    assert other["game_version"] == "FC26"
-    assert [p["id"] for p in client.get("/players").json()["items"]] == [other["id"]]
-    assert client.get("/club/analysis").json()["counts"]["players"] == 1
-    assert client.post("/squads/recommend").json()["players"][0]["id"] == other["id"]
-    assert client.post(f"/segments/{legacy_segment}/confirm", json={"player_ids": [legacy["id"]]}).status_code == 404
+    active = create_card(client, name="Solo FC27")
+    historical = create_card(client, name="Solo historico")
     segment_id = create_segment(client, {"squad_size": 1})
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [legacy["id"]]}).status_code == 422
-    result = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [other["id"]]})
-    assert result.status_code == 200
-    assert client.get("/submissions").json()["total"] == 1
-    client.patch("/profile", json={"game_version": "FC27"})
-    assert client.get("/submissions").json()["total"] == 0
-    assert client.post(f"/submissions/{result.json()['submission_id']}/restore").status_code == 404
+    with SessionLocal() as db:
+        db.get(Player, historical['id']).game_version = 'FC26'
+        db.commit()
+    assert client.patch('/profile', json={'game_version': 'FC26'}).status_code == 422
+    assert historical['id'] not in [p['id'] for p in client.get('/players?limit=500').json()['items']]
+    assert client.get('/players?game_version=FC26').status_code == 422
+    assert client.get('/club/analysis').json()['game_version'] == 'FC27'
+    assert historical['id'] not in [p['id'] for p in client.post('/squads/recommend').json()['players']]
+    assert client.post(f"/segments/{segment_id}/confirm", json={'player_ids': [historical['id']]}).status_code == 422
+    assert client.post(f"/segments/{segment_id}/confirm", json={'player_ids': [active['id']]}).status_code == 200
+    with SessionLocal() as db:
+        assert db.get(Player, historical['id']).game_version == 'FC26'
+        assert not db.get(Player, historical['id']).deleted
 
 
 def test_import_confirmation_is_bound_to_file_edition_and_one_use(client):
@@ -334,9 +334,7 @@ def test_import_confirmation_is_bound_to_file_edition_and_one_use(client):
     assert upload({"confirm": "true"}).status_code == 422
     assert upload({"confirm": "true", "preview_token": token}, content.replace(b"83", b"84")).status_code == 422
     assert upload({"confirm": "true", "preview_token": token + "tampered"}).status_code == 422
-    client.patch("/profile", json={"game_version": "FC26"})
-    assert upload({"confirm": "true", "preview_token": token}).status_code == 422
-    client.patch("/profile", json={"game_version": "FC27"})
+    assert client.patch("/profile", json={"game_version": "FC26"}).status_code == 422
     confirmed = upload({"confirm": "true", "preview_token": token})
     assert confirmed.status_code == 200 and confirmed.json()["imported"] == 1
     replay = upload({"confirm": "true", "preview_token": token})

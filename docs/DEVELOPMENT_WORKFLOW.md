@@ -1,5 +1,7 @@
 # Desarrollo por sprints: FC27
 
+El producto público es exclusivamente FC27: [frontera de edición](FC27_EXCLUSIVE.md). Conservar históricos ocultos y probar cruces solo en bases desechables. Las referencias no crean posesión. La revisión manual no acredita una variante ni una conexión EA.
+
 Cada sprint tiene 1–3 objetivos funcionales, un solo agente por defecto, riesgos concretos y pruebas previstas. Revisa `git status --short`, rama, remotos, PR abiertas, [AGENTS.md](../AGENTS.md) y [PROJECT_MAP.md](PROJECT_MAP.md). Las PR #2 y #3 son ramas revisables, no evidencia de despliegue o merge. Conserva el trabajo ajeno y desarrolla fuera de `main`.
 
 ## Verificación aislada desde PowerShell

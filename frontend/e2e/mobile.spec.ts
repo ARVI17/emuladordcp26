@@ -2,10 +2,10 @@ import {test,expect,openLocal} from './fixtures'
 
 test('el panel y la navegación de FC 27 caben en una pantalla móvil',async({page})=>{
   await openLocal(page)
-  await expect(page.getByRole('heading',{name:/FC (26|27) Club Lab/})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Club Lab FC27'})).toBeVisible()
   await expect(page.getByRole('navigation',{name:'Navegación principal'})).toBeVisible()
   await expect(page.getByRole('button',{name:'Mi club',exact:true})).toBeVisible()
-  await expect(page.getByLabel('Temporada activa')).toBeVisible()
+  await expect(page.getByLabel('Temporada activa')).toHaveCount(0)
   await page.getByRole('button',{name:'Mi club',exact:true}).click()
   await expect(page.getByRole('heading',{name:'Mi club',exact:true})).toBeVisible()
   const widths=await page.evaluate(()=>({viewport:window.innerWidth,document:document.documentElement.scrollWidth}))
@@ -50,7 +50,7 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
       created.push((await response.json()).id)
     }
     await openLocal(page)
-    await expect(page.getByRole('heading',{name:'FC 27 Club Lab'})).toBeVisible()
+    await expect(page.getByRole('heading',{name:'Club Lab FC27'})).toBeVisible()
     await page.getByRole('button',{name:'Análisis',exact:true}).click()
     await expect(page.getByRole('heading',{name:'Análisis de mi club'})).toBeVisible()
     await page.getByRole('button',{name:/^Armar un /}).click()

@@ -38,6 +38,8 @@ class RemoteRead(InputModel):
 
     @model_validator(mode="after")
     def evidence(self):
+        if self.game_version != "FC27" or any(item.fields.get("game_version", "FC27") != "FC27" for item in self.items):
+            raise ValueError("Solo se admite una lectura inequívoca de FC27")
         if self.observed_at.tzinfo is None or self.observed_at > now():
             raise ValueError("La observación remota exige fecha válida con zona horaria")
         if self.revision != self.end_revision:

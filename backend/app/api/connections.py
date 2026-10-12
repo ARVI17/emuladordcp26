@@ -71,7 +71,7 @@ def enter(payload: EntryInput, request: Request, background: BackgroundTasks, db
     with resource_locks(db, "session:"+session.id):
         db.refresh(session)
         target = db.get(ClubContext, payload.context_id or session.context_id)
-        if target is None or target.owner_id != session.owner_id:
+        if target is None or target.owner_id != session.owner_id or target.game_version != "FC27":
             raise HTTPException(404, "Contexto no disponible")
         if payload.mode == "local" and target.verified:
             raise HTTPException(409, "El historial de un club vinculado no se convierte en inventario local editable")
@@ -109,7 +109,7 @@ def enter(payload: EntryInput, request: Request, background: BackgroundTasks, db
 @router.get("/club-contexts")
 def contexts(request: Request, db: Session = Depends(raw_db)):
     session, _ = session_for(db, request)
-    return [{"id": row.id, "name": row.name, "verified": row.verified, "game_version": row.game_version, "platform": row.platform} for row in db.scalars(select(ClubContext).where(ClubContext.owner_id == session.owner_id))]
+    return [{"id": row.id, "name": row.name, "verified": row.verified, "game_version": row.game_version, "platform": row.platform} for row in db.scalars(select(ClubContext).where(ClubContext.owner_id == session.owner_id, ClubContext.game_version == "FC27"))]
 
 
 @router.get("/club-contexts/{context_id}/sync-state")

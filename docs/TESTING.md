@@ -215,3 +215,7 @@ Primero compruebe que `/api/emulator/status` degrada sin dispositivo y el resto 
 Para un plan tradicional, compruebe frase incorrecta, cambios de carta/calibración, preparación, ejecución y cancelación. Inspeccione que ningún paso incluya la pulsación final de entrega. Los score deben rechazarse antes de generar preparación automática. La preparación puede cambiar la selección visible en el dispositivo; use datos y una pantalla que permitan revisar esos efectos.
 
 Siguen pendientes el build/arranque del stack Docker completo, el E2E a través de su Nginx, backup/restauración reales mediante PowerShell, Safari y un teléfono/emulador con Companion y un club EA real. Esos resultados deben añadirse cuando se ejecuten, indicando versión de Companion, resolución, entorno y cualquier fallo observado. Los datos de las comprobaciones registradas son ficticios y no demuestran una sincronización ni una entrega real en EA.
+
+## Frontera exclusivamente FC27
+
+Docker aislado: 191 Pytest/PostgreSQL, 25 Vitest y 20 Playwright (móvil/escritorio), build, health, OpenAPI y Alembic correctos. Se incluyen perfiles históricos, relaciones mixtas y rechazo de rutas de archivo. Datos antiguos conservados; stack principal sin cambios. Dos ejecuciones previas detectaron contratos de pruebas obsoletos y un 500 al acceder a un segmento histórico; corregidos antes del pase completo.

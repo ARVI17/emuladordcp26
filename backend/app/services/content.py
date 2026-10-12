@@ -8,7 +8,7 @@ from urllib.parse import urljoin, urlsplit
 import httpx
 
 BUILTIN = json.loads((Path(__file__).resolve().parent.parent / "data" / "fc27_content.json").read_text())
-NEWS_SOURCES = {"FC27": "https://www.ea.com/games/ea-sports-fc/fc-27", "FC26": "https://www.ea.com/games/ea-sports-fc/fc-26"}
+NEWS_SOURCES = {"FC27": "https://www.ea.com/games/ea-sports-fc/fc-27"}
 MAX_NEWS_BYTES = 2_000_000
 
 class NewsLinks(HTMLParser):

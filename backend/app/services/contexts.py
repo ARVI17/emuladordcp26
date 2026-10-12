@@ -50,7 +50,7 @@ def session_for(db, request, *, mutate=False):
         if not hmac.compare_digest(digest(request.headers.get("X-CSRF-Token", "")), session.csrf_hash):
             raise HTTPException(403, "Reabre la aplicación para revisar esta acción")
     context = db.get(ClubContext, session.context_id)
-    if context is None or context.owner_id != session.owner_id:
+    if context is None or context.owner_id != session.owner_id or context.game_version != "FC27":
         raise HTTPException(404, "Contexto no disponible")
     db.info.update(club_context_id=context.id, local_session=session, context=context)
     return session, context
@@ -121,6 +121,18 @@ def scope_reads(execute_state):
     if context_id is not None and execute_state.is_select:
         execute_state.statement = execute_state.statement.options(with_loader_criteria(
             ClubScoped, lambda cls: cls.club_context_id == context_id, include_aliases=True))
+        # Includes aggregates, aliases and relationship loads. Historical access is
+        # internal only (unbound sessions used by backups/migrations).
+        from app.db.base import Base
+        for mapper in Base.registry.mappers:
+            model = mapper.class_
+            if hasattr(model, "game_version"):
+                execute_state.statement = execute_state.statement.options(
+                    with_loader_criteria(model, model.game_version == "FC27", include_aliases=True))
+        from app.models.entities import Challenge, Segment, SquadPlayer
+        execute_state.statement = execute_state.statement.options(
+            with_loader_criteria(Segment, Segment.challenge_id.in_(select(Challenge.id).where(Challenge.game_version == "FC27")), include_aliases=True),
+            with_loader_criteria(SquadPlayer, SquadPlayer.player_id.in_(select(Player.id).where(Player.game_version == "FC27")), include_aliases=True))
 
 
 @event.listens_for(Session, "before_flush")
@@ -129,6 +141,8 @@ def scope_writes(db, *_):
     if context_id is None:
         return
     for obj in db.new | db.dirty | db.deleted:
+        if hasattr(obj, "game_version") and obj.game_version not in (None, "FC27"):
+            raise HTTPException(422, "Solo se admiten datos FC27; el histórico permanece aislado")
         if not isinstance(obj, ClubScoped):
             continue
         if obj in db.new and obj.club_context_id is None:
@@ -153,6 +167,8 @@ def bind_request(db, request: Request):
     path = request.url.path.removeprefix("/api")
     if path == "/health":
         return
+    if any(request.query_params.get(key) not in (None, "FC27") for key in ("game_version", "edition")):
+        raise HTTPException(422, "Solo FC27 está disponible en la aplicación")
     session, _ = session_for(db, request, mutate=request.method not in {"GET", "HEAD", "OPTIONS"})
     if path.startswith(("/settings", "/audit", "/profile")):
         return

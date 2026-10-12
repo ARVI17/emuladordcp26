@@ -40,8 +40,8 @@ DB = Annotated[Session, Depends(get_db)]
 
 
 def version_for(db: Session, version: str | None = None) -> str:
-    if version is not None and not re.fullmatch(r"FC[2-9][0-9]", version):
-        raise HTTPException(422, "Edición no reconocida")
+    if version not in (None, "FC27"):
+        raise HTTPException(422, "El producto solo admite FC27; el histórico no está disponible en estas rutas")
     return version or current_version(db)
 
 
@@ -91,7 +91,7 @@ def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
 
 
 def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
-    active = [entry for entry in squad.players if not entry.player.deleted and entry.player.game_version == squad.game_version]
+    active = [entry for entry in squad.players if entry.player and not entry.player.deleted and entry.player.game_version == squad.game_version]
     entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": entry.player.availability == "available",
                 "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
     starters = [entry for entry in active if not entry.slot.startswith("BENCH-") and entry.player.availability == "available"]
@@ -124,7 +124,7 @@ def get_or_404(db: Session, model, entity_id: int):
     version = current_version(db)
     if hasattr(entity, "game_version") and entity.game_version != version:
         raise HTTPException(404, "Registro no disponible en la edición activa")
-    if isinstance(entity, Segment) and entity.challenge.game_version != version:
+    if isinstance(entity, Segment) and (not entity.challenge or entity.challenge.game_version != version):
         raise HTTPException(404, "Segmento no disponible en la edición activa")
     return entity
 

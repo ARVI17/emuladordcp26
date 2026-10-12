@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator, model_validator
 
-GameVersion = Annotated[str, Field(pattern=r"^FC[2-9][0-9]$")]
+GameVersion = Literal["FC27"]
 PlayerID = Annotated[StrictInt, Field(ge=1)]
 ATTRIBUTE_KEYS = {"pace", "shooting", "passing", "dribbling", "defending", "physical", "diving", "handling", "kicking", "reflexes", "speed", "positioning"}
 POSITION_ALIASES = {"GK":"POR", "RB":"LD", "CB":"DFC", "LB":"LI", "RWB":"CAD", "LWB":"CAI", "CDM":"MCD", "CM":"MC", "CAM":"MCO", "RM":"MD", "LM":"MI", "RW":"ED", "LW":"EI", "ST":"DC", "CF":"SD"}

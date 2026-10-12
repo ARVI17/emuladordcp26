@@ -42,7 +42,8 @@ def test_import_rejects_blank_required_and_unknown_boolean():
 def test_import_header_validation_and_explicit_edition():
     with pytest.raises(ValueError, match="repetidos"):
         parse_import(b"name,name,rating,position,league,club,nationality\nA,B,86,MC,Liga,Club,Colombia", "club.csv")
-    assert normalize_player_record({**BASE, "game_version": "FC26"})["game_version"] == "FC26"
+    with pytest.raises(ValueError, match="game_version"):
+        normalize_player_record({**BASE, "game_version": "FC26"})
 
 
 @pytest.mark.parametrize("excel", [False, True])
