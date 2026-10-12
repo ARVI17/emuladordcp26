@@ -32,6 +32,11 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=settings.app_name, version="2.0.0", lifespan=lifespan, docs_url="/docs", redoc_url=None, root_path="/api")
 app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins, allow_credentials=False, allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"], allow_headers=["Content-Type", "X-CSRF-Token", "X-App-Entry"])
 
+@app.get('/build', tags=['Estado local'])
+def build_metadata():
+    from app.core.build import build_info
+    return build_info()
+
 @app.exception_handler(RequestValidationError)
 async def validation_error(_: Request, exc: RequestValidationError):
     return JSONResponse(status_code=422, content={"detail": "Datos de entrada inválidos", "errors": [{"field": ".".join(map(str, e["loc"])), "message": e["msg"]} for e in exc.errors()]})

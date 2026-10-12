@@ -16,12 +16,18 @@ services:
       retries: 30
   backend:
     image: ${VERIFY_BACKEND_IMAGE:-emuladordcp26-planner-backend}
-    build: ./backend
+    build:
+      context: ./backend
+      args: &build_metadata
+        BUILD_REVISION: ${BUILD_REVISION:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        BUILD_ENVIRONMENT: ${BUILD_ENVIRONMENT:-review}
+        BUILD_DIRTY: ${BUILD_DIRTY:-false}
     environment:
       DATABASE_URL: postgresql+psycopg://planner_test:planner_test_only@database:5432/planner_review_test
       OLLAMA_URL: http://127.0.0.1:1
       ADB_ENABLED: 'false'
-      SEED_DEMO: 'true'
+      SEED_DEMO: 'false'
       CORS_ORIGINS: http://localhost:${REVIEW_PORT:-8081},http://127.0.0.1:${REVIEW_PORT:-8081}
     depends_on:
       database:
@@ -33,7 +39,9 @@ services:
       timeout: 3s
       retries: 30
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args: *build_metadata
     mem_limit: 64m
     healthcheck:
       test: [CMD, wget, -q, --spider, "http://127.0.0.1/"]

@@ -172,7 +172,9 @@ def dashboard(db: DB):
         alerts.append({"level": "warning", "message": f"Tienes {duplicates} duplicados intransferibles para priorizar."})
     if protected:
         alerts.append({"level": "info", "message": f"{protected} cartas están protegidas contra entregas."})
-    return {"profile": {key: getattr(profile, key) for key in ("id", "game_version", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}, "counts": {"players": count, "protected": protected, "duplicates": duplicates, "pending_challenges": pending}, "objectives": [objective_data(goal) for goal in goals], "alerts": alerts}
+    from app.services.account import account_summary
+    return {"account": account_summary(db), "mode": db.info['local_session'].mode,
+            "profile": {key: getattr(profile, key) for key in ("id", "game_version", "name", "coins", "platform", "max_budget", "risk_level", "preferences")}, "counts": {"players": count, "protected": protected, "duplicates": duplicates, "pending_challenges": pending}, "objectives": [objective_data(goal) for goal in goals], "alerts": alerts}
 
 
 @router.get("/players")
