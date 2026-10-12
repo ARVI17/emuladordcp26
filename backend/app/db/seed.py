@@ -10,6 +10,9 @@ LEAGUES = ["Liga Aurora", "Premier Nova", "Serie Estelar", "Liga Central", "Liga
 CLUBS = ["Costa FC", "Unión Solar", "Real Norte", "Deportivo Sur", "Racing Verde", "Ciudad Azul", "Atlético Oro", "Sporting Luna", "Valle Rojo", "Puerto Blanco"]
 NATIONS = ["Colombia", "España", "Argentina", "Brasil", "Francia", "México", "Uruguay", "Portugal"]
 
+def demo_player_names() -> list[str]:
+    return [f"{FIRST[index % len(FIRST)]} {LAST[(index * 2) % len(LAST)]} {index + 1}" for index in range(132)]
+
 def seed_database() -> None:
     db = SessionLocal()
     try:

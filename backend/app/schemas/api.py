@@ -100,6 +100,11 @@ class ObjectiveUpdate(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
 
+class DcpAssistantRequest(BaseModel):
+    segment_id: int = Field(gt=0)
+    preserve_starters: bool = True
+    max_solutions: int = Field(default=3, ge=1, le=3)
+
 class EmulatorConnectRequest(BaseModel):
     address: str = Field(min_length=3, max_length=120, pattern=r"^[a-zA-Z0-9._-]+:[0-9]{2,5}$")
 
@@ -109,6 +114,12 @@ class EmulatorConnectRequest(BaseModel):
         if not 1 <= int(value.rsplit(":", 1)[1]) <= 65535:
             raise ValueError("El puerto ADB debe estar entre 1 y 65535")
         return value
+
+class EmulatorPairRequest(EmulatorConnectRequest):
+    pairing_code: str = Field(pattern=r"^[0-9]{6}$")
+
+class EmulatorSelectRequest(BaseModel):
+    serial: str = Field(min_length=1, max_length=120, pattern=r"^[a-zA-Z0-9._:-]+$")
 
 class EmulatorTapRequest(BaseModel):
     x: int = Field(ge=0, le=10000)
@@ -148,3 +159,41 @@ class AutomationPlanCreate(BaseModel):
 
 class AutomationExecuteRequest(BaseModel):
     confirmation: str = Field(min_length=8, max_length=40)
+
+class InventoryScanImportRequest(BaseModel):
+    players: list[PlayerCreate] = Field(min_length=1, max_length=500)
+    candidate_ids: list[int] = Field(min_length=1, max_length=500)
+    confirmation: str = Field(min_length=8, max_length=80)
+    archive_demo: bool = False
+
+    @model_validator(mode="after")
+    def candidate_ids_match_players(self):
+        if len(self.candidate_ids) != len(self.players):
+            raise ValueError("Cada jugador debe conservar su candidate_id")
+        if len(set(self.candidate_ids)) != len(self.candidate_ids):
+            raise ValueError("Los candidate_id no pueden repetirse")
+        return self
+
+class InventoryBulkImportRequest(BaseModel):
+    confirmation: str = Field(min_length=10, max_length=80)
+
+class DcpSyncRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    requirements: dict[str, Any]
+    confirmation: str = Field(min_length=10, max_length=40)
+
+class ObjectiveSyncItem(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    progress: int = Field(ge=0, le=100_000)
+    target: int = Field(ge=1, le=100_000)
+    category: str = Field(default="Objetivo", min_length=2, max_length=40)
+
+    @model_validator(mode="after")
+    def progress_fits_target(self):
+        if self.progress > self.target:
+            self.progress = self.target
+        return self
+
+class ObjectiveSyncRequest(BaseModel):
+    objectives: list[ObjectiveSyncItem] = Field(min_length=1, max_length=100)
+    confirmation: str = Field(min_length=10, max_length=40)

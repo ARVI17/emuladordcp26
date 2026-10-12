@@ -29,6 +29,15 @@ class AdbBridge:
         if any(term in output.lower() for term in ("unable", "failed", "cannot", "refused", "offline")): raise AdbError(output)
         return output
 
+    def pair(self, address: str, pairing_code: str) -> str:
+        if not re.fullmatch(r"[a-zA-Z0-9._-]+:[0-9]{2,5}", address): raise AdbError("Dirección ADB inválida")
+        if not 1 <= int(address.rsplit(":", 1)[1]) <= 65535: raise AdbError("Puerto ADB inválido")
+        if not re.fullmatch(r"[0-9]{6}", pairing_code): raise AdbError("Código de emparejamiento inválido")
+        output = self._run(["pair", address, pairing_code], timeout=25)
+        sanitized = output.replace(pairing_code, "[redactado]")
+        if any(term in sanitized.lower() for term in ("unable", "failed", "cannot", "refused", "incorrect")): raise AdbError(sanitized)
+        return sanitized
+
     def devices(self) -> list[dict]:
         output = self._run(["devices", "-l"])
         rows = []
@@ -47,6 +56,21 @@ class AdbBridge:
         if not content.startswith(b"\x89PNG"): raise AdbError("El dispositivo no devolvió una captura PNG")
         return content
 
+    def ui_hierarchy(self, serial: str) -> bytes:
+        """Read Android's accessibility tree without retaining it on either system."""
+        path = "/data/local/tmp/emuladordcp26-ui.xml"
+        self._device(serial, ["shell", "uiautomator", "dump", path], timeout=20)
+        try:
+            content = self._device(serial, ["exec-out", "cat", path], timeout=10, binary=True)
+        finally:
+            try:
+                self._device(serial, ["shell", "rm", "-f", path], timeout=5)
+            except AdbError:
+                pass
+        if not content.startswith(b"<?xml") or len(content) > 2_000_000:
+            raise AdbError("El dispositivo no devolvió una jerarquía de interfaz válida")
+        return content
+
     def screen_size(self, serial: str) -> tuple[int, int] | None:
         output = self._device(serial, ["shell", "wm", "size"])
         matches = re.findall(r"(\d+)x(\d+)", output)
@@ -57,6 +81,13 @@ class AdbBridge:
 
     def swipe(self, serial: str, x1: int, y1: int, x2: int, y2: int, duration_ms: int):
         self._device(serial, ["shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2), str(duration_ms)])
+
+    def scroll_inventory_list_to_end(self, serial: str, width: int, height: int):
+        if not 320 <= width <= 4320 or not 480 <= height <= 7680:
+            raise AdbError("Resolución no permitida para desplazar el inventario")
+        x, y1, y2 = width // 2, int(height * 0.8), int(height * 0.19)
+        swipe = f"input swipe {x} {y1} {x} {y2} 120"
+        self._device(serial, ["shell", "; ".join([swipe] * 5)], timeout=20)
 
     def keyevent(self, serial: str, code: int):
         if code not in {4, 66, 67, 111, 123}: raise AdbError("Tecla no permitida")

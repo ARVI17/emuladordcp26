@@ -1,6 +1,6 @@
 # emuladordcp26 — Asistente local FC 26
 
-Aplicación local, mobile-first y no oficial para administrar un club ficticio, proteger cartas, organizar plantillas y objetivos, importar inventario, revisar capturas con OCR y resolver DCP mediante optimización determinista. Puede preparar en un teléfono o emulador Android conectado por ADB una combinación ya calculada, siempre con autorización explícita y deteniéndose antes de la entrega final. El frontend consume una API FastAPI real y toda la información se persiste en PostgreSQL local.
+Aplicación local, mobile-first y no oficial para administrar el inventario revisado por el usuario, proteger cartas, organizar plantillas y objetivos, leer capturas con OCR y resolver DCP mediante optimización determinista. Puede acumular lecturas visuales del club mostrado en Companion, proponer requisitos de un DCP y preparar en un teléfono o emulador Android conectado por ADB una combinación ya calculada, siempre con autorización explícita y deteniéndose antes de la entrega final.
 
 No inicia sesión ni se conecta directamente a las API de EA. Nunca solicita correo, contraseña, cookies, tokens ni códigos de verificación. La sesión, si se usa la preparación asistida, permanece dentro del dispositivo controlado por su propietario.
 
@@ -12,6 +12,8 @@ No inicia sesión ni se conecta directamente a las API de EA. Nunca solicita cor
 - Puertos libres: `8080` para la aplicación y `55432` para PostgreSQL. Ambos se pueden cambiar en `.env`.
 
 En Windows, instala Docker Desktop, activa WSL 2 cuando el instalador lo solicite y espera a que Docker indique que el motor está listo.
+
+En equipos de 16 GB que ejecuten también un emulador Android, un límite global de WSL2 de 5 GB y 2 GB de swap ofrece un equilibrio razonable. Se configura desde WSL Settings o `%USERPROFILE%\.wslconfig`; después es necesario reiniciar Docker Desktop. No uses un límite menor sin probar OCR, compilación e inferencia.
 
 ## Inicio en un comando
 
@@ -31,7 +33,9 @@ En el primer inicio, PostgreSQL se prepara, Alembic aplica las migraciones y el 
 
 ## Configuración
 
-Opcionalmente copia `.env.example` a `.env` y modifica los valores locales. No confirmes `.env` en Git. Las variables principales son `APP_PORT`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `OLLAMA_MODEL`, `OLLAMA_URL`, `ADB_ENABLED`, `ADB_DEFAULT_ADDRESS`, `MAX_UPLOAD_MB` y `CORS_ORIGINS`.
+Opcionalmente copia `.env.example` a `.env` y modifica los valores locales. No confirmes `.env` en Git. Las variables principales son `APP_PORT`, `POSTGRES_PORT`, `POSTGRES_PASSWORD`, `OLLAMA_MODEL`, `OLLAMA_URL`, `ADB_ENABLED`, `ADB_DEFAULT_ADDRESS`, `MAX_UPLOAD_MB` y `CORS_ORIGINS`. Los topes `BACKEND_MEMORY_LIMIT`, `DATABASE_MEMORY_LIMIT`, `FRONTEND_MEMORY_LIMIT`, `NGINX_MEMORY_LIMIT` y `OLLAMA_MEMORY_LIMIT` permiten ajustar RAM sin editar Compose. PostgreSQL usa un perfil local de 64 MB de buffers, 30 conexiones máximas y un pool SQLAlchemy de 3+2 conexiones para evitar reservas innecesarias.
+
+Las lecturas del club no usan Ollama ni una API con créditos. **Actualizar desde Companion** realiza una sola inspección de la pantalla `Futb. de Mi Club` cuando el usuario pulsa el botón; no existe un temporizador de sincronización. **Actualizar revisión** vuelve a consultar únicamente los datos locales. La revisión detallada conserva solo 20 formularios, mientras **Cargar todo el club sin duplicados** procesa en el servidor todos los lotes pendientes bajo la frase `IMPORTAR TODO EL CLUB`. Compara nombre+media+posición con cartas activas, usadas y otros lotes para no duplicarlas.
 
 ## Comandos
 
@@ -59,14 +63,36 @@ En Windows sin `make`, usa directamente `docker compose up --build -d`, `docker 
 
 ## Emulador o teléfono Android por ADB
 
-El backend incluye el cliente ADB dentro de su propio contenedor. El emulador o teléfono debe ofrecer ADB por TCP y ser accesible desde Docker; el valor predeterminado es `host.docker.internal:5555`. No instales credenciales en el proyecto ni las escribas en sus formularios.
+El backend incluye el cliente ADB dentro de su propio contenedor. Para el AVD local, Docker reutiliza el servidor ADB restringido a Windows mediante `ADB_SERVER_SOCKET=tcp:host.docker.internal:5037`; para un teléfono se conserva la conexión ADB por IP y puerto. No instales credenciales en el proyecto ni las escribas en sus formularios.
+
+### AVD local recomendado en Windows
+
+Para no depender de otro celular, usa el AVD `FC26_Companion` creado con las herramientas oficiales de Android. Tiene Android 15/API 35, Google Play, aceleración WHPX, marco Pixel 5 y límites de 1,5 GB de RAM y 2 núcleos. Android Studio no necesita permanecer abierto. Inícialo y selecciónalo en la aplicación con:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-android-avd.ps1
+```
+
+El script deja ADB restringido al equipo local, abre el emulador visible, espera a que Android termine y selecciona su serial en el backend. En el primer uso abre Play Store, inicia sesión manualmente, instala la aplicación oficial **EA SPORTS FC Companion** y entra tú mismo en tu cuenta EA. El proyecto no recibe ni almacena esas credenciales.
+
+Al terminar una sesión de DCP, libera la RAM del AVD sin apagar Docker:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\stop-android-avd.ps1
+```
+
+El Android oficial no se ejecuta dentro de Docker Desktop en Windows porque Google no admite KVM acelerado en esa combinación. Forzarlo con virtualización anidada aumenta complejidad y consumo; las imágenes preconstruidas con Play Store también son antiguas. Por eso la API, base de datos, web, OCR y Ollama permanecen en Docker, mientras solo el runtime gráfico de Android usa WHPX en Windows. Android Studio no necesita estar abierto durante el uso.
 
 1. Inicia el emulador y activa su acceso ADB local/TCP.
 2. En **Emulador**, pulsa **Conectar** y comprueba que el dispositivo figure como disponible.
-3. Abre manualmente la pantalla de DCP en la aplicación del dispositivo.
-4. Calibra las coordenadas de búsqueda, campo, resultado y botón de agregar según la resolución mostrada.
-5. Desde una solución DCP, pulsa **Preparar en emulador**. Revisa el plan y escribe `PREPARAR <id>` para autorizar sus pulsaciones.
-6. Comprueba visualmente los once jugadores. La entrega final queda deliberadamente pendiente para que la aceptes tú en el dispositivo.
+3. Abre manualmente **Mi club → Futbolistas**. En **Sincronizar mi club real**, inicia una lectura y pulsa **Actualizar desde Companion**. Cambia de página manualmente y vuelve a pulsar, o usa **Avanzar y leer siguiente** para la navegación validada. Al terminar, revisa el resumen global y escribe `IMPORTAR TODO EL CLUB` para cargar todos los lotes únicos sin crear miles de controles en el navegador.
+4. Revisa nombre, media y posición, y completa liga, club, nacionalidad y demás datos que Companion no expone como texto. La lista solicita y conserva solo 20 cartas por página para reducir RAM y tráfico. Escribe `IMPORTAR <id>`; si además quieres archivar solo las 132 cartas demo, marca esa opción y escribe `REEMPLAZAR DEMO <id>`.
+5. Abre el segmento DCP y pulsa **Leer requisitos DCP**. Revisa el borrador OCR antes de crearlo y optimizarlo.
+6. Toma una captura y calibra por clic las zonas de búsqueda, campo, primer resultado y agregar; esos clics de calibración no se envían al dispositivo.
+7. Desde una solución DCP, pulsa **Preparar en emulador**. Revisa el plan y escribe `PREPARAR <id>` para autorizar sus pulsaciones.
+8. Comprueba visualmente los once jugadores. La entrega final queda deliberadamente pendiente para que la aceptes tú en el dispositivo.
+
+Para un teléfono con **Depuración inalámbrica**, abre **Emparejar dispositivo con código** en Android, introduce en la web su IP:puerto y código temporal, pulsa **Emparejar** y luego usa en **Conectar** el segundo IP:puerto que muestra Android. El código se utiliza una vez y no se persiste.
 
 Puedes diagnosticar la conexión desde PowerShell:
 
@@ -86,7 +112,13 @@ docker compose up --build -d
 docker compose exec ollama ollama pull qwen2.5:3b
 ```
 
-Cambia `OLLAMA_MODEL` en `.env` por otro modelo ya instalado y reinicia el backend. El chat solo consulta un resumen controlado del inventario; no ejecuta cambios. Preguntas y respuestas se almacenan únicamente en PostgreSQL local. Si Ollama falla, se muestra el aviso de degradación y el resto continúa activo.
+Cambia `OLLAMA_MODEL` en `.env` por otro modelo ya instalado y reinicia el backend. El chat solo consulta un resumen controlado de conteos, distribución de medias, duplicados destacados y requisitos DCP; no ejecuta cambios. Preguntas y respuestas se almacenan únicamente en PostgreSQL local. Si Ollama falla, se muestra el aviso de degradación y el resto continúa activo.
+
+La pantalla **IA** incluye además un **Análisis DCP guiado** que no depende de Ollama: pregunta qué segmento calcular, si debe conservar titulares y cuántas propuestas mostrar. OR-Tools genera soluciones reales excluyendo cartas protegidas y el análisis nunca consume cartas. Para crear un borrador de plan exige `CREAR PLAN <segmento>`; su ejecución todavía requiere `PREPARAR <plan>` en Emulador y la entrega final permanece manual.
+
+En Windows/WSL2 el servicio reserva una GPU NVIDIA para evitar que la inferencia recaiga sobre la RAM del sistema. `OLLAMA_KEEP_ALIVE=2m` conserva velocidad durante una conversación y descarga el modelo después de dos minutos inactivo; `OLLAMA_MAX_LOADED_MODELS=1` impide modelos simultáneos, `OLLAMA_NUM_PARALLEL=1` limita el crecimiento del contexto y `OLLAMA_NO_CLOUD=1` conserva el asistente en modo local. Tras una consulta, `docker compose exec ollama ollama ps` debe mostrar uso de GPU; si no aparece, revisa el controlador NVIDIA y la integración GPU de Docker Desktop.
+
+Si durante una sesión larga de ADB no vas a usar el chat, puedes liberar también la memoria base de Ollama con `docker compose stop ollama` y recuperarlo después con `docker compose start ollama`; inventario, DCP y emulador continúan funcionando.
 
 ## Uso esencial
 

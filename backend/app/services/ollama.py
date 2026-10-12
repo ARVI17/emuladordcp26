@@ -13,10 +13,23 @@ async def status() -> dict:
 
 async def chat(message: str, context: str) -> dict:
     if not (await status())["available"]: return {"available": False, "answer": UNAVAILABLE, "sections": {}}
-    prompt = "Eres un asistente local de FC. Distingue DATOS, RECOMENDACIÓN, SUPOSICIONES y FALTANTES. No afirmes datos no presentes.\n" + context + "\nPregunta: " + message
+    prompt = (
+        "Eres un copiloto local de inventario y DCP de FC. Responde en español y distingue DATOS, RECOMENDACIÓN, SUPOSICIONES y FALTANTES. "
+        "No afirmes datos no presentes, no inventes jugadores de una solución y no digas que calculaste una combinación: el cálculo exacto corresponde al solver determinista del Analizador DCP guiado. "
+        "Nunca solicites credenciales, compras, ventas, login ni entrega final. Haz una pregunta breve cuando falte elegir DCP o política de titulares.\n"
+        + context + "\nPregunta: " + message
+    )
     try:
         async with httpx.AsyncClient(timeout=45) as client:
-            response = await client.post(f"{settings.ollama_url}/api/generate", json={"model": settings.ollama_model, "prompt": prompt, "stream": False})
+            response = await client.post(
+                f"{settings.ollama_url}/api/generate",
+                json={
+                    "model": settings.ollama_model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "keep_alive": settings.ollama_keep_alive,
+                },
+            )
             response.raise_for_status()
             return {"available": True, "answer": response.json().get("response", ""), "sections": {"source": "Ollama local"}}
     except Exception:
