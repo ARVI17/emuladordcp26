@@ -17,7 +17,7 @@ from app.services.locks import resource_locks
 from app.services.audit import record
 
 router = APIRouter(tags=["Conexiones y entrada"])
-EA_SOURCE = "https://help.ea.com/en/articles/ea-sports-fc/community-api/"
+EA_SOURCE = "https://help.ea.com/es/articles/ea-sports-fc/community-api/"
 BLOCKER = "EA solo documenta acceso para socios aprobados. Este proyecto no dispone de aprobación ni protocolo de integración, permisos, identidad verificada o paginación documentados."
 
 
@@ -25,7 +25,9 @@ BLOCKER = "EA solo documenta acceso para socios aprobados. Este proyecto no disp
 def capabilities():
     fields = ["identity", "inventory", "copy_ids", "duplicates", "tradability", "loans", "transfer_list", "unassigned", "sbc_storage", "squads", "coins", "evolutions", "dcp", "history", "gallery", "pagination", "remote_revision", "background_refresh"]
     return {"provider": "ea_community", "status": "unavailable", "label": "Integración pendiente",
-            "authorization_supported": False, "documentation_url": EA_SOURCE, "reviewed_on": "2026-10-11",
+            "authorization_supported": False, "documentation_url": EA_SOURCE, "reviewed_on": "2026-10-12",
+            "official_app_url": "https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/",
+            "opening_official_app_links_this_project": False,
             "blocker": BLOCKER, "capabilities": {field: {"status": "unverified", "evidence": EA_SOURCE, "reason": "No hay concesión documentada para esta aplicación"} for field in fields},
             "approved_partners": ["FUTBIN", "FUT.GG", "FUTWIZ"], "automated_ea_operations": "unsupported",
             "implemented_reconciliation": ["inventory", "coins"],

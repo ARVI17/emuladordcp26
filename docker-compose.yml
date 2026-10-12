@@ -33,7 +33,13 @@ services:
 
   backend:
     container_name: emuladordcp26-backend
-    build: ./backend
+    build:
+      context: ./backend
+      args: &build_metadata
+        BUILD_REVISION: ${BUILD_REVISION:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        BUILD_ENVIRONMENT: ${BUILD_ENVIRONMENT:-local}
+        BUILD_DIRTY: ${BUILD_DIRTY:-false}
     environment:
       DATABASE_URL: ${DATABASE_URL:-}
       POSTGRES_DB: ${POSTGRES_DB:-fc26}
@@ -73,6 +79,7 @@ services:
     build:
       context: ./frontend
       args:
+        <<: *build_metadata
         VITE_API_URL: ${VITE_API_URL:-/api}
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:80/"]

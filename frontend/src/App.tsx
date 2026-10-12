@@ -4,6 +4,7 @@ import {MarketPage} from './pages/MarketPage'
 import {KnowledgePage} from './pages/KnowledgePage'
 import {openEntry,type EntryState} from './lib/entry'
 import {ConnectionsPage} from './pages/ConnectionsPage'
+import {BuildStatus} from './components/BuildStatus'
 import {useEffect,useRef,useState,type ReactNode} from 'react'
 import {useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from './api/client'
@@ -22,11 +23,11 @@ import {CompanionPage} from './pages/CompanionPage'
 import {AiPage,DashboardPage,DuplicatesPage,ObjectivesPage,SettingsPage} from './pages/OverviewPages'
 
 const navigation:{id:Page;label:string;icon:string}[]=[
+  {id:'conexiones',label:'Mi cuenta',icon:'◎'},
   {id:'fichajes',label:'Fichajes',icon:'↔'},
   {id:'planes',label:'Planes',icon:'✓'},
   {id:'mercado',label:'Mercado',icon:'◇'},
   {id:'referencias',label:'Referencias',icon:'≡'},
-  {id:'conexiones',label:'Conexiones',icon:'◎'},
   {id:'inicio',label:'Inicio',icon:'⌂'},
   {id:'club',label:'Mi club',icon:'♙'},
   {id:'analisis',label:'Análisis',icon:'◉'},
@@ -46,7 +47,7 @@ function storedTheme(){try{return localStorage.getItem('theme')!=='light'}catch{
 
 export default function App(){
   const qc=useQueryClient()
-  const [page,setPage]=useState<Page>('inicio'),[dark,setDark]=useState(storedTheme),[initialFormation,setInitialFormation]=useState('4-3-3')
+  const [page,setPage]=useState<Page>('conexiones'),[dark,setDark]=useState(storedTheme),[initialFormation,setInitialFormation]=useState('4-3-3')
   const [entry,setEntry]=useState<EntryState>(),[entryError,setEntryError]=useState<unknown>(),[entering,setEntering]=useState(true)
   const entryGeneration=useRef(0),mode=useRef<'live'|'local'>('live')
   const enter=async(next:'live'|'local',reason='open',contextId?:number)=>{const generation=++entryGeneration.current;mode.current=next;setEntry(undefined);setEntering(true);setEntryError(undefined);await qc.cancelQueries();qc.clear();try{const result=await openEntry(next,reason,contextId);if(generation===entryGeneration.current){setEntry(result);if(result.mode==='local')setPage('inicio')}}catch(error){if(generation===entryGeneration.current)setEntryError(error)}finally{if(generation===entryGeneration.current)setEntering(false)}}
@@ -72,6 +73,6 @@ export default function App(){
     <header className="topbar"><div className="brand"><span className="brand-mark" aria-hidden="true">F<span>27</span></span><div><span className="eyebrow">TU CLUB. TUS DECISIONES.</span><h1>Club Lab FC27</h1></div></div><div className="header-controls"><span className="local-pill"><span aria-hidden="true">●</span> Local</span></div></header>
     <nav className="bottom-nav" aria-label="Navegación principal">{navigation.map(item=><button key={item.id} className={page===item.id?'active':''} onClick={()=>setPage(item.id)} aria-current={page===item.id?'page':undefined}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></button>)}</nav>
     <main id="contenido" className="content" tabIndex={-1}>{entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>setPage('conexiones')}>Ver conexión</button></div>}{entering?<Loading/>:!entry||(entry.mode==='live'&&!!dependencies[page]&&!effectiveEntry?.modules[dependencies[page]!]?.ready)?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')} onSelect={(id,next)=>void enter(next,'switch',id)}/>:profile.isLoading?<Loading/>:profile.error?<><ErrorBox error={profile.error}/><button onClick={()=>profile.refetch()}>Reintentar conexión local</button></>:<div className="page-content" key={`${page}-${season}`}>{pages[page]}</div>}</main>
-    <footer className="app-footer">Club Lab · Datos locales · Revisa tus decisiones antes de aplicarlas en el juego.</footer>
+    <footer className="app-footer"><BuildStatus entry={effectiveEntry}/></footer>
   </div></SeasonContext.Provider>
 }

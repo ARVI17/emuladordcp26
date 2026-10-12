@@ -7,6 +7,7 @@ import subprocess
 import time
 import urllib.request
 import uuid
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,7 +48,11 @@ def main():
     project = 'emuladordcp26-check-' + uuid.uuid4().hex[:10]
     report_dir = ROOT/'state/sprints'/project
     report_dir.mkdir(parents=True)
-    env = dict(os.environ, VERIFY_BACKEND_IMAGE=project+'-backend', REVIEW_PORT=str(args.port))
+    revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+    dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip())
+    env = dict(os.environ, VERIFY_BACKEND_IMAGE=project+'-backend', REVIEW_PORT=str(args.port),
+               BUILD_REVISION=revision, BUILD_DIRTY=str(dirty).lower(), BUILD_ENVIRONMENT='test',
+               BUILD_DATE=datetime.now(timezone.utc).isoformat())
     empty_env = report_dir/'empty.env'
     empty_env.write_text('', encoding='utf-8')
     context = subprocess.check_output(['docker', 'context', 'show'], text=True).strip()
@@ -77,6 +82,13 @@ def main():
         for path in ('/health', '/api/openapi.json'):
             with urllib.request.urlopen(f'http://127.0.0.1:{args.port}{path}', timeout=10) as response:
                 if response.status != 200: raise RuntimeError('HTTP verification failed')
+        def metadata(path):
+            with urllib.request.urlopen(f'http://127.0.0.1:{args.port}{path}', timeout=10) as response:
+                return json.load(response)
+        front, back = metadata('/build.json'), metadata('/api/build')
+        if front != back or back['revision'] != revision or back['source_dirty'] != dirty:
+            raise RuntimeError('Served build provenance does not match the tested source')
+        result['served_build'] = back
         step('migration-current', 'exec', '-T', 'backend', 'alembic', 'current')
         step('migration-check', 'exec', '-T', 'backend', 'alembic', 'check')
         if args.scope in {'full', 'backend'}: step('pytest', 'run', '--rm', '--no-deps', 'backend-test')

@@ -35,6 +35,7 @@ class RemoteRead(InputModel):
     pagination: dict
     items: list[RemoteItem] = Field(max_length=20000)
     coins: int | None = Field(default=None, ge=0)
+    club_name: str | None = Field(default=None, min_length=1, max_length=100)
 
     @model_validator(mode="after")
     def evidence(self):
@@ -158,6 +159,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
                         conflicts.append(player.id)
         if read.coverage.get("coins", {}).get("complete") and read.coins is not None:
             context.coins = read.coins
+        if read.club_name is not None:
+            context.name = read.club_name
         context.snapshot_id = snapshot.id
         if pending_variants:
             snapshot.coverage = {**snapshot.coverage, 'inventory': {**snapshot.coverage.get('inventory', {}), 'complete': False, 'pending_variants': len(pending_variants)}}
@@ -166,6 +169,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
         run.status = entry.status
         run.finished_at = now()
         run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": len(pending_variants), "revision": read.revision, "count": len(unique)}
+        run.manifest = {**run.manifest, "account": {"name": context.name,
+            "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None}}
         record(db, "publish_snapshot", "inventory_snapshot", snapshot.id, {"count": len(unique), "conflicts": len(conflicts)})
         db.commit()
         return snapshot
