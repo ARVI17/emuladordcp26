@@ -8,7 +8,8 @@ Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa a
 - Principal Compose `emuladordcp26`, entrada `http://localhost:8080`, volumen `emuladordcp26_postgres_data`. Conservar imágenes, volúmenes y proyectos ajenos. La revisión antigua de 8081 fue respaldada y retirada; no volver a dejar otra aplicación permanente.
 - Cero adaptadores de producción en `ADAPTERS`. [Cuenta y bloqueos](docs/ACCOUNT_ACCESS.md), [contrato del lector](docs/PROVIDER_CONTRACT.md). No pedir credenciales/cookies/tokens EA, inventar protocolos ni abrir una carga pública de snapshots verificados. Abrir EA no conecta esta aplicación.
 - La sesión es local (cookie HttpOnly, CSRF, entrada/contexto); el modo local se elige expresamente y el servidor conserva esa elección al recargar. El contexto 1 nunca se asigna automáticamente a una cuenta.
-- Migración vigente `0015`: principal explícita y protegida. [Protecciones y filtros](docs/SQUAD_SAFETY.md). No inferir principal por nombre, media u orden. Guardar alternativas no modifica ni activa la principal en EA.
+- Migración vigente `0016`: reglas auxiliares de objetivos y evidencia de progreso; `0015` conserva la principal explícita y protegida. [Protecciones y filtros](docs/SQUAD_SAFETY.md). No inferir principal por nombre, media u orden. Guardar alternativas no modifica ni activa la principal en EA.
+- [Plantillas para objetivos](docs/OBJECTIVE_SQUADS.md): una transcripción revisada puede alimentar una hipótesis de composición no consumptiva, siempre etiquetada manual; no certifica objetivo activo ni progreso. Guardar/exportar revalidan el comprobante y no incrementan contadores.
 - Evidencia documental/manual/lectura remota son distintas. El catálogo público no acredita posesión. Los borradores de reglas no se vuelven oficiales por marcar revisión. No activar fixtures sintéticos en producción.
 
 ## Operación canónica

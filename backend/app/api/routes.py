@@ -22,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 from app.api.analysis import SquadRecommendationRequest
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission
+from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission, now
 from app.optimizers.sbc import solve, validate_solution
 from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
 from app.schemas.requirements import normalize_requirements
@@ -61,7 +61,10 @@ def objective_data(objective: Objective) -> dict:
     from app.services.definition_validation import is_documented, pending_result
     if not is_documented(objective):
         return pending_result(objective)
-    return {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "progress", "target", "completed", "expires_at")}
+    result = {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "target", "expires_at")}
+    evidence = objective.progress_evidence or {}
+    value = evidence.get('value') if evidence.get('origin') in {'manual', 'observed'} else None
+    return {**result, 'progress': value, 'progress_origin': evidence.get('origin', 'unknown'), 'completed': value is not None and value >= objective.target}
 
 
 def score_progress(db: Session, segment: Segment) -> int:
@@ -116,6 +119,7 @@ def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     return {
         "id": squad.id, "game_version": squad.game_version, "name": squad.name, "formation": squad.formation,
         "primary": squad.primary, "protected": squad.protected, "players": entries, "tactic": squad.tactic,
+        "objective_context": squad.objective_context,
         "tactic_status": "local_hypothesis",
         "rating": calculate_rating([entry.player.rating for entry in starters]),
         "chemistry": sum(entry.player.chemistry for entry in starters), "chemistry_approximate": True,
@@ -466,7 +470,7 @@ def duplicate_squad(squad_id: int, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         source = get_or_404(db, Squad, squad_id)
-        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version, tactic=dict(source.tactic or {}))
+        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version, tactic=dict(source.tactic or {}), objective_context=dict(source.objective_context or {}))
         db.add(copy)
         db.flush()
         copied = 0
@@ -746,6 +750,8 @@ def create_objective(payload: ObjectiveCreate, db: DB):
         values = payload.model_dump()
         values["game_version"] = payload_version(payload, db)
         objective = Objective(**values)
+        if 'progress' in payload.model_fields_set:
+            objective.progress_evidence = {'value': payload.progress, 'origin': 'manual', 'observed_at': now().isoformat(), 'note': 'Declarado en el registro local'}
         objective.completed = objective.progress >= objective.target
         db.add(objective)
         db.flush()
@@ -759,10 +765,15 @@ def update_objective(objective_id: int, payload: ObjectiveUpdate, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         objective = get_or_404(db, Objective, objective_id)
+        if 'target' in payload.model_fields_set and payload.target != objective.target and objective.planning_rules:
+            objective.planning_rules = {**objective.planning_rules, 'reviewed': False}
         for key, value in payload.model_dump(exclude_unset=True).items():
             setattr(objective, key, value)
         if payload.completed is None:
             objective.completed = objective.progress >= objective.target
+        if 'progress' in payload.model_fields_set or 'completed' in payload.model_fields_set:
+            value = payload.progress if 'progress' in payload.model_fields_set else objective.target if payload.completed else None
+            objective.progress_evidence = {'value': value, 'origin': 'manual' if value is not None else 'unknown', 'observed_at': now().isoformat(), 'note': 'Declarado en el registro local'}
         record(db, "update", "objective", objective.id)
         db.commit()
         return objective_data(objective)

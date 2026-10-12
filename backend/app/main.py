@@ -12,6 +12,7 @@ from app.api.market_insights import router as market_insights_router
 from app.api.agenda import router as agenda_router
 from app.api.squad_safety import router as squad_safety_router
 from app.api.dcp_filters import router as dcp_filters_router
+from app.api.objective_planning import router as objective_planning_router
 from app.api.planner import router as planner_router
 from app.api.connections import router as connections_router
 from app.api.routes import router
@@ -58,6 +59,7 @@ app.include_router(emulator_router)
 app.include_router(analysis_router)
 app.include_router(squad_safety_router)
 app.include_router(dcp_filters_router)
+app.include_router(objective_planning_router)
 app.include_router(fc27_router)
 
 app.include_router(connections_router)

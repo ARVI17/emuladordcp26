@@ -1,5 +1,13 @@
 # Pruebas del planificador FC27
 
+## Plantillas para objetivos (12-oct-2026)
+
+El generador usa reglas auxiliares revisadas y muestra por separado composición, contexto y acciones de partido. Las pruebas cubren mínimos/máximos/exactos, once/banquillo/convocatoria, metadatos desconocidos, modalidades incompatibles, dificultad, cesiones, titulares reutilizables y propuesta sin principal. Guardar/exportar conservan principal, copias y progreso; los comprobantes caducan o se invalidan al cambiar reglas, inventario, protecciones o progreso. Dos guardados concurrentes crean una sola alternativa; nombres repetidos se rechazan. Los contadores históricos sin evidencia siguen siendo desconocidos.
+
+La primera migración nueva detectó columnas ya creadas por el modelo actual en la revisión histórica 0001; se corrigió únicamente 0016 para distinguir base nueva de instalación existente. Después pasaron 260 Pytest, y la ampliación final pasó 261. Dos recorridos de navegador señalaron selectores de prueba ambiguos (etiqueta de selector y dos encabezados de principal); se hicieron específicos, conservando las comprobaciones de exportación, guardado y estado idéntico antes/después. No se cuentan esos intentos como pases completos. Se revisaron las capturas sintéticas de la propuesta en móvil y escritorio.
+
+La repetición final conjunta con el bloque de presupuesto pasó **264 Pytest/PostgreSQL** (285,33 s), **34 Vitest**, **28 Playwright** móvil/escritorio, build, salud/OpenAPI y Alembic **0016**/check. El informe `0b98eba56f` acredita cierre temporal y principal/volúmenes sin cambios. La lectura EA real, Safari y hardware siguen sin probar; una composición manual no acredita vigencia oficial ni progreso remoto. Los logs y capturas quedan en state/ ignorado, y las suites usan bases separadas de la instalación personal.
+
 ## Copias observadas y comparación con la principal (12-oct-2026)
 
 La ejecución final aislada pasó **245 Pytest/PostgreSQL** (212,61 s), **33 Vitest**, **28 Playwright**, build, arranque, salud/OpenAPI y Alembic `0015`/check. Principal y volúmenes permanecieron sin cambios; los recursos temporales se retiraron. Los casos nuevos verifican 47 copias fuera del catálogo, paginación, variantes localizadas, dos copias y Evo individual, permanencia tras caducar el catálogo, bloqueo de lectura vencida, preferencias sin sustitución de hechos, metadatos nulos, filtro de ausencia e historial de Galería sin cesiones. La comparación por puesto no altera la principal.

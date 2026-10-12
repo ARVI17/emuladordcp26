@@ -87,6 +87,7 @@ class Squad(ClubScoped, Base):
     primary: Mapped[bool] = mapped_column(Boolean, default=False)
     protected: Mapped[bool] = mapped_column(Boolean, default=False)
     tactic: Mapped[dict] = mapped_column(JSON, default=dict)
+    objective_context: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     players: Mapped[list["SquadPlayer"]] = relationship(cascade="all, delete-orphan", back_populates="squad")
 
@@ -142,6 +143,10 @@ class Objective(DefinitionEvidence, ClubScoped, Base):
     target: Mapped[int] = mapped_column(Integer, default=1)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    planning_rules: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
+    planning_revision: Mapped[int] = mapped_column(Integer, default=0, server_default='0')
+    planning_history: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
+    progress_evidence: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
 
 class AuditLog(ClubScoped, Base):
     __tablename__ = "audit_logs"

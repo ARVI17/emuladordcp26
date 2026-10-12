@@ -26,7 +26,7 @@ export type Page=keyof typeof sections
 export const primaryPages:Page[]=['inicio','plantillas','dcp','evoluciones','mercado','tienda','club','galeria','objetivos']
 export const assistantPages:Page[]=['analisis','fichajes','planes','practica','referencias','ia','novedades','duplicados','emulador']
 export function currentPage(hash=window.location.hash):Page{
-  const path=hash.replace(/^#\/?/,'')
+  const path=hash.replace(/^#\/?/,'').split('?')[0]
   return (Object.keys(sections) as Page[]).find(id=>sections[id].path===path)|| (path in sections?path as Page:'inicio')
 }
 export function navigate(page:Page){window.location.hash='/'+sections[page].path}

@@ -1,4 +1,3 @@
-import {PendingDefinitions} from '../components/PendingDefinitions'
 import {useEffect,useState,type FormEvent} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {useForm} from 'react-hook-form'
@@ -7,22 +6,11 @@ import {z} from 'zod'
 import {api,money,shortDate} from '../api/client'
 import {useSeason} from '../lib/season'
 import {invalidateClub} from '../lib/query'
-import {inputInstant,timeZone,timeZones,setTimeZone} from '../lib/i18n'
-import type {Objective,Player,Profile} from '../types'
+import {timeZone,timeZones,setTimeZone} from '../lib/i18n'
+import type {Player,Profile} from '../types'
 import {Empty,ErrorBox,Loading,Notice,SectionTitle} from '../components/ui'
 import {PlayerCard} from '../components/PlayerCard'
 
-function ObjectiveRow({objective}:{objective:Objective}){
-  const percentage=Math.min(100,Math.round(objective.progress/Math.max(1,objective.target)*100))
-  return <div className={`objective ${objective.completed?'complete':''}`}><div className="split"><div><span className="eyebrow">{objective.category}</span><h3>{objective.name}</h3><p>{objective.description}</p><p>Vence: {shortDate(objective.expires_at)}</p></div><strong>{objective.progress}/{objective.target}</strong></div><div className="progress" role="progressbar" aria-label={objective.name} aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100}><span style={{width:`${percentage}%`}}/></div></div>
-}
-export function ObjectivesPage(){
-  const season=useSeason(),qc=useQueryClient(),[open,setOpen]=useState(false),[draft,setDraft]=useState({name:'',description:'',category:'Objetivo',target:1,expires_at:''})
-  const query=useQuery({queryKey:['objectives',season],queryFn:()=>api<Objective[]>(`/objectives?game_version=${season}`)})
-  const create=useMutation({mutationFn:()=>api('/objectives',{method:'POST',body:JSON.stringify({...draft,game_version:season,progress:0,expires_at:draft.expires_at?inputInstant(draft.expires_at):null})}),onSuccess:()=>{setDraft({name:'',description:'',category:'Objetivo',target:1,expires_at:''});setOpen(false);void invalidateClub(qc)}})
-  const progress=useMutation({mutationFn:({id,value}:{id:number;value:number})=>api(`/objectives/${id}`,{method:'PATCH',body:JSON.stringify({progress:value})}),onSuccess:()=>invalidateClub(qc)})
-  return <><PendingDefinitions/><SectionTitle title="Objetivos" subtitle={`Organiza tu progreso y tus fechas · ${season}`} action={<button className="primary compact" onClick={()=>{create.reset();setOpen(!open)}}>+ Objetivo</button>}/>{open&&<form className="panel form-grid" onSubmit={event=>{event.preventDefault();create.mutate()}}><label className="wide">Nombre<input required maxLength={120} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></label><label className="wide">Descripción<textarea maxLength={5000} value={draft.description} onChange={e=>setDraft({...draft,description:e.target.value})}/></label><label>Categoría<select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}><option>Objetivo</option><option>Temporada</option><option>Galería</option></select></label><label>Meta<input required type="number" min={1} max={1000000} value={draft.target} onChange={e=>setDraft({...draft,target:Number(e.target.value)})}/></label><label className="wide">Vencimiento<input type="datetime-local" value={draft.expires_at} onChange={e=>setDraft({...draft,expires_at:e.target.value})}/></label><button className="primary wide" disabled={create.isPending}>{create.isPending?'Guardando…':'Guardar objetivo'}</button><div className="wide"><ErrorBox error={create.error}/></div></form>}<ErrorBox error={progress.error}/>{query.isLoading?<Loading/>:query.error?<ErrorBox error={query.error}/>:!query.data?.length?<Empty>Registra tu primer objetivo.</Empty>:<div className="stack">{query.data.map(objective=><div className="panel" key={objective.id}><ObjectiveRow objective={objective}/><div className="button-row"><button disabled={objective.completed||progress.isPending} onClick={()=>progress.mutate({id:objective.id,value:Math.min(objective.target,objective.progress+1)})}>+1 progreso</button><button disabled={objective.completed||progress.isPending} onClick={()=>progress.mutate({id:objective.id,value:objective.target})}>Completar</button></div></div>)}</div>}</>
-}
 export function DuplicatesPage(){
   const season=useSeason(),qc=useQueryClient(),query=useQuery({queryKey:['duplicates',season],queryFn:()=>api<Player[]>(`/duplicates?game_version=${season}`)})
   const used=useMutation({mutationFn:(id:number)=>api(`/duplicates/${id}/used`,{method:'POST'}),onSuccess:()=>invalidateClub(qc)})

@@ -41,7 +41,7 @@ def invalidate_changed_rules(db, *_):
         return  # Reviewed imports/migrations are internal, never an HTTP bypass.
     for row in list(db.dirty | db.new):
         changed = {a.key for a in inspect(row).attrs if a.history.has_changes()}
-        if isinstance(row, DefinitionEvidence) and changed - {'completed', 'progress', 'validation_status', 'validation_evidence'}:
+        if isinstance(row, DefinitionEvidence) and changed - {'completed', 'progress', 'progress_evidence', 'validation_status', 'validation_evidence'}:
             row.validation_status = 'pending_verification'
             row.validation_evidence = {'reason': 'Las reglas cambiaron; requieren nuevo contraste documental'}
         if isinstance(row, Segment) and changed & {'name', 'requirements'}:

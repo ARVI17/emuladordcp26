@@ -1,3 +1,4 @@
+import {ObjectiveSquadsPage} from './pages/ObjectiveSquadsPage'
 import {ContextHelpScope} from './components/ContextHelp'
 import {TransfersPage} from './pages/TransfersPage'
 import {PlannerPage} from './pages/PlannerPage'
@@ -25,7 +26,7 @@ import {GalleryPage} from './pages/GalleryPage'
 import {EvolutionsPage} from './pages/EvolutionsPage'
 import {UpdatesPage} from './pages/UpdatesPage'
 import {CompanionPage} from './pages/CompanionPage'
-import {AiPage,DuplicatesPage,ObjectivesPage,SettingsPage} from './pages/OverviewPages'
+import {AiPage,DuplicatesPage,SettingsPage} from './pages/OverviewPages'
 
 const dependencies:Partial<Record<Page,string>>={club:'analysis',analisis:'analysis',plantillas:'squads',recomendadas:'squads','plantillas-objetivos':'squads',planes:'analysis',dcp:'dcp',galeria:'gallery',evoluciones:'evolutions',duplicados:'analysis',ia:'chat'}
 function storedTheme(){try{return localStorage.getItem('theme')!=='light'}catch{return true}}
@@ -50,9 +51,9 @@ export default function App(){
     inicio:<HomePage/>,tienda:<StorePage/>,club:<ClubPage/>,practica:<><SectionTitle title="Práctica" subtitle="Rutinas y registros locales"/><PracticeAgenda/></>,
     analisis:<AnalysisPage onBuild={formation=>{setInitialFormation(formation);navigate('recomendadas')}}/>,
     plantillas:<SquadsPage view="principal"/>,recomendadas:<SquadsPage initialFormation={initialFormation}/>,
-    'plantillas-objetivos':<ObjectivesPage/>,dcp:<ChallengesPage/>,
+    'plantillas-objetivos':<ObjectiveSquadsPage generator/>,dcp:<ChallengesPage/>,
     galeria:<GalleryPage/>,evoluciones:<EvolutionsPage/>,novedades:<UpdatesPage/>,
-    objetivos:<ObjectivesPage/>,duplicados:<DuplicatesPage/>,ia:<AiPage/>,
+    objetivos:<ObjectiveSquadsPage/>,duplicados:<DuplicatesPage/>,ia:<AiPage/>,
     emulador:<CompanionPage/>,configuracion:<SettingsPage dark={dark} setDark={setDark}/>,
   }
   const observedClub=page==='club'&&effectiveEntry?.identity_verified&&!!effectiveEntry.snapshot_id
