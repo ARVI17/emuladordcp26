@@ -15,7 +15,7 @@ python scripts/verify_docker.py --scope frontend
 
 Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emuladordcp26-check-*`, imágenes propias y puerto loopback 8082 (`--port` permite otro distinto de los habituales). Construye imágenes, inicia PostgreSQL/API/frontend/Nginx, espera salud, comprueba HTTP y migraciones. Pytest usa **otra base PostgreSQL** distinta de la API de navegador. Ambas viven en tmpfs; no contienen datos únicos. Full ejecuta Pytest, Vitest y Playwright móvil/escritorio; el build del frontend forma parte de todos los scopes.
 
-El comando rechaza volúmenes persistentes, montajes inesperados, redes externas y bases incorrectas. Retira únicamente su proyecto al terminar, incluso al fallar, mediante `down` sin `-v`. No reinicia ni despliega el principal. Comprueba sus IDs/fechas de arranque antes y después. Si se interrumpe abruptamente, consulta el proyecto exacto del informe antes de retirar contenedores. Nunca uses un borrado global.
+El comando rechaza volúmenes persistentes, montajes inesperados, redes externas y bases incorrectas. Retira únicamente los IDs completos de contenedores y redes propios tras verificar sus etiquetas, imágenes y montajes, sin borrar volúmenes. Un bloqueo compartido en `~/.fc27/verification/` impide pruebas simultáneas entre worktrees; el sistema operativo lo libera tras una caída. No reinicia ni despliega el principal. Comprueba sus IDs/fechas de arranque antes y después. Tras una caída abrupta, recupera solo recursos cuya propiedad y carácter sintético coinciden con su manifiesto local. Una discrepancia conserva el recurso y detiene la limpieza.
 
 No ejecutes restauraciones adicionales en el contenedor `test-database` mientras corre Pytest: su tmpfs y WAL también consumen el límite de 512 MB. Las comprobaciones de dump/migración poblada deben ser secuenciales o usar otro contenedor desechable con recursos propios. Un fallo por memoria no cuenta como prueba pasada; conserva el informe y repite la suite aislada.
 
@@ -23,7 +23,7 @@ Las pruebas generales usan un catálogo sintético explícito en `backend/tests/
 
 La cabecera de fixtures también limita la evidencia de definiciones mediante contexto de petición; una creación desde la interfaz normal queda pendiente. El PostgreSQL destructivo conserva512MB de límite, shared_buffers32MB y WAL64MB con checkpoints cada30s para que las sucesivas recreaciones del esquema no agoten el tmpfs.
 
-Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. Los datos de prueba se descartan deliberadamente. Para revisar una interfaz a mano existe `docker-compose.review.yml` en 8081: también es desechable; detener su PostgreSQL tmpfs pierde datos. No confundas esa revisión con el club real ni con el stack principal.
+Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. `docker-compose.review.yml` es una pieza interna del arnés temporal; no se inicia como segunda instalación personal. La comprobación real del cierre tras éxito, error, cancelación y caída se ejecuta con `python scripts/check_test_lifecycle.py`.
 
 ## Cierre de cada sprint
 
@@ -39,3 +39,7 @@ Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. Los dato
 El principal conserva `emuladordcp26_postgres_data` y `emuladordcp26_ollama_data`. Antes de migrarlo: autorización específica, dump en `backups/`, restauración comprobada en otra base y plan para recuperar código/esquema concordantes. No ejecutar el downgrade que elimina contexto ni restaurar primero sobre datos únicos. Las [migraciones documentadas](FC27_UPGRADE.md) conservan las dos variantes históricas de `0005`.
 
 Retirar un contenedor no equivale a respaldar su capa escribible: inspecciona diff, mounts, datos y configuración antes. Conserva volúmenes, bind mounts y archivos únicos; si no es posible preservarlos, deja ese contenedor pendiente. Las reglas de este documento no autorizan eliminar otros proyectos, operar cartas EA ni publicar la aplicación.
+
+## Operación personal única
+
+`powershell -File scripts/fc27.ps1 Inicio|Estado|Pruebas|Parada` usa el proyecto canónico `emuladordcp26`, IDs existentes y el volumen `emuladordcp26_postgres_data`. Resuelve su código por ruta absoluta, comprueba motor local, duplicados y puerto 8080. Inicio no ejecuta `up`, builds ni recreaciones: otro worktree no produce otra aplicación. Si faltan servicios, exige revisar un despliegue; no inventa un proyecto o puerto alternativo. Parada conserva contenedores y datos. Los errores nativos se verifican explícitamente.

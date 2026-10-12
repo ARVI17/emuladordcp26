@@ -7,9 +7,13 @@ import subprocess
 import time
 import urllib.request
 import uuid
+import signal
+import sys
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
+from docker_lifecycle import HostLock, cleanup, prepare, recover, run_interruptible, save_manifest
 
 
 def validate(config, project):
@@ -38,7 +42,7 @@ def validate(config, project):
         raise RuntimeError('Unexpected API database')
 
 
-def main():
+def verify():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scope', choices=['full', 'backend', 'frontend'], default='full')
     parser.add_argument('--port', type=int, default=8082)
@@ -60,19 +64,25 @@ def main():
     if not detail['Endpoints']['docker']['Host'].startswith(('npipe://', 'unix://')):
         raise RuntimeError('Select a local Docker engine before verification')
     docker = ['docker', '--context', context]
+    recover(docker, context)
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', 'docker-compose.review.yml', '-f', 'docker-compose.verify.yml']
     config = json.loads(subprocess.check_output(compose+['--profile', 'test', 'config', '--format', 'json'], cwd=ROOT, env=env, text=True))
     validate(config, project)
+    manifest_path, manifest = prepare(config, project, context)
+    effective = report_dir/'compose.json'
+    effective.write_text(json.dumps(config, indent=2), encoding='utf-8')
+    compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', str(effective)]
     main_ids = subprocess.check_output(docker+['ps', '-aq', '--filter', 'label=com.docker.compose.project=emuladordcp26'], text=True).split()
     def main_state():
         if not main_ids: return []
         return [(c['Id'], c['State']['Status'], c['State']['StartedAt']) for c in json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True))]
     before = main_state()
+    volumes_before = subprocess.check_output(docker+['volume', 'ls', '-q'], text=True).split()
     result = {'project': project, 'scope': args.scope, 'git_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(), 'steps': [], 'status': 'FAILED'}
     def step(name, *arguments):
         started = time.monotonic()
         with (report_dir/(name+'.log')).open('wb') as log:
-            code = subprocess.run(compose+list(arguments), cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
+            code = run_interruptible(compose+list(arguments), cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
         result['steps'].append({'name': name, 'exit': code, 'seconds': round(time.monotonic()-started, 2)})
         print(name, 'PASSED' if code == 0 else 'FAILED', flush=True)
         if code: raise RuntimeError(f'{name} failed; see {report_dir/name}.log')
@@ -97,19 +107,39 @@ def main():
             step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e')
         result['status'] = 'PASSED'
     finally:
+        # Finish owned cleanup even if the user presses Ctrl+C a second time.
+        previous = {s: signal.signal(s, signal.SIG_IGN) for s in (signal.SIGINT, signal.SIGTERM)}
         if result['status'] != 'PASSED':
             with (report_dir/'services.log').open('wb') as log:
-                subprocess.run(compose+['logs', '--no-color', '--tail', '120'], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
-        try: step('cleanup', 'down', '--timeout', '30')
+                try:
+                    subprocess.run(compose+['logs', '--no-color', '--tail', '120'], cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=20)
+                except subprocess.TimeoutExpired:
+                    pass
+        try:
+            cleanup(docker, manifest)
+            save_manifest(manifest_path, manifest)
+            result['steps'].append({'name': 'cleanup', 'exit': 0})
         except Exception:
             result['status'] = 'FAILED'
             raise
         finally:
             result['main_stack_unchanged'] = main_state() == before
-            if not result['main_stack_unchanged']: result['status'] = 'FAILED'
+            result['volumes_unchanged'] = subprocess.check_output(docker+['volume', 'ls', '-q'], text=True).split() == volumes_before
+            if not result['main_stack_unchanged'] or not result['volumes_unchanged']: result['status'] = 'FAILED'
             (report_dir/'result.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
             print('Report:', report_dir/'result.json', flush=True)
+            for signum, handler in previous.items(): signal.signal(signum, handler)
     if result['status'] != 'PASSED': raise RuntimeError('Verification failed')
+
+
+def main():
+    def cancelled(signum, frame):
+        raise KeyboardInterrupt('Verificación cancelada')
+    signal.signal(signal.SIGTERM, cancelled)
+    if hasattr(signal, 'SIGBREAK'):
+        signal.signal(signal.SIGBREAK, cancelled)
+    with HostLock():
+        verify()
 
 
 if __name__ == '__main__':

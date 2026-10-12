@@ -17,7 +17,7 @@ Contenido y formaciones exigen vigencia documental; no publiques enlaces descubi
 
 El arranque normal no carga demo. `validation_status` y el catálogo vigente limitan SQL/alias/relaciones; no elimines ese filtro para recuperar cartas pendientes. La revisión se hace en cuarentena, con evidencia de variante y sin alterar protecciones. El arnés sintético de `tests/e2e_app.py` es exclusivo de bases desechables y no debe incorporarse al entrypoint normal.
 
-Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
+Pruebas: únicamente mediante `scripts/verify_docker.py`, con bloqueo compartido, etiquetas por ejecución, tmpfs y limpieza verificada. No dejes un segundo grupo de revisión abierto. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.
 
 ## Flujo permanente por sprints
 
@@ -38,8 +38,8 @@ El backend sí incluye el cliente ADB y puede conectar por TCP con un teléfono 
 Desde la raíz:
 
 ```powershell
-docker compose up --build -d
-docker compose ps
+powershell -File scripts/fc27.ps1 Inicio
+powershell -File scripts/fc27.ps1 Estado
 ```
 
 Accesos predeterminados:
@@ -64,18 +64,16 @@ La ausencia del modelo o una caída de Ollama no debe bloquear inventario, DCP, 
 ## Comandos habituales
 
 ```powershell
-# Construir/iniciar y detener sin borrar volúmenes
-docker compose up --build -d
-docker compose down
+# Reutilizar/detener la instalación existente sin recrear
+powershell -File scripts/fc27.ps1 Inicio
+powershell -File scripts/fc27.ps1 Parada
 
 # Estado y diagnóstico
 docker compose ps
 docker compose logs --tail=200 backend database nginx frontend ollama
 
 # Pruebas completas
-docker compose run --rm --no-deps backend pytest -q
-docker compose run --rm frontend-test
-docker compose run --rm frontend-e2e
+python scripts/verify_docker.py --scope full
 
 # Verificar migraciones y datos con el stack activo
 docker compose exec backend alembic current
