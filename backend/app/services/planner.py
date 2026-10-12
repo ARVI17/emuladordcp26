@@ -173,7 +173,20 @@ def preview(db, payload: PlanInput):
     return result
 
 
+def documented_plan(db, plan):
+    from app.services.catalog_validation import check_fields, find_variant
+    ids = {pid for a in plan.inputs.get('actions', []) for pid in a.get('player_ids', [])}
+    found = set(db.scalars(select(Player.id).where(Player.id.in_(ids)))) if ids else set()
+    return (plan.inputs.get('binding', {}).get('game_version') == 'FC27'
+        and ids == found
+        and all(check_fields(db, p)[0] is not None for a in plan.inputs.get('actions', []) for p in a.get('copies', []))
+        and all(find_variant(db, q.get('variant_id')) is not None for q in plan.inputs.get('quotes', {}).values()))
+
+
 def plan_data(db, plan):
+    if not documented_plan(db, plan):
+        return {'id': plan.id, 'status': plan.status, 'verification_status': 'pending_verification',
+                'message': 'Plan conservado fuera de las operaciones activas; revisa sus variantes', 'actions': []}
     actions = list(db.scalars(select(PlanAction).where(PlanAction.plan_id == plan.id).order_by(PlanAction.ordinal)))
     return {"id": plan.id, "name": plan.name, "status": plan.status, "plan_hash": plan.plan_hash,
             "entry_id": plan.entry_id, "expires_at": plan.expires_at, "inputs": plan.inputs,

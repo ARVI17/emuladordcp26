@@ -17,7 +17,9 @@ Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emulad
 
 El comando rechaza volúmenes persistentes, montajes inesperados, redes externas y bases incorrectas. Retira únicamente su proyecto al terminar, incluso al fallar, mediante `down` sin `-v`. No reinicia ni despliega el principal. Comprueba sus IDs/fechas de arranque antes y después. Si se interrumpe abruptamente, consulta el proyecto exacto del informe antes de retirar contenedores. Nunca uses un borrado global.
 
-No ejecutes restauraciones adicionales en el contenedor `test-database` mientras corre Pytest: su tmpfs también consume el límite de 256 MB. Las comprobaciones de dump/migración poblada deben ser secuenciales o usar otro contenedor desechable con recursos propios. Un fallo por memoria no cuenta como prueba pasada; conserva el informe y repite la suite aislada.
+No ejecutes restauraciones adicionales en el contenedor `test-database` mientras corre Pytest: su tmpfs y WAL también consumen el límite de 512 MB. Las comprobaciones de dump/migración poblada deben ser secuenciales o usar otro contenedor desechable con recursos propios. Un fallo por memoria no cuenta como prueba pasada; conserva el informe y repite la suite aislada.
+
+Las pruebas generales usan un catálogo sintético explícito en `backend/tests/catalog_fixture.py`. El servidor E2E `tests/e2e_app.py` exige la variable de prueba y una base permitida; solo peticiones preparatorias con `X-Catalog-Fixture: 1` crean evidencia sintética. `app.main` y el arranque normal nunca importan ese arnés. Las pruebas `catalog_boundary` y el recorrido `catalog.spec.ts` lo omiten para comprobar la política real de admisión. Un pase con fixtures no prueba autenticidad de datos ni acceso a EA.
 
 Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. Los datos de prueba se descartan deliberadamente. Para revisar una interfaz a mano existe `docker-compose.review.yml` en 8081: también es desechable; detener su PostgreSQL tmpfs pierde datos. No confundas esa revisión con el club real ni con el stack principal.
 

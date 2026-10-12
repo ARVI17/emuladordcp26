@@ -52,7 +52,8 @@ def save_plan(payload: PlanInput, db: Session = Depends(get_db)):
 @router.get("/plans")
 def list_plans(db: Session = Depends(get_db)):
     from app.services.editions import current_version
-    return [plan_data(db, row) for row in db.scalars(select(ClubPlan).order_by(ClubPlan.id.desc()).limit(100)) if row.inputs["binding"].get("game_version", "FC27") == current_version(db)]
+    from app.services.planner import documented_plan
+    return [plan_data(db, row) for row in db.scalars(select(ClubPlan).order_by(ClubPlan.id.desc()).limit(100)) if documented_plan(db, row)]
 
 
 @router.post("/plans/{plan_id}/review")
@@ -236,6 +237,8 @@ def quotes(db: Session = Depends(get_db)):
 
 @router.post("/market/quotes", status_code=201)
 def add_quote(payload: QuoteInput, db: Session = Depends(get_db)):
+    from app.services.catalog_validation import require_variant
+    require_variant(db, payload.variant_id)
     if payload.observed_at.tzinfo is None or payload.expires_at.tzinfo is None or payload.observed_at > now() or payload.expires_at <= payload.observed_at:
         raise HTTPException(422, "Revisa las fechas de observación y caducidad con su zona horaria")
     row = MarketQuote(**payload.model_dump())
@@ -279,6 +282,8 @@ def journal(db: Session = Depends(get_db)):
 
 @router.post("/market/journal", status_code=201)
 def add_trade(payload: TradeInput, db: Session = Depends(get_db)):
+    from app.services.catalog_validation import require_variant
+    require_variant(db, payload.variant_id)
     with resource_locks(db, "inventory"):
         from app.services.editions import current_version
         if payload.game_version != current_version(db):

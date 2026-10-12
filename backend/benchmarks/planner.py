@@ -11,7 +11,7 @@ from app.services.squad_analysis import FORMATIONS, recommend_owned_squad
 
 def measure(size):
     positions = ["POR", "LD", "DFC", "LI", "MCD", "MC", "MCO", "MD", "MI", "ED", "EI", "DC"]
-    players = [Player(id=i+1, deleted=False, availability="available", **PlayerCreate(
+    players = [Player(id=i+1, deleted=False, validation_status="documented", availability="available", **PlayerCreate(
         name=f"Synthetic {i}", athlete_id=f"athlete-{i}", position=positions[i % len(positions)],
         rating=60+i % 35, league="Test", club="Test", nationality="Test", price=None,
         attributes={key: 50+(i*7) % 45 for key in ("pace", "shooting", "passing", "dribbling", "defending", "physical")},

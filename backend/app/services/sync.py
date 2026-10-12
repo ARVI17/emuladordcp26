@@ -93,7 +93,7 @@ def publish_read(db, run_id: int, read: RemoteRead):
             if not {"name", "rating", "position"}.issubset(item.fields):
                 raise ValueError("Cada copia requiere identidad deportiva actual; no se infiere de una lectura antigua")
             mapping = mappings.get(item.copy_id)
-            player = db.get(Player, mapping.player_id) if mapping else None
+            player = db.get(Player, mapping.player_id, execution_options={'include_quarantine': True}) if mapping else None
             fields = {key: getattr(player, key) for key in PlayerCreate.model_fields} if player else {"league": "No disponible", "club": "No disponible", "nationality": "No disponible"}
             fields.update(item.fields)
             # An observation is not an undocumented delta. Old details remain in the
@@ -116,6 +116,7 @@ def publish_read(db, run_id: int, read: RemoteRead):
         db.add(snapshot)
         db.flush()
         conflicts = []
+        pending_variants = []
         for item, mapping, player, fields in prepared:
             if player is None:
                 player = Player(**{**fields, "athlete_id": item.athlete_id})
@@ -139,6 +140,9 @@ def publish_read(db, run_id: int, read: RemoteRead):
                 player.unknown_fields = fields["unknown_fields"]
                 player.data_reviewed = fields["data_reviewed"]
             mapping.location = item.location
+            from app.services.catalog_validation import validate_copy
+            if not validate_copy(db, player):
+                pending_variants.append(player.id)
             mapping.last_snapshot_id = snapshot.id
             mapping.available = True
             player.deleted = False
@@ -146,7 +150,7 @@ def publish_read(db, run_id: int, read: RemoteRead):
         if read.coverage.get("inventory", {}).get("complete"):
             for copy_id, mapping in mappings.items():
                 if copy_id not in unique:
-                    player = db.get(Player, mapping.player_id)
+                    player = db.get(Player, mapping.player_id, execution_options={'include_quarantine': True})
                     mapping.available = False
                     player.availability = "absent"
                     # Absence does not invent a sale, submission, or discard.
@@ -155,11 +159,13 @@ def publish_read(db, run_id: int, read: RemoteRead):
         if read.coverage.get("coins", {}).get("complete") and read.coins is not None:
             context.coins = read.coins
         context.snapshot_id = snapshot.id
+        if pending_variants:
+            snapshot.coverage = {**snapshot.coverage, 'inventory': {**snapshot.coverage.get('inventory', {}), 'complete': False, 'pending_variants': len(pending_variants)}}
         entry.snapshot_id = snapshot.id
-        entry.status = "review_required" if conflicts else "ready" if read.coverage.get("inventory", {}).get("complete") else "partial"
+        entry.status = "review_required" if conflicts else "ready" if snapshot.coverage.get("inventory", {}).get("complete") else "partial"
         run.status = entry.status
         run.finished_at = now()
-        run.manifest = {"pagination": read.pagination, "coverage": read.coverage, "conflicts": conflicts, "revision": read.revision, "count": len(unique)}
+        run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": len(pending_variants), "revision": read.revision, "count": len(unique)}
         record(db, "publish_snapshot", "inventory_snapshot", snapshot.id, {"count": len(unique), "conflicts": len(conflicts)})
         db.commit()
         return snapshot

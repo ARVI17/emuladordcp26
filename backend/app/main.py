@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.catalog import router as catalog_router
+from app.api.variants import router as variants_router
 from app.api.knowledge import router as knowledge_router
 from app.api.practice import router as practice_router
 from app.api.market_insights import router as market_insights_router
@@ -65,3 +66,4 @@ app.include_router(market_insights_router)
 app.include_router(agenda_router)
 
 app.include_router(catalog_router)
+app.include_router(variants_router)

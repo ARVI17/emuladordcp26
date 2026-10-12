@@ -20,7 +20,7 @@ def card(identifier, position="MC", **overrides):
         "game_version": "FC27", "chemistry": 2, "price": 700,
         **overrides,
     }
-    return Player(id=identifier, deleted=False, **PlayerCreate.model_validate(values).model_dump())
+    return Player(id=identifier, deleted=False, validation_status='documented', **PlayerCreate.model_validate(values).model_dump())
 
 
 def create_card(client, **overrides):
@@ -336,11 +336,11 @@ def test_import_confirmation_is_bound_to_file_edition_and_one_use(client):
     assert upload({"confirm": "true", "preview_token": token + "tampered"}).status_code == 422
     assert client.patch("/profile", json={"game_version": "FC26"}).status_code == 422
     confirmed = upload({"confirm": "true", "preview_token": token})
-    assert confirmed.status_code == 200 and confirmed.json()["imported"] == 1
+    assert confirmed.status_code == 200 and confirmed.json()["imported"] == 0 and confirmed.json()["quarantined"] == 1
     replay = upload({"confirm": "true", "preview_token": token})
     assert replay.status_code == 200 and replay.json()["already_imported"]
-    assert replay.json()["imported"] == 0 and replay.json()["original_imported"] == 1
-    assert client.get("/players", params={"search": "Importado"}).json()["total"] == 1
+    assert replay.json()["imported"] == 0 and replay.json()["original_quarantined"] == 1
+    assert client.get("/players", params={"search": "Importado"}).json()["total"] == 0
     assert all(not key.startswith("_") for key in client.get("/settings").json())
     assert client.put("/settings/_import_signing_key", json={"secret": "replacement"}).status_code == 422
 

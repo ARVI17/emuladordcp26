@@ -23,6 +23,9 @@ class Profile(ClubScoped, Base):
 class Player(ClubScoped, Base):
     __tablename__ = "players"
     id: Mapped[int] = mapped_column(primary_key=True)
+    validation_status: Mapped[str] = mapped_column(String(30), default="pending_verification", server_default="pending_verification")
+    catalog_variant_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    validation_evidence: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
     game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(100), index=True)
     rating: Mapped[int] = mapped_column(Integer, index=True)
@@ -241,3 +244,4 @@ class EvolutionDefinition(ClubScoped, Base):
 
 # Register all tables in the shared metadata (including Alembic and fixtures).
 from app.models import planner  # noqa: E402,F401
+from app.models import catalog  # noqa: E402,F401

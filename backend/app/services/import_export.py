@@ -178,14 +178,20 @@ def parse_import(content: bytes, filename: str) -> list[dict]:
         else:
             raise ValueError("Formato no permitido. Usa CSV o XLSX")
         records = []
+        errors = []
         for row_number, values in enumerate(raw_rows, 2):
             if not any(value not in (None, "") for value in values):
                 continue
             if len(values) != len(headers):
                 raise ValueError(f"Fila {row_number}: la cantidad de columnas no coincide con el encabezado")
-            if len(records) >= MAX_IMPORT_ROWS:
+            if row_number > MAX_IMPORT_ROWS + 1:
                 raise ValueError(f"El archivo supera {MAX_IMPORT_ROWS} jugadores")
-            records.append(normalize_player_record(dict(zip(headers, values)), row_number=row_number))
+            try:
+                records.append(normalize_player_record(dict(zip(headers, values)), row_number=row_number))
+            except ValueError as exc:
+                errors.append(str(exc))
+        if errors:
+            raise ValueError('; '.join(errors[:100]) + (f'; {len(errors)} filas inválidas en total' if len(errors) > 100 else ''))
         if not records:
             raise ValueError("El archivo no contiene jugadores")
         return records

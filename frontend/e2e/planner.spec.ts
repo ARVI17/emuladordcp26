@@ -128,12 +128,13 @@ test('al abrir no certifica datos locales como club conectado',async({page},test
  await page.screenshot({path:testInfo.outputPath('entry-viewport.png')})
 })
 
-test('calcula el neto y mantiene las 50 referencias públicas',async({page},testInfo)=>{
+test('calcula el neto y mantiene las 50 referencias públicas',async({page,request},testInfo)=>{
  await openLocal(page)
  await page.getByRole('button',{name:'Mercado',exact:true}).click()
  await page.getByRole('button',{name:'Calcular con hipótesis del 5 %'}).click()
  await expect(page.getByText(/Beneficio estimado: 450/)).toBeVisible()
- const trade=`Diario ${Date.now()}`
+ const variants=await (await request.get('/api/catalog/variants')).json()
+ const trade=variants.items[testInfo.project.name.includes('Móvil')?0:1].variant_id
  await page.getByLabel('Variante exacta de la carta').fill(trade)
  await page.getByLabel('Importe observado').fill('10000')
  await page.getByLabel('Fecha de observación').fill(new Date(Date.now()-60000).toISOString().slice(0,16))

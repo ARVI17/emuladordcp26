@@ -522,7 +522,7 @@ def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db:
             validated.append(value)
         archived = 0
         if payload.archive_demo:
-            demo_rows = db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source == "demo", Player.deleted.is_(False))).all()
+            demo_rows = db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source == "demo", Player.deleted.is_(False)).execution_options(include_quarantine=True)).all()
             db.info["reviewed_exception_ids"] = {p.id for p in demo_rows}
             for player in demo_rows:
                 player.deleted = True
@@ -533,11 +533,13 @@ def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db:
             import unicodedata
             name = " ".join(unicodedata.normalize("NFKD", value["name"]).encode("ascii", "ignore").decode().casefold().split())
             return name, value["rating"], value["position"]
-        existing = {visual_key({"name": p.name, "rating": p.rating, "position": p.position}) for p in db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source != "demo"))}
+        existing = {visual_key({"name": p.name, "rating": p.rating, "position": p.position}) for p in db.scalars(select(Player).where(Player.game_version == scan.game_version, Player.data_source != "demo").execution_options(include_quarantine=True))}
         keys = [visual_key(value) for value in validated]
         if len(keys) != len(set(keys)) or existing.intersection(keys):
             raise HTTPException(409, "Identidad visual ambigua: ya existe una carta activa o consumida. Concilia las copias antes de importar; OCR no aporta IDs de copia EA.")
         imported = [Player(**value) for value in validated]
+        from app.services.catalog_validation import validate_copy
+        accepted = [validate_copy(db, p, explicit_edition='game_version' in item.model_fields_set) for p, item in zip(imported, payload.players)]
         db.add_all(imported)
         db.flush()
         from app.services.gallery import record_player
@@ -551,7 +553,7 @@ def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db:
         scan.imported_at = datetime.now(timezone.utc) if scan.status == "imported" else None
         record(db, "import", "inventory_scan", scan.id, {"imported": len(imported), "remaining": len(scan.candidates), "demo_archived": archived, "reviewed": True, "game_version": scan.game_version, "candidate_ids": payload.candidate_ids})
         db.commit()
-        return {"imported": len(imported), "demo_archived": archived, "player_ids": scan.imported_player_ids, "scan": scan_data(scan)}
+        return {"imported": sum(accepted), "quarantined": len(imported)-sum(accepted), "demo_archived": archived, "player_ids": [p.id for p, ok in zip(imported, accepted) if ok], "scan": scan_data(scan)}
 
 
 @router.post("/scans/{scan_id}/cancel")
@@ -570,7 +572,8 @@ def cancel_inventory_scan(scan_id: int, db: DB):
 def list_plans(db: DB, limit: int = Query(30, ge=1, le=100)):
     segment_ids = select(Segment.id).join(Challenge).where(Challenge.game_version == current_version(db))
     rows = db.scalars(select(AutomationPlan).where(AutomationPlan.segment_id.in_(segment_ids)).order_by(AutomationPlan.id.desc()).limit(limit)).all()
-    return [plan_data(row) for row in rows]
+    from app.services.catalog_validation import check_fields
+    return [plan_data(row) for row in rows if all(check_fields(db, p)[0] is not None for p in row.solution_snapshot.get('players', []))]
 
 
 @router.post("/plans", status_code=201)

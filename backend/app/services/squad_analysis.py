@@ -52,6 +52,7 @@ PLAYER_FIELDS = (
 
 def serialize_player(player: Player, protected_ids: set[int] | None = None) -> dict:
     result = {key: getattr(player, key, None) for key in PLAYER_FIELDS}
+    result.update(validation_status=player.validation_status, variant_evidence=player.validation_evidence)
     for key in (getattr(player, "unknown_fields", None) or []):
         if key in result:
             result[key] = None
@@ -157,6 +158,9 @@ def _group(position: str) -> str:
 
 
 def recommend_owned_squad(players: list[Player], *, game_version: str, formation: str = "4-3-3", style: str = "balanced", locked_player_ids: list[int] | None = None, excluded_player_ids: list[int] | None = None, bench_size: int = 7, include_loans: bool = True, include_unreviewed: bool = False, use_alternate_positions: bool = True, protected_ids: set[int] | None = None) -> dict:
+    if game_version != 'FC27':
+        raise ValueError('Solo se admite FC27')
+    players = [p for p in players if p.validation_status in ('documented', 'provider_verified')]
     from ortools.sat.python import cp_model
 
     slots = formation_slots(formation)

@@ -1,5 +1,13 @@
 # Pruebas del planificador FC27
 
+## Estado vigente: catálogo y cuarentena (sprint 7)
+
+Docker aislado: **197 Pytest/PostgreSQL** (122,67 s), **26 Vitest**, **22 Playwright** móvil/escritorio sobre Nginx (50,6 s), build, salud, OpenAPI y Alembic0013/check correctos. Las suites frontend se repitieron tras ajustar dos contratos antiguos de mensajes/variantes. El principal conservó IDs y arranques. El límite de PostgreSQL de pruebas pasó a512MB tras un OOM registrado; no se cambió el principal.
+
+Migración poblada y recuperación:228cartas,228entradasGalería y4planes conservados; dump previo0012 restaurado en otra base. Cinco guardas del comando Docker correctas; revisión visual del catálogo móvil. No se probaron Safari, GPU/Ollama ni hardware/EA.
+
+La preparación general emplea evidencia sintética únicamente en bases desechables. Seis pruebas `catalog_boundary` y el recorrido de cuarentena omiten la autocertificación de fixtures. El entrypoint E2E vigente es `PLAYWRIGHT_DISPOSABLE_DB=1 uvicorn --app-dir tests e2e_app:app`; el arranque normal `app.main` nunca admite ese arnés ni crea demo. Procedimiento actual: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Los resultados y comandos multiedición siguientes son registro histórico; no habilitan un selector ni sustituyen este flujo.
+
 ## Flujo reproducible por sprints
 
 Sprint 1, 11-oct-2026: `python scripts/verify_docker.py --scope full` pasó con **155 Pytest/PostgreSQL**, **25 Vitest**, **12 Playwright** sobre Nginx, build, migraciones/HTTP y limpieza del proyecto temporal. Cinco pruebas del comando rechazaron configuraciones peligrosas. El primer intento detectó una suposición fija de ADB en una prueba; se corrigió para comprobar activado/desactivado sin dispositivos y se repitió toda la ejecución. El stack principal conservó IDs y fechas de arranque. Procedimiento: [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Evidencia privada en `state/sprints/`.

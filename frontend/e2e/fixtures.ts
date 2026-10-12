@@ -6,7 +6,7 @@ export const test=base.extend({
   const entered=await bootstrap.post('/api/app/entries',{headers:{'X-CSRF-Token':session.csrf_token},data:{nonce:crypto.randomUUID(),mode:'local'}})
   expect(entered.ok()).toBeTruthy()
   const entry=await entered.json()
-  const request=await playwright.request.newContext({baseURL,storageState:await bootstrap.storageState(),extraHTTPHeaders:{'X-CSRF-Token':session.csrf_token,'X-App-Entry':String(entry.entry_id)}})
+  const request=await playwright.request.newContext({baseURL,storageState:await bootstrap.storageState(),extraHTTPHeaders:{'X-CSRF-Token':session.csrf_token,'X-App-Entry':String(entry.entry_id),'X-Catalog-Fixture':'1'}})
   await use(request)
   await request.dispose();await bootstrap.dispose()
  }

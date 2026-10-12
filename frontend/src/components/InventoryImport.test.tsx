@@ -44,7 +44,7 @@ describe('importación vinculada a la revisión',()=>{
     expect(body.get('confirm')).toBe('true')
     expect(screen.getByLabelText('CSV o Excel')).toBeDisabled()
     await act(async()=>importing.resolve({imported:1}))
-    expect(await screen.findByText('Se importaron 1 cartas en FC27.')).toBeInTheDocument()
+    expect(await screen.findByText('Activadas: 1. En cuarentena: 0. Las pendientes no participan en el club.')).toBeInTheDocument()
     expect(screen.queryByRole('button',{name:'Confirmar importación'})).not.toBeInTheDocument()
   })
   it('explica una repetición idempotente sin anunciar nuevas cartas',async()=>{

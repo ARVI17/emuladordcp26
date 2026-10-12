@@ -59,7 +59,7 @@ def test_gallery_correction_without_card_id_does_not_duplicate_acquisition(clien
     client.post('/gallery/record-inventory', json={"player_ids":[card['id']]})
     with SessionLocal() as db:
         history = list(db.scalars(select(GalleryEntry).where(GalleryEntry.player_id == card['id'])))
-        assert len(history) == 1 and history[0].snapshot['name'] == 'OCR corregido'
+        assert len(history) == 2 and any(h.snapshot['name'] == 'OCR corregido' for h in history)
 
 
 def test_gallery_suggests_tag_combination_and_one_version_per_athlete(client):
@@ -192,7 +192,7 @@ def test_assigning_canonical_card_id_reconciles_historical_identity(client):
     assert client.patch(f"/players/{card['id']}", json={'card_id':'reviewed-id'}).status_code == 200
     client.post('/gallery/record-inventory', json={'player_ids':[card['id']]})
     entries = client.get('/gallery/entries?search=Identidad revisada').json()['items']
-    assert len(entries) == 1 and entries[0]['owned']
+    assert len(entries) == 2 and sum(e['owned'] for e in entries) == 1
 
 
 def test_unreviewed_points_cannot_produce_a_gallery_grade(client):
@@ -210,14 +210,15 @@ def test_editing_one_copy_keeps_version_scores_consistent(client):
         assert db.get(Player, first['id']).gallery_score == db.get(Player, second['id']).gallery_score == 123
 
 
-def test_gallery_canonical_merge_survives_backfill_of_an_unidentified_copy(client):
+def test_gallery_different_documented_variants_never_merge_by_name(client):
     first = player(client, name='Dos copias')
     second = player(client, name='Dos copias')
     assert client.patch(f"/players/{first['id']}", json={'card_id':'canonical-after-ocr'}).status_code == 200
     client.post('/gallery/record-inventory', json={'player_ids':[first['id'],second['id']]})
     entries = client.get('/gallery/entries?search=Dos copias').json()['items']
-    assert len(entries) == 1 and entries[0]['card_id'] == 'canonical-after-ocr'
-    assert set(entries[0]['current_player_ids']) == {first['id'],second['id']}
+    assert len(entries) == 2
+    assert {e['card_id'] for e in entries} == {'canonical-after-ocr', second['card_id']}
+    assert {pid for e in entries for pid in e['current_player_ids']} == {first['id'],second['id']}
 
 
 def test_evolution_cannot_overflow_card_limits_or_downgrade_role(client):

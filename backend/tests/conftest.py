@@ -9,15 +9,31 @@ from app.db.seed import seed_database
 from app.db.session import engine
 from app.main import app
 
+class FixtureClient(TestClient):
+    def request(self, method, url, **kwargs):
+        from catalog_fixture import prepare_payload
+        if 'json' in kwargs:
+            kwargs['json'] = prepare_payload(url, method, kwargs['json'])
+        return super().request(method, url, **kwargs)
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'catalog_boundary: real catalog validation without synthetic witnesses')
+
+
 @pytest.fixture()
-def client():
+def client(request):
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     seed_database()
+    strict = bool(request.node.get_closest_marker('catalog_boundary'))
+    if not strict:
+        from catalog_fixture import activate_seed
+        activate_seed()
     from app.api.emulator import require_adb_permission
     # Existing bridge tests exercise mocked commands; production has no permission override.
     app.dependency_overrides[require_adb_permission] = lambda: None
-    with TestClient(app) as test_client:
+    with (TestClient if strict else FixtureClient)(app) as test_client:
         response = test_client.post("/app/session")
         assert response.status_code == 200, response.text
         test_client.headers["X-CSRF-Token"] = response.json()["csrf_token"]

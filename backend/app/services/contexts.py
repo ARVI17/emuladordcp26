@@ -130,9 +130,22 @@ def scope_reads(execute_state):
                 execute_state.statement = execute_state.statement.options(
                     with_loader_criteria(model, model.game_version == "FC27", include_aliases=True))
         from app.models.entities import Challenge, Segment, SquadPlayer
+        from app.models.planner import ClubPlan
         execute_state.statement = execute_state.statement.options(
+            with_loader_criteria(ClubPlan, ClubPlan.inputs['binding']['game_version'].as_string() == 'FC27', include_aliases=True),
             with_loader_criteria(Segment, Segment.challenge_id.in_(select(Challenge.id).where(Challenge.game_version == "FC27")), include_aliases=True),
             with_loader_criteria(SquadPlayer, SquadPlayer.player_id.in_(select(Player.id).where(Player.game_version == "FC27")), include_aliases=True))
+        if not execute_state.execution_options.get('include_quarantine'):
+            from app.services.catalog_validation import active_player_clause, active_gallery_clause, variant_conditions
+            from app.models.catalog import CardVariant
+            from app.models.entities import GalleryEntry
+            from app.models.planner import MarketQuote, TradeRecord, MarketAlert
+            execute_state.statement = execute_state.statement.options(
+                with_loader_criteria(Player, active_player_clause(), include_aliases=True),
+                with_loader_criteria(GalleryEntry, active_gallery_clause(), include_aliases=True))
+            for model in (MarketQuote, TradeRecord, MarketAlert):
+                execute_state.statement = execute_state.statement.options(with_loader_criteria(
+                    model, model.variant_id.in_(select(CardVariant.variant_id).where(*variant_conditions())), include_aliases=True))
 
 
 @event.listens_for(Session, "before_flush")

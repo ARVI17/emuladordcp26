@@ -65,6 +65,10 @@ def remote(copies=("copy-1",), *, complete=True, **overrides):
     values = dict(provider="test",subject="subject-a",club_key="club-a",platform="PC",game_version="FC27",revision="revision-a",end_revision="revision-a",observed_at=now()-timedelta(seconds=1),coverage={"inventory":{"complete":complete},"coins":{"complete":True}},pagination={"documented_end":True,"all_locations":True,"expected_count":len(copies)} if complete else {},coins=10000,
                   items=[{"copy_id":identifier,"athlete_id":"athlete-1","variant_id":"variant-1","location":"club","fields":{"name":"Jugador sintético","rating":80,"position":"MC","is_loan":False,"is_evolution":False,"tradable":True}} for identifier in copies])
     values.update(overrides)
+    from catalog_fixture import witness
+    for item in values['items']:
+        witness({'league':'No disponible', 'club':'No disponible', 'nationality':'No disponible',
+                 **item['fields'], 'game_version': values['game_version'], 'card_id': item['variant_id']})
     return RemoteRead.model_validate(values)
 
 
@@ -124,7 +128,8 @@ def test_import_same_content_new_preview_is_idempotent(client):
     b=client.post('/players/import',files={'file':('club.csv',io.BytesIO(data),'text/csv')},data={'confirm':'true','preview_token':second})
     assert a.status_code==200,a.text
     assert b.json()['already_imported'] is True
-    assert client.get('/players?search=Importado').json()['total']==1
+    assert client.get('/players?search=Importado').json()['total']==0
+    assert client.get('/inventory/quarantine').json()['total']==1
 
 
 def test_reservations_block_legacy_routes_and_cancel_releases(client):

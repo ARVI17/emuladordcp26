@@ -1,5 +1,9 @@
 # Merge only with docker-compose.review.yml; scripts/verify_docker.py supplies a unique project.
 services:
+  backend:
+    command: [sh, -c, "alembic upgrade head && exec uvicorn --app-dir tests e2e_app:app --host 0.0.0.0 --port 8000"]
+    environment:
+      PLAYWRIGHT_DISPOSABLE_DB: '1'
   test-database:
     image: postgres:16-alpine
     environment:
@@ -7,7 +11,8 @@ services:
       POSTGRES_USER: planner_test
       POSTGRES_PASSWORD: planner_test_only
     tmpfs: [/var/lib/postgresql/data]
-    mem_limit: 256m
+    # PostgreSQL files/WAL also count against this limit because tests use tmpfs.
+    mem_limit: 512m
     healthcheck:
       test: [CMD-SHELL, "pg_isready -U planner_test -d planner_unit_test"]
       interval: 3s

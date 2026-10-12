@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import JSONResponse
 from fastapi.responses import Response
 from pydantic import ValidationError
 from sqlalchemy import func, or_, select
@@ -197,11 +198,15 @@ def create_player(payload: PlayerCreate, db: DB):
         values = payload.model_dump()
         values["game_version"] = payload_version(payload, db)
         player = Player(**values)
+        from app.services.catalog_validation import validate_copy, copy_result
+        accepted = validate_copy(db, player, explicit_edition='game_version' in payload.model_fields_set)
         db.add(player)
         db.flush()
         record_player(db, player)
         record(db, "create", "player", player.id)
         db.commit()
+        if not accepted:
+            return JSONResponse(status_code=202, content=copy_result(player))
         return player_data(player, effective_protected_ids(db))
 
 
@@ -219,8 +224,14 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
             normalized = PlayerCreate.model_validate(merged).model_dump()
         except ValidationError as exc:
             raise HTTPException(422, exc.errors(include_url=False, include_context=False, include_input=False)) from exc
+        from app.services.catalog_validation import check_fields
+        if check_fields(db, normalized)[0] is None:
+            raise HTTPException(409, 'La modificación no coincide con una variante FC27 documentada')
         for key, value in normalized.items():
             setattr(player, key, value)
+        from app.services.catalog_validation import validate_copy
+        if set(changes) & {'game_version', 'card_id', 'name', 'rating', 'position', 'card_type', 'data_source'}:
+            validate_copy(db, player)
         if player.unknown_fields and changes.get("data_reviewed") is True:
             player.unknown_fields = [field for field in player.unknown_fields if field not in changes]
             if player.unknown_fields:
@@ -301,7 +312,6 @@ def _parse_player_records(content: bytes, filename: str, version: str) -> list[d
         for item in records:
             if item.get("game_version") and item["game_version"] != version:
                 raise ValueError("El archivo incluye otra edición. Cambia la edición activa antes de importarlo")
-            item["game_version"] = version
         return records
     except (ValueError, TypeError, OverflowError) as exc:
         raise HTTPException(422, str(exc)) from exc
@@ -313,7 +323,9 @@ def _process_import(db: Session, content: bytes, filename: str, confirm: bool, t
     if not confirm:
         version = current_version(db)
         records = _parse_player_records(content, filename, version)
-        return {"preview": records[:100], "total": len(records), "requires_confirmation": True, "content_hash": content_hash, "preview_token": _new_preview_token(db, content_hash, suffix, version), "game_version": version}
+        from app.services.catalog_validation import check_fields
+        preview = [dict(item, validation_status='documented' if check_fields(db, item)[0] else 'pending_verification') for item in records[:100]]
+        return {"preview": preview, "total": len(records), "requires_confirmation": True, "content_hash": content_hash, "preview_token": _new_preview_token(db, content_hash, suffix, version), "game_version": version}
     with resource_locks(db, "inventory"):
         db.expire_all()
         version = current_version(db)
@@ -321,19 +333,22 @@ def _process_import(db: Session, content: bytes, filename: str, confirm: bool, t
         receipt_key = "_import_receipt_" + hashlib.sha256(f"{db.info.get('club_context_id', 1)}:{version}:{content_hash}".encode()).hexdigest()
         receipt = db.get(AppSetting, receipt_key)
         if receipt:
-            return {"imported": 0, "already_imported": True, "original_imported": receipt.value["imported"], "content_hash": content_hash}
+            return {"imported": 0, "quarantined": 0, "already_imported": True, "original_imported": receipt.value["imported"], "original_quarantined": receipt.value.get("quarantined", 0), "content_hash": content_hash}
         if payload["expires"] < int(time.time()):
             raise HTTPException(422, "La vista previa caducó. Revisa el archivo de nuevo")
         records = _parse_player_records(content, filename, version)
         players = [Player(**item) for item in records]
+        from app.services.catalog_validation import validate_copy
+        accepted = [validate_copy(db, player, explicit_edition='game_version' in item) for player, item in zip(players, records)]
         db.add_all(players)
         db.flush()
         for player in players:
             record_player(db, player)
-        db.add(AppSetting(key=receipt_key, value={"imported": len(players), "hash": content_hash, "game_version": version}))
+        imported, quarantined = sum(accepted), len(players)-sum(accepted)
+        db.add(AppSetting(key=receipt_key, value={"imported": imported, "quarantined": quarantined, "hash": content_hash, "game_version": version}))
         record(db, "import", "players", details={"count": len(players), "filename": filename[:120], "content_hash": content_hash, "game_version": version})
         db.commit()
-        return {"imported": len(players), "already_imported": False, "content_hash": content_hash}
+        return {"imported": imported, "quarantined": quarantined, "already_imported": False, "content_hash": content_hash}
 
 
 @router.post("/players/import")

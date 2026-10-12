@@ -63,6 +63,8 @@ def alerts(offset: int = Query(default=0, ge=0, le=10000), db: Session = Depends
 
 @router.post('/market/alerts', status_code=201)
 def add_alert(payload: AlertInput, db: Session = Depends(get_db)):
+    from app.services.catalog_validation import require_variant
+    require_variant(db, payload.variant_id)
     with resource_locks(db, 'market-alerts'):
         count = db.scalar(select(func.count()).select_from(MarketAlert).where(MarketAlert.game_version == current_version(db), MarketAlert.enabled.is_(True)))
         if count >= 50:

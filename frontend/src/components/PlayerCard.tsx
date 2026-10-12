@@ -3,6 +3,7 @@ import type {Player} from '../types'
 import {attributeLabels} from '../lib/players'
 
 export function PlayerCard({player:p,onEdit,onProtect,onDelete,pending=false,compact=false}:{player:Player;onEdit?:()=>void;onProtect?:()=>void;onDelete?:()=>void;pending?:boolean;compact?:boolean}){
+  if(p.game_version!=='FC27'||!['documented','provider_verified'].includes(p.validation_status||''))return null
   const protectedNow=p.effective_protected??p.protected
   const attributes=Object.entries(p.attributes||{}).slice(0,6)
   return <article className={`player-card ${p.special?'special':''} ${protectedNow?'is-protected':''} ${p.is_holographic?'holographic':''}`}>

@@ -178,6 +178,9 @@ def transfer_comparison(payload: TransferRequest, db: Annotated[Session, Depends
         if fields.game_version != current_version(db) or not fields.card_id or not fields.data_reviewed:
             raise HTTPException(409, "La variante pública no tiene edición e identidad revisadas")
         card = Player(**fields.model_dump())
+        from app.services.catalog_validation import validate_copy
+        if not validate_copy(db, card, explicit_edition='game_version' in fields.model_fields_set):
+            raise HTTPException(409, 'La variante candidata no está documentada para FC27')
         if position not in player_positions(card):
             continue
         quote = valid_quote(db, candidate.quote_id, variant=card.card_id)

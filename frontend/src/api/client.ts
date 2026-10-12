@@ -36,7 +36,16 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
     throw new ApiError(detail,response.status)
   }
   if(response.status===204)return undefined as T
-  return response.json() as Promise<T>
+  const data:unknown=await response.json()
+  assertFC27(data)
+  return data as T
+}
+export function assertFC27(data:unknown):void{
+  if(!data||typeof data!=='object')return
+  if(Array.isArray(data)){data.forEach(assertFC27);return}
+  const row=data as Record<string,unknown>
+  if('game_version' in row&&row.game_version!==null&&row.game_version!=='FC27')throw new ApiError('Respuesta bloqueada: contiene una edición ajena a FC27',409)
+  Object.values(row).forEach(assertFC27)
 }
 export const money=(value:number|null)=>value===null?'Desconocido':new Intl.NumberFormat('es-CO').format(value)
 export async function downloadInventory(format:'csv'|'xlsx',season:string){

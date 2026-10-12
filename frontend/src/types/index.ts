@@ -1,6 +1,7 @@
 export type GameVersion = 'FC27'
 export type AttributeKey = 'pace'|'shooting'|'passing'|'dribbling'|'defending'|'physical'|'diving'|'handling'|'kicking'|'reflexes'|'speed'|'positioning'
 export type Player = {
+  validation_status?:string;variant_evidence?:Record<string,unknown>;
   id:number; name:string; rating:number; position:string; league:string; club:string; nationality:string;
   card_type:string; rare:boolean; special:boolean; tradable:boolean|null; price:number|null; chemistry:number;
   favorite?:boolean;notes?:string;athlete_id?:string|null;
@@ -32,7 +33,7 @@ export type AutomationPlan = {id:number;name:string;plan_type:string;status:stri
 export type InventoryScanCandidate = {candidate_id:number;name:string;rating:number|null;position:string;source_page:number;confidence:Record<string,number>}
 export type InventoryScan = {id:number;source_scan_id?:number|null;status:string;device_serial:string;screen_size:number[];captured_pages:number;candidate_count?:number;offset?:number;candidates:InventoryScanCandidate[];imported_player_ids:number[];imported_count:number;last_error:string|null;confirmation_phrase:string;archive_demo_phrase:string;images_saved:false;requires_review:true;created_at:string;imported_at:string|null;game_version?:GameVersion;is_active?:boolean;can_capture?:boolean;can_continue?:boolean}
 export type DcpInspection = {raw_text:string;detected_requirements:Record<string,unknown>;warnings?:string[];review_warnings?:string[];requires_human_review?:boolean;screen_size:number[]|null;source:'ADB';saved:false;requires_confirmation:true}
-export type ImportPreview = {total:number;preview:PlayerInput[];preview_token:string;content_hash:string;requires_confirmation:true}
+export type ImportPreview = {total:number;preview:(PlayerInput & {validation_status?:string})[];preview_token:string;content_hash:string;requires_confirmation:true}
 export type GalleryEntry = {id:number;item_key:string;game_version:GameVersion;player_id:number|null;name:string;rating:number;position:string;league:string;club:string;nationality:string;card_type:string;is_holographic:boolean;gallery_score:number|null;recorded_at:string;owned:boolean;current_player_ids:number[]}
 export type GalleryEvaluation = {selected_entries:GalleryEntry[];eligible_count:number;filled_slots:number;required_slots:number;complete:boolean;known_score:number;unknown_score_count:number;score:number|null;grade:string|null;tags:{name:string;achieved:boolean;count:number;minimum:number;bonus:number}[];missing_slots:number;warnings:string[]}
 export type GallerySetInput = {game_version?:GameVersion;slug?:string;name:string;description?:string;category?:string;rules:{size:number;min_rating:number;league?:string;club?:string;nationality?:string;card_type?:string;holographic_only?:boolean;unique_players?:boolean};tags:{name:string;field:string;value:string|boolean;minimum:number;bonus:number}[];grade_thresholds:Record<string,number>;reward?:string;source_url?:string|null;rules_reviewed:boolean}

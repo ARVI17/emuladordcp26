@@ -40,9 +40,9 @@ def test_csv_preview_confirm_and_export(client):
     assert preview.status_code == 200 and preview.json()["total"] == 1
     files = {"file": ("club.csv", io.BytesIO(csv_data.encode()), "text/csv")}
     confirmed = client.post("/players/import", data={"confirm":"true", "preview_token":preview.json()["preview_token"]}, files=files)
-    assert confirmed.json()["imported"] == 1
+    assert confirmed.json()["imported"] == 0 and confirmed.json()["quarantined"] == 1
     exported = client.get("/players/export?format=csv")
-    assert exported.status_code == 200 and b"Importado" in exported.content
+    assert exported.status_code == 200 and b"Importado" not in exported.content
 
 def test_works_without_ollama(client):
     status = client.get("/ai/status").json()
