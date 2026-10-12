@@ -30,6 +30,9 @@ def knowledge(db: Session = Depends(get_db)):
     days = schedule.value.get("days", 7) if schedule else 7
     rows = []
     for row in references():
+        documented = (row.get('status') == 'documented' and row.get('verified_at') and row.get('valid_until')
+                      and datetime.fromisoformat(row['verified_at']) <= now() < datetime.fromisoformat(row['valid_until']))
+        row = {**row, 'status': 'documented' if documented else 'pending_verification'}
         reviewed = active.get(row["id"])
         rows.append({**row, "review": reviewed.evidence if reviewed else None,
                      "revision_id": reviewed.id if reviewed else None,

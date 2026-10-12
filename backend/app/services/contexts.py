@@ -139,8 +139,9 @@ def scope_reads(execute_state):
         execute_state.statement = execute_state.statement.options(with_loader_criteria(
             Profile, Profile.origin.in_(['manual', 'provider_verified']), include_aliases=True))
         if not execute_state.execution_options.get('include_historical_squads'):
+            from app.services.squad_analysis import verified_formations
             execute_state.statement = execute_state.statement.options(with_loader_criteria(
-                Squad, Squad.origin.in_(['manual', 'provider_verified']), include_aliases=True))
+                Squad, Squad.origin.in_(['manual', 'provider_verified']) & Squad.formation.in_(list(verified_formations())), include_aliases=True))
         if not execute_state.execution_options.get('include_pending_definitions'):
             from app.services.definition_validation import MODELS, active_definition_clause
             for model in MODELS.values():

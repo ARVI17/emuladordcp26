@@ -52,4 +52,4 @@ def test_works_without_ollama(client):
     assert "continúan funcionando" in answer["answer"]
     history = client.get("/ai/history").json()
     assert [item["role"] for item in history] == ["user", "assistant"]
-    assert history[0]["content"] == "Resume mi club"
+    assert history[0]["content"] == "Resumen de mi club FC27"

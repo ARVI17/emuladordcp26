@@ -1,5 +1,5 @@
 """Own practice hypotheses; cited mechanics do not establish a universal meta."""
-from datetime import date
+from datetime import date, datetime, timezone
 
 SOURCES = {
     'R09': {'title': 'EA · Gameplay Deep Dive', 'url': 'https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-gameplay-deep-dive', 'published_on': '2026-07-29', 'kind': 'official'},
@@ -16,12 +16,15 @@ DRILLS = {
 
 
 def catalog():
+    due = datetime.now(timezone.utc).date() > date(2026, 10, 25)
     return {'game_version': 'FC27', 'reviewed_on': '2026-10-11', 'patch_verified': False,
-            'review_due': date.today() > date(2026, 10, 25), 'sources': SOURCES, 'drills': DRILLS,
+            'review_due': due, 'sources': SOURCES if not due else {}, 'drills': DRILLS if not due else {},
             'notice': 'Ejercicios propios e hipótesis contrastables. Revisión documental del 11-oct-2026; no acredita tu parche ni configuración. Comprueba los controles en el juego.'}
 
 
 def build_agenda(focus, minutes, platform):
+    if catalog()['review_due']:
+        raise ValueError('Prácticas pendientes de nueva revisión FC27')
     drill = DRILLS[focus]
     warmup = max(1, minutes // 5)
     review = max(1, minutes // 5)

@@ -63,17 +63,17 @@ def test_each_formation_fills_only_eligible_slots(formation):
 
 
 def test_assignment_reserves_flexible_midfielder_for_the_only_remaining_position():
-    positions = FORMATIONS["4-3-3"]
+    positions = FORMATIONS["4-3-3 Holding"]
     players = [card(index, position) for index, position in enumerate(positions, 1)]
     # There is only one primary MC. The stronger MCD must use MC, leaving MCD
     # for the less flexible card, or the eleven cannot be completed.
     players[5] = card(6, "MCD", rating=95, alternate_positions=["MC"])
     players[6] = card(7, "MCD", rating=70)
-    result = recommend_owned_squad(players, game_version="FC27")
+    result = recommend_owned_squad(players, game_version="FC27", formation="4-3-3 Holding")
     assert result["complete"]
     flexible = next(row for row in result["lineup"] if row["player"]["id"] == 6)
     assert flexible["position"] == "MC" and flexible["used_alternate_position"]
-    no_alternates = recommend_owned_squad(players, game_version="FC27", use_alternate_positions=False)
+    no_alternates = recommend_owned_squad(players, game_version="FC27", formation="4-3-3 Holding", use_alternate_positions=False)
     assert not no_alternates["complete"]
     assert [gap["position"] for gap in no_alternates["gaps"]] == ["MC"]
 

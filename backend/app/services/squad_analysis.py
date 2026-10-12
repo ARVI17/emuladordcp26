@@ -5,6 +5,7 @@ Protection is derived here so a squad never overwrites a manual player flag.
 """
 
 from collections import Counter, defaultdict
+from datetime import date, datetime, timezone
 import unicodedata
 
 from sqlalchemy import or_, select
@@ -20,7 +21,8 @@ FORMATIONS = {
     "4-4-1-1 mediocampo": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "MCO", "DC"],
     "4-3-1-2": ["POR", "LD", "DFC", "DFC", "LI", "MC", "MC", "MC", "MCO", "DC", "DC"],
     "4-1-2-1-2 estrecha": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "MCO", "DC", "DC"],
-    "4-3-3": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "ED", "DC", "EI"],
+    "4-3-3": ["POR", "LD", "DFC", "DFC", "LI", "MC", "MC", "MC", "ED", "DC", "EI"],
+    "4-3-3 Holding": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "ED", "DC", "EI"],
     "4-4-2": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "DC", "DC"],
     "4-2-3-1": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MCO", "MCO", "MCO", "DC"],
     "4-1-2-1-2": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "MCO", "DC", "DC"],
@@ -70,11 +72,12 @@ def effective_protected_ids(db: Session, game_version: str | None = None) -> set
         .execution_options(include_historical_squads=True)
     ).all()
     from app.services.protection import reserved_ids
-    return set(manual) | set(inherited) | reserved_ids(db)
+    reserved = db.scalars(select(Player.id).where(Player.id.in_(reserved_ids(db)), Player.game_version == version, Player.deleted.is_(False))).all()
+    return set(manual) | set(inherited) | set(reserved)
 
 
 def formation_slots(formation: str) -> list[dict]:
-    if formation not in FORMATIONS:
+    if formation not in verified_formations():
         raise ValueError("Formación no disponible")
     counts: Counter = Counter()
     result = []
@@ -85,7 +88,21 @@ def formation_slots(formation: str) -> list[dict]:
 
 
 def formations_data() -> dict:
-    return {"items": [{"id": key, "name": key, "slots": formation_slots(key), "source_url": "https://www.fut.gg/tactics/", "reviewed_on": "2026-10-11", "tactic_status": "local_hypothesis", "import_code": None} for key in FORMATIONS]}
+    return {"game_version": "FC27", "items": [{"id": key, "name": key, "slots": formation_slots(key),
+        "source_url": formation_source(key), "reviewed_on": "2026-10-12", "valid_until": "2026-11-10",
+        "validation_status": "documented", "tactic_status": "local_hypothesis", "import_code": None} for key in verified_formations()]}
+
+
+def verified_formations():
+    return FORMATIONS if date(2026, 10, 12) <= datetime.now(timezone.utc).date() <= date(2026, 11, 10) else {}
+
+
+def formation_source(key):
+    if key in {'4-3-3', '4-3-3 Holding', '3-5-2'}:
+        return 'https://www.fut.gg/tactics/' + key.lower().replace(' ', '-') + '/'
+    if key == '4-3-1-2':
+        return 'https://note.com/yuyugamesyoutube/n/nf627565b75df'
+    return 'https://nealguides.com/best-fc-27-formations/'
 
 
 def normalized_position(position: str) -> str:
@@ -279,8 +296,8 @@ def analyze_club(db: Session) -> dict:
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
     protected = effective_protected_ids(db, version)
     reviewed = [p for p in players if p.data_reviewed]
-    alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in FORMATIONS]
-    recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])))
+    alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in verified_formations()]
+    recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])), default={"formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]})
     recommended = recommendation["formation"]
     positions = []
     for position in ATTRIBUTE_WEIGHTS:

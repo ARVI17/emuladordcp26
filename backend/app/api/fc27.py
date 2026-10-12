@@ -13,7 +13,7 @@ from app.schemas.api import GameVersion
 from app.schemas.fc27 import (ContentImportRequest, EvolutionInput, EvolutionPreview, GalleryRecordRequest,
                              GalleryScoreUpdate, GallerySetInput)
 from app.services.audit import record
-from app.services.content import builtin_content, fetch_news
+from app.services.content import builtin_content, fetch_news, active_article
 from app.services.editions import current_version
 from app.services.evolutions import definition_data, preview_path
 from app.services.gallery import (base_for_gallery, entry_data, item_key, owned_index, record_player,
@@ -269,11 +269,14 @@ def content(game_version: GameVersion | None = None, db: Session = Depends(get_d
     result = builtin_content(version)
     news = db.get(AppSetting, f"content_news_{version}")
     manifest = db.get(AppSetting, f"content_manifest_{db.info.get('club_context_id', 1)}_{version}")
-    result.update(last_checked=None, refresh_error=None, last_import=manifest.value if manifest else None)
+    result.update(last_checked=None, refresh_error=None, last_import=manifest.value if manifest else None, pending_articles=0)
     if news:
         result.update(last_checked=news.value.get("last_checked"), refresh_error=news.value.get("refresh_error"))
-        seen = {article["url"] for article in news.value.get("articles", [])}
-        result["articles"] = [*news.value.get("articles", []), *[article for article in result["articles"] if article["url"] not in seen]]
+        candidates = news.value.get('articles', [])
+        articles = [a for a in candidates if active_article(a)]
+        result['pending_articles'] = len(candidates)-len(articles)
+        seen = {article['url'] for article in articles}
+        result['articles'] = [*articles, *[a for a in result['articles'] if a['url'] not in seen]]
     return result
 
 

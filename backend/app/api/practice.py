@@ -45,14 +45,20 @@ def practice_catalog(db: Session = Depends(get_db)):
 
 @router.get('/practice/sessions')
 def sessions(db: Session = Depends(get_db)):
-    return [data(r) for r in db.scalars(select(PracticeSession).where(PracticeSession.game_version == current_version(db)).order_by(PracticeSession.id.desc()).limit(50))]
+    if catalog()['review_due']:
+        return []
+    return [data(r) for r in db.scalars(select(PracticeSession).where(PracticeSession.game_version == current_version(db), PracticeSession.agenda['reviewed_on'].as_string() == catalog()['reviewed_on']).order_by(PracticeSession.id.desc()).limit(50))]
 
 
 @router.post('/practice/sessions', status_code=201)
 def create(payload: PracticeInput, db: Session = Depends(get_db)):
     if current_version(db) != 'FC27':
         raise HTTPException(409, 'Las prácticas disponibles requieren FC27')
-    row = PracticeSession(game_version='FC27', agenda=build_agenda(payload.focus, payload.minutes, payload.platform))
+    try:
+        agenda = build_agenda(payload.focus, payload.minutes, payload.platform)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    row = PracticeSession(game_version='FC27', agenda=agenda)
     db.add(row)
     db.flush()
     record(db, 'plan_practice', 'practice_session', row.id)
@@ -64,7 +70,7 @@ def create(payload: PracticeInput, db: Session = Depends(get_db)):
 def result(session_id: int, payload: PracticeResult, db: Session = Depends(get_db)):
     with resource_locks(db, f'practice:{session_id}'):
         row = db.get(PracticeSession, session_id)
-        if not row or row.game_version != current_version(db):
+        if not row or row.game_version != current_version(db) or catalog()['review_due'] or row.agenda.get('reviewed_on') != catalog()['reviewed_on']:
             raise HTTPException(404, 'Práctica no disponible en esta edición')
         if row.status != 'planned':
             raise HTTPException(409, 'La práctica ya tiene resultado; crea otra sesión')

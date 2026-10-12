@@ -23,8 +23,8 @@ class SquadRecommendationRequest(BaseModel):
 
     @model_validator(mode="after")
     def consistent_ids(self):
-        from app.services.squad_analysis import FORMATIONS
-        if self.formation not in FORMATIONS:
+        from app.services.squad_analysis import verified_formations
+        if self.formation not in verified_formations():
             raise ValueError("Formación no disponible")
         for values in (self.locked_player_ids, self.excluded_player_ids):
             if len(values) != len(set(values)):
@@ -71,7 +71,7 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
     from app.models.entities import Player
     from app.services.contexts import require_module
     from app.services.editions import current_version
-    from app.services.squad_analysis import FORMATIONS, recommend_owned_squad, effective_protected_ids
+    from app.services.squad_analysis import verified_formations, recommend_owned_squad, effective_protected_ids
     binding = require_module(db, "squads")
     version = current_version(db)
     players = list(db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))))
@@ -82,7 +82,7 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
     excluded = list(payload.excluded_player_ids)
     for name, style in profiles:
         choices = []
-        for formation, slots in FORMATIONS.items():
+        for formation, slots in verified_formations().items():
             wide_slots = sum(position in {"MD", "MI", "ED", "EI"} for position in slots)
             if (style == "wide" and wide_slots < 2) or (style == "possession" and wide_slots):
                 continue

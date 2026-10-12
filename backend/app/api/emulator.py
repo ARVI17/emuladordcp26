@@ -28,6 +28,15 @@ def require_adb_permission():
     raise HTTPException(403, "Automatización deshabilitada: no hay permiso aplicable para enviar acciones a EA. Usa Companion manualmente.")
 
 
+def companion_fc27_compatible():
+    # No connected hardware/build evidence has been reviewed for this application.
+    return False
+
+
+COMPATIBILITY = {'game_version': 'FC27', 'compatibility_status': 'pending_verification',
+                 'app_build': None, 'visual_actions_allowed': False, 'compatibility_evidence': None}
+
+
 router = APIRouter(prefix="/emulator", tags=["Emulador asistido"])
 DB = Annotated[Session, Depends(get_db)]
 logger = logging.getLogger(__name__)
@@ -236,14 +245,14 @@ def _append_page(scan: InventoryScan, candidates: list[dict], digest: str, page:
 def status(db: DB):
     config = emulator_config(db)
     if not settings.adb_enabled:
-        return {"enabled": False, "available": False, "devices": [], "config": config, "message": "ADB está desactivado"}
+        return {**COMPATIBILITY, "enabled": False, "available": False, "devices": [], "config": config, "message": "ADB está desactivado"}
     try:
         devices = AdbBridge().devices()
         serial = config.get("serial") or config.get("address")
         ready = any(item["serial"] == serial and item["state"] == "device" for item in devices)
-        return {"enabled": True, "available": ready, "devices": devices, "config": config, "message": None if ready else "Selecciona un emulador o teléfono ADB conectado."}
+        return {**COMPATIBILITY, "enabled": True, "available": ready, "devices": devices, "config": config, "message": None if ready else "Selecciona un emulador o teléfono ADB conectado."}
     except AdbError as exc:
-        return {"enabled": True, "available": False, "devices": [], "config": config, "message": str(exc)}
+        return {**COMPATIBILITY, "enabled": True, "available": False, "devices": [], "config": config, "message": str(exc)}
 
 
 @router.post("/connect")
@@ -497,7 +506,7 @@ def advance_inventory_page(scan_id: int, db: DB):
 
 
 @router.post("/scans/{scan_id}/import")
-def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db: DB):
+def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db: DB, compatible: bool = Depends(companion_fc27_compatible)):
     with operation(db, "inventory", f"scan:{scan_id}"):
         scan = _scan(db, scan_id)
         expected = f"REEMPLAZAR DEMO {scan.id}" if payload.archive_demo else f"IMPORTAR {scan.id}"
@@ -540,6 +549,12 @@ def import_inventory_scan(scan_id: int, payload: InventoryScanImportRequest, db:
         imported = [Player(**value) for value in validated]
         from app.services.catalog_validation import validate_copy
         accepted = [validate_copy(db, p, explicit_edition='game_version' in item.model_fields_set) for p, item in zip(imported, payload.players)]
+        if not compatible:
+            accepted = [False] * len(imported)
+            for player in imported:
+                player.validation_status = 'pending_verification'
+                player.catalog_variant_id = None
+                player.validation_evidence = {'reason': 'Compatibilidad FC27 de esta versión de Companion pendiente de verificar', 'claimed_edition': scan.game_version}
         db.add_all(imported)
         db.flush()
         from app.services.gallery import record_player

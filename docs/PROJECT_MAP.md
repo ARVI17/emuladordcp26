@@ -4,11 +4,13 @@ Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `
 
 Definiciones activas: `services/definition_validation.py`, mixin `DefinitionEvidence`, migración `0014`, resumen `/catalog/pending` y `PendingDefinitions.tsx`. Los cambios de reglas invalidan evidencia; los borradores no llegan a optimización ni a los totales activos. `Profile.origin` y `Squad.origin` conservan los valores legados fuera de las vistas normales.
 
+`/settings` solo devuelve información técnica seleccionada. La escritura genérica de ajustes está reservada: no permite sustituir cachés de noticias, manifiestos o evidencia. Las rutas específicas conservan su propia validación. El chat usa la política `fc27_grounded_v1`; contenido, formaciones y prácticas se ocultan al vencer su revisión.
+
 Referencia del código de la versión 2.0 en `emuladordcp26`. La API declara rutas sin `/api`; Nginx añade ese prefijo externamente y FastAPI usa `root_path="/api"`. Swagger es el inventario completo de contratos. Las reglas de trabajo están en [AGENTS.md](../AGENTS.md).
 
 ## Ampliación del planificador (11 de octubre de 2026)
 
-El head es `0012`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación con PR #2, migraciones, comportamiento y dependencias pendientes. Los módulos nuevos son:
+El head es `0014`. [FC27_PLANNER.md](FC27_PLANNER.md) describe la comparación con PR #2, migraciones, comportamiento y dependencias pendientes. Los módulos nuevos son:
 
 | Capa | Archivos y contrato |
 | --- | --- |

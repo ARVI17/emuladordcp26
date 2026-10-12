@@ -165,7 +165,7 @@ def test_content_pack_validation_is_atomic(client):
 
 
 def test_failed_news_refresh_preserves_last_success(client, monkeypatch):
-    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':None}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
+    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':'2026-10-09','game_version':'FC27','validation_status':'documented','observed_at':'2026-10-10T00:00:00+00:00','valid_until':'2026-11-10T00:00:00+00:00'}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
     assert client.post('/content/refresh').json()['articles'][0]['title'] == 'EA test'
     def failed(_): raise RuntimeError('sensitive internal value')
     monkeypatch.setattr('app.api.fc27.fetch_news', failed)
@@ -187,7 +187,7 @@ def test_content_reference_never_applies_scores_or_imports_game_data(client):
     with SessionLocal() as db:
         before = [(player.id, player.gallery_score) for player in db.scalars(select(Player))]
     response = client.get('/content').json()
-    assert response['game_version'] == 'FC27' and response['scoring']['base_scores']['84'] == 830
+    assert response['game_version'] == 'FC27' and response['scoring'] is None and response['scoring_status'] == 'pending_verification'
     with SessionLocal() as db:
         assert [(player.id, player.gallery_score) for player in db.scalars(select(Player))] == before
 

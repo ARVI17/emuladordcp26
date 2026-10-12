@@ -13,6 +13,8 @@ Head `0014` (evidencia de definiciones y origen de perfiles): `0006` reconoce la
 
 DCP, objetivos, conjuntos, evoluciones y publicaciones exigen evidencia vigente de FC27. La marca manual de revisión no la sustituye. Los borradores conservados se resumen en `/catalog/pending`; cambiar reglas invalida su evidencia. Las protecciones históricas no se eliminan al ocultar plantillas o cartas pendientes.
 
+Contenido y formaciones exigen vigencia documental; no publiques enlaces descubiertos como noticias verificadas ni repongas tablas de puntos sin evidencia. El chat solo muestra resúmenes redactados por el servidor; Ollama selecciona enfoques y nunca aporta texto factual libre. Companion tiene compatibilidad pendiente: sus importaciones van a cuarentena incluso si coinciden con el catálogo. Las dependencias sintéticas de compatibilidad/permisos son exclusivas de pruebas; nunca las actives en producción.
+
 El arranque normal no carga demo. `validation_status` y el catálogo vigente limitan SQL/alias/relaciones; no elimines ese filtro para recuperar cartas pendientes. La revisión se hace en cuarentena, con evidencia de variante y sin alterar protecciones. El arnés sintético de `tests/e2e_app.py` es exclusivo de bases desechables y no debe incorporarse al entrypoint normal.
 
 Revision: `docker-compose.review.yml`, loopback 8081, base tmpfs desechable. No contiene datos reales ni sustituye el stack normal. Resultados actuales en [docs/TESTING.md](docs/TESTING.md); cifras anteriores corresponden a PR #2.

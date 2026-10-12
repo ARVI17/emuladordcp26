@@ -1,5 +1,15 @@
 # Pruebas del planificador FC27
 
+## Contenido y límites FC27 (sprint 9)
+
+`python scripts/verify_docker.py --scope full` pasó en el proyecto desechable `bdacad27b7`: **212 Pytest/PostgreSQL** (157,03 s), **26 Vitest** y **24 Playwright** móvil/escritorio (aprox. 1 min). Build TypeScript/Vite/PWA, arranque, salud, OpenAPI y Alembic0014/check correctos. Se revisó la captura móvil de Novedades. El principal conservó contenedores/arranques; la limpieza temporal terminó sin borrar volúmenes.
+
+Seis pruebas nuevas sin arnés de acreditación ejercitan prosa adversaria del modelo, historial no acreditado, noticias sin fecha/de otra edición/vencidas, formaciones distintas y caducadas, compatibilidad desconocida de Companion, 50 referencias sin posesión y caducidad de prácticas. El recorrido de navegador comprueba contenido pendiente, consulta FC27 y rechazo de otra edición. Las pruebas de puentes existentes solo simulan compatibilidad en una base desechable.
+
+La primera ejecución completa detectó una prueba basada en el antiguo dibujo 4-3-3: 211 pases y un fallo. El caso de mediocampista polivalente se corrigió para usar 4-3-3 Holding. Una repetición iniciada antes de completar ese ajuste se detuvo y limpió; no se cuenta como pase. Después pasó el conjunto completo indicado arriba. La comprobación final `--scope backend`, proyecto `31192b8ab5`, volvió a pasar **212 pruebas** (158,92 s), build, arranque, salud, OpenAPI y Alembic/check tras cerrar ajustes internos, recuentos de reservas y respuestas caducadas. Frontend y navegador no se repitieron porque ese último ajuste solo afectó al backend. Se conserva un aviso de deprecación httpx/Starlette.
+
+No se probó conexión EA, dispositivo real, Safari ni inferencia GPU/Ollama. La integración y compatibilidad siguen pendientes. No hubo migración de datos únicos, despliegue principal ni merge. El CI de `5bca18e` (sprint8) terminó correctamente en ambos eventos; los resultados del commit de este sprint se registran en su PR.
+
 ## Definiciones acreditadas (sprint 8)
 
 Docker completo: **205 Pytest/PostgreSQL** (151,71 s), **26 Vitest**, **22 Playwright** y build/HTTP/OpenAPI/Alembic0014 correctos. Ocho pruebas de frontera omiten el arnés documental. El E2E repetido también envía un DCP sin evidencia y comprueba que solo aparece el aviso de pendientes. El arnés de navegador acredita definiciones exclusivamente con la cabecera explícita de preparación de fixtures; los formularios y casos de frontera siguen la admisión real.

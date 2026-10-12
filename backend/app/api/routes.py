@@ -34,7 +34,7 @@ from app.services.import_export import export_players, ocr_image, parse_import
 from app.services.locks import resource_locks
 from app.services.ollama import chat, status
 from app.services.rating import calculate_rating
-from app.services.squad_analysis import FORMATIONS, athlete_keys, effective_protected_ids, formation_slots, player_positions, recommend_owned_squad, serialize_player
+from app.services.squad_analysis import verified_formations, athlete_keys, effective_protected_ids, formation_slots, player_positions, recommend_owned_squad, serialize_player
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
@@ -102,7 +102,7 @@ def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": entry.player.availability == "available",
                 "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
     starters = [entry for entry in active if not entry.slot.startswith("BENCH-") and entry.player.availability == "available"]
-    expected = formation_slots(squad.formation) if squad.formation in FORMATIONS else []
+    expected = formation_slots(squad.formation) if squad.formation in verified_formations() else []
     # Older saved squads numbered all slots globally (DFC-3, MC-7...). Count
     # positions rather than treating a legacy suffix as a missing footballer.
     present = Counter(entry.slot.rsplit("-", 1)[0] for entry in starters
@@ -404,7 +404,7 @@ def create_squad(payload: SquadCreate, db: DB):
         binding = require_module(db, "squads")
         if payload.expected_binding and any(binding.get(key) != value for key, value in payload.expected_binding.model_dump().items()):
             raise HTTPException(409, "El inventario o la entrada cambió; vuelve a calcular esta propuesta")
-        if payload.formation not in FORMATIONS:
+        if payload.formation not in verified_formations():
             raise HTTPException(422, "Formación no disponible")
         players = db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.deleted.is_(False), Player.game_version == version, Player.availability == "available")).all() if payload.player_ids else []
         if len(players) != len(payload.player_ids) or len(set(payload.player_ids)) != len(payload.player_ids):
@@ -485,9 +485,12 @@ def protect_squad(squad_id: int, db: DB):
 
 @router.post("/squads/recommend")
 def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommendationRequest | None = None):
-    options = (payload or SquadRecommendationRequest()).model_dump()
+    try:
+        options = (payload or SquadRecommendationRequest()).model_dump()
+    except ValueError as exc:
+        raise HTTPException(422, 'Formaciones pendientes de revisión FC27') from exc
     if formation is not None:
-        if formation not in FORMATIONS:
+        if formation not in verified_formations():
             raise HTTPException(422, "Formación no disponible")
         options["formation"] = formation
     version = current_version(db)
@@ -730,16 +733,23 @@ async def ai_status():
 
 @router.post("/ai/chat")
 async def ai_chat(payload: ChatRequest, db: DB):
+    from app.services.ollama import POLICY, FOCUSES, question_focus, grounded_answer
+    try:
+        focus = question_focus(payload.message)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
     version = current_version(db)
     conditions = (Player.game_version == version, Player.deleted.is_(False))
     count = db.scalar(select(func.count(Player.id)).where(*conditions)) or 0
     duplicates_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.duplicate_untradeable.is_(True))) or 0
     protected_count = len(effective_protected_ids(db, version))
-    pending = db.scalars(select(Challenge.name).where(Challenge.game_version == version, Challenge.completed.is_(False)).limit(10)).all()
-    context = f"DATOS REGISTRADOS {version}: {count} jugadores; {duplicates_count} duplicados; {protected_count} protegidos; DCP pendientes: {', '.join(pending)}."
-    result = await chat(payload.message, context)
-    db.add(ChatMessage(role="user", content=payload.message, metadata_json={"source": "local", "game_version": version}))
-    db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model, "game_version": version}))
+    pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
+    counts = {'players': count, 'duplicates': duplicates_count, 'protected': protected_count, 'dcp': pending}
+    context = f'DATOS FC27: {json.dumps(counts)}'
+    result = grounded_answer(await chat(focus, context), counts, focus)
+    # Retain the intent, never arbitrary text that may contain secrets or unverified facts.
+    db.add(ChatMessage(role="user", content=FOCUSES[focus], metadata_json={"source": "local", "game_version": version, "policy": POLICY}))
+    db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model, "game_version": version, "policy": POLICY}))
     record(db, "chat", "ai", details={"available": result["available"], "message_length": len(payload.message), "game_version": version})
     db.commit()
     return result
@@ -749,7 +759,8 @@ async def ai_chat(payload: ChatRequest, db: DB):
 def ai_history(db: DB, limit: int = Query(50, ge=1, le=200)):
     version = current_version(db)
     edition = ChatMessage.metadata_json["game_version"].as_string()
-    condition = or_(edition == version, edition.is_(None)) if version == "FC26" else edition == version
+    from app.services.ollama import POLICY
+    condition = (edition == version) & (ChatMessage.metadata_json['policy'].as_string() == POLICY)
     rows = list(reversed(db.scalars(select(ChatMessage).where(condition).order_by(ChatMessage.id.desc()).limit(limit)).all()))
     return [{"id": row.id, "role": row.role, "content": row.content, "metadata": row.metadata_json, "created_at": row.created_at} for row in rows]
 
@@ -791,21 +802,14 @@ def update_profile(payload: ProfileUpdate, db: DB):
 
 @router.get("/settings")
 def list_settings(db: DB):
-    return {row.key: row.value for row in db.scalars(select(AppSetting)).all() if not row.key.startswith("_")}
+    # Internal caches/manifests contain unreviewed or historical domain data.
+    return {'game_version': 'FC27', 'ollama': {'model': settings.ollama_model},
+            'optimizer': {'configurable': False, 'message': 'Coeficientes locales fijos en el motor'}}
 
 
 @router.put("/settings/{key}")
 def update_setting(key: str, value: dict, db: DB):
-    if key.startswith("_") or not key.replace("_", "").isalnum() or len(key) > 80:
-        raise HTTPException(422, "Clave inválida o reservada")
-    setting = db.get(AppSetting, key)
-    if setting:
-        setting.value = value
-    else:
-        db.add(AppSetting(key=key, value=value))
-    record(db, "update", "setting", details={"key": key})
-    db.commit()
-    return {"key": key, "value": value}
+    raise HTTPException(422, 'Configuración interna reservada; usa la función específica del perfil, emulador o revisión')
 
 
 @router.get("/audit")

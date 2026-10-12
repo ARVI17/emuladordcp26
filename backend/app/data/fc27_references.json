@@ -10,13 +10,15 @@
     "declared_scope": "texto público revisado. Límite: Fuente oficial de anuncio; contrastar modificaciones posteriores y alcance de cada apartado.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Anuncio general de mecánicas, no requisitos concretos."
   },
   {
     "id": "R02",
@@ -35,7 +37,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R03",
@@ -54,7 +57,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R04",
@@ -73,7 +77,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R05",
@@ -86,13 +91,15 @@
     "declared_scope": "texto público revisado. Límite: No documenta acceso abierto para este proyecto ni garantiza inventario completo, campos, exportaciones u operaciones de escritura.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "API para socios aprobados; no concede permiso a esta aplicación."
   },
   {
     "id": "R06",
@@ -111,7 +118,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R07",
@@ -130,7 +138,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R08",
@@ -149,7 +158,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R09",
@@ -162,13 +172,15 @@
     "declared_scope": "texto pertinente revisado. Límite: Artículo de anuncio: contrastar cualquier ajuste posterior con las notas de actualización; no implica que todas las plataformas compartan todas las mecánicas.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Mecánicas y controles documentados; parche y configuración del usuario sin verificar."
   },
   {
     "id": "R10",
@@ -187,7 +199,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R11",
@@ -206,7 +219,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R12",
@@ -225,7 +239,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R13",
@@ -244,7 +259,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R14",
@@ -257,13 +273,15 @@
     "declared_scope": "texto pertinente revisado. Límite: Es la valoración de NealGuides, no un consenso oficial ni garantía de victoria. No convertir sus valores de altura o códigos en ajustes inmutables; la guía pide adaptarlos al jugador.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Formaciones y posiciones; tácticas del autor como hipótesis, códigos sin probar."
   },
   {
     "id": "R15",
@@ -282,7 +300,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R16",
@@ -295,13 +314,15 @@
     "declared_scope": "texto pertinente revisado. Límite: El título promocional no demuestra mejora instantánea; evaluar las técnicas en ejercicios y partidos.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Consejos del autor como hipótesis de práctica."
   },
   {
     "id": "R17",
@@ -320,7 +341,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R18",
@@ -339,7 +361,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R19",
@@ -352,13 +375,15 @@
     "declared_scope": "texto pertinente revisado. Límite: Texto en japonés; la síntesis procede del artículo, no de una visualización del vídeo. Cuatro victorias en Draft son una experiencia personal, no evidencia general de que sea la mejor formación. No contar además el vídeo enlazado como una referencia distinta del mismo contenido.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Formación 4-3-1-2; no acredita cartas recomendadas ni resultados."
   },
   {
     "id": "R20",
@@ -377,7 +402,8 @@
     "media_scope": "metadata_only",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R21",
@@ -396,7 +422,8 @@
     "media_scope": "metadata_only",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R22",
@@ -415,7 +442,8 @@
     "media_scope": "metadata_only",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R23",
@@ -434,7 +462,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R24",
@@ -447,13 +476,15 @@
     "declared_scope": "texto pertinente revisado. Límite: Las frecuencias corresponden a las plantillas que FUT.GG dice rastrear; no equivalen al conjunto de todos los jugadores ni a tasas de victoria. No extrapolar popularidad a superioridad; no se verificó por separado el conjunto de datos subyacente.",
     "card_claim": null,
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Catálogo público FC27 y posiciones de las formaciones consultadas; no posesión ni meta universal."
   },
   {
     "id": "R25",
@@ -472,7 +503,8 @@
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "No utilizada como regla activa; requiere revisión documental específica."
   },
   {
     "id": "R26",
@@ -486,12 +518,13 @@
     "card_claim": "FC27 | ID de variante del catálogo: 192119 | Variante del proveedor: Rare | Media: 90 | Posición principal: POR | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
     "verified_at": null,
-    "status": "unverified",
+    "status": "pending_verification",
     "confidence": "pending_review",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "Ficha exacta no accesible"
   },
   {
     "id": "R27",
@@ -504,13 +537,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 245956 | Variante del proveedor: Rare | Media: 85 | Posición principal: POR | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R28",
@@ -523,13 +558,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 203376 | Variante del proveedor: Rare | Media: 88 | Posición principal: DFC | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R29",
@@ -542,13 +579,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 236479 | Variante del proveedor: Rare | Media: 88 | Posición principal: DFC | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R30",
@@ -561,13 +600,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 243715 | Variante del proveedor: Rare | Media: 88 | Posición principal: DFC | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R31",
@@ -581,12 +622,13 @@
     "card_claim": "FC27 | ID de variante del catálogo: 235212 | Variante del proveedor: Rare | Media: 88 | Posición principal: LD | Alternativas publicadas: MD.",
     "submitted_on": "2026-10-11",
     "verified_at": null,
-    "status": "unverified",
+    "status": "pending_verification",
     "confidence": "pending_review",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "Ficha exacta no accesible"
   },
   {
     "id": "R32",
@@ -599,13 +641,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 67336110 | Variante del proveedor: Team of the week | Media: 86 | Posición principal: DFC | Alternativas publicadas: LD, MD.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R33",
@@ -618,13 +662,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 67361009 | Variante del proveedor: Destined for Glory Pristine Holographic | Media: 89 | Posición principal: LI | Alternativas publicadas: MI.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R34",
@@ -637,13 +683,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 265674 | Variante del proveedor: Rare | Media: 86 | Posición principal: LI | Alternativas publicadas: MI, EI.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R35",
@@ -657,12 +705,13 @@
     "card_claim": "FC27 | ID de variante del catálogo: 231866 | Variante del proveedor: Rare | Media: 90 | Posición principal: MCD | Alternativas publicadas: MC.",
     "submitted_on": "2026-10-11",
     "verified_at": null,
-    "status": "unverified",
+    "status": "pending_verification",
     "confidence": "pending_review",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "verified_scope": "Ficha exacta no accesible"
   },
   {
     "id": "R36",
@@ -675,13 +724,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 237289 | Variante del proveedor: Rare | Media: 88 | Posición principal: MCD | Alternativas publicadas: MC.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R37",
@@ -694,13 +745,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 239053 | Variante del proveedor: Rare | Media: 87 | Posición principal: MC | Alternativas publicadas: LD, MCD, MD, ED.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R38",
@@ -713,13 +766,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 251854 | Variante del proveedor: Rare | Media: 90 | Posición principal: MC | Alternativas publicadas: MCD, MCO.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R39",
@@ -732,13 +787,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 241667 | Variante del proveedor: Rare | Media: 90 | Posición principal: MC | Alternativas publicadas: MCO.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R40",
@@ -751,13 +808,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 252371 | Variante del proveedor: Rare | Media: 90 | Posición principal: MCO | Alternativas publicadas: MCD, MC, MI, DC, EI.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R41",
@@ -770,13 +829,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 256630 | Variante del proveedor: Rare | Media: 86 | Posición principal: MCO | Alternativas publicadas: MC, MI, EI.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R42",
@@ -789,13 +850,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 246669 | Variante del proveedor: Rare | Media: 87 | Posición principal: ED | Alternativas publicadas: MD.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R43",
@@ -808,13 +871,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 227102 | Variante del proveedor: Rare | Media: 89 | Posición principal: ED | Alternativas publicadas: MD.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R44",
@@ -827,13 +892,15 @@
     "declared_scope": "ficha leída inicialmente; en revalidación devolvió 503, campos esenciales reconfirmados en el perfil FC27. Límite: Consultar la sección FC27 del perfil de respaldo. No mezclar versiones históricas; no es carta propia ni recomendación de compra.",
     "card_claim": "FC27 | ID de variante del catálogo: 238794 | Variante del proveedor: Rare | Media: 89 | Posición principal: EI | Alternativas publicadas: MI, DC.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R45",
@@ -846,13 +913,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 269404 | Variante del proveedor: Rare | Media: 87 | Posición principal: EI | Alternativas publicadas: MD, MI, MCO, ED, DC.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R46",
@@ -865,13 +934,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 239085 | Variante del proveedor: Rare | Media: 91 | Posición principal: DC | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R47",
@@ -884,13 +955,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 228093 | Variante del proveedor: Rare | Media: 85 | Posición principal: DC | Alternativas publicadas: ninguna alternativa publicada en el registro revisado.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R48",
@@ -903,13 +976,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 231747 | Variante del proveedor: Rare | Media: 91 | Posición principal: DC | Alternativas publicadas: EI.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R49",
@@ -922,13 +997,15 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 67372876 | Variante del proveedor: Team of the week Pristine Holographic | Media: 89 | Posición principal: DC | Alternativas publicadas: MCO.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   },
   {
     "id": "R50",
@@ -941,12 +1018,14 @@
     "declared_scope": "ficha FC27 revisada. Límite: No es carta propia ni recomendación de compra; atributos y elegibilidad de la copia real se revalidan antes de planificar.",
     "card_claim": "FC27 | ID de variante del catálogo: 258980 | Variante del proveedor: Rare | Media: 88 | Posición principal: DC | Alternativas publicadas: MCO.",
     "submitted_on": "2026-10-11",
-    "verified_at": null,
-    "status": "unverified",
-    "confidence": "pending_review",
+    "verified_at": "2026-10-12T00:08:00+00:00",
+    "status": "documented",
+    "confidence": "documentary",
     "media_scope": "text_reference",
     "personal_ownership": false,
     "automatic_fetch_allowed": false,
-    "price": null
+    "price": null,
+    "valid_until": "2026-11-10T00:00:00+00:00",
+    "verified_scope": "Ficha exacta: edición, identificador, nombre, media, posición y etiqueta del proveedor; no posesión ni precio. Rare es etiqueta FUT.GG, no clasificación oficial EA."
   }
 ]

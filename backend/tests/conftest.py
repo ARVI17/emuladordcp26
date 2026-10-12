@@ -33,9 +33,11 @@ def client(request):
         from catalog_fixture import activate_seed, witness_definitions
         activate_seed()
         event.listen(Session, 'before_flush', witness_definitions)
-    from app.api.emulator import require_adb_permission
+    from app.api.emulator import require_adb_permission, companion_fc27_compatible
     # Existing bridge tests exercise mocked commands; production has no permission override.
-    app.dependency_overrides[require_adb_permission] = lambda: None
+    if not strict:
+        app.dependency_overrides[require_adb_permission] = lambda: None
+        app.dependency_overrides[companion_fc27_compatible] = lambda: True
     with (TestClient if strict else FixtureClient)(app) as test_client:
         response = test_client.post("/app/session")
         assert response.status_code == 200, response.text

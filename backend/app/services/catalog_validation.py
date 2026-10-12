@@ -66,7 +66,8 @@ def validate_copy(db, player, *, explicit_edition=True):
     player.validation_status = variant.validation_status if variant else 'pending_verification'
     player.catalog_variant_id = variant.id if variant else None
     player.validation_evidence = ({'source_url': variant.source_url, 'observed_at': variant.observed_at.isoformat(),
-                                  'valid_until': variant.valid_until.isoformat(), 'official': variant.validation_status == 'provider_verified'}
+                                  'valid_until': variant.valid_until.isoformat(), 'official': variant.validation_status == 'provider_verified',
+                                  'card_type_scope': 'Etiqueta del catálogo de origen; no acredita clasificación oficial EA'}
                                  if variant else {'reason': reason, 'claimed_edition': values['game_version'] if explicit_edition else None})
     return variant is not None
 
@@ -92,4 +93,5 @@ def load_documented_catalog(db):
         db.add(CardVariant(game_version='FC27', variant_id=variant, name=name, rating=rating, position=position,
             card_type=card_type, source_url=refs[reference], observed_at=datetime.fromisoformat(data['observed_at']),
             valid_until=datetime.fromisoformat(data['valid_until']), validation_status='documented',
-            evidence={'reference_id': reference, 'edition_and_item_checked': True, 'official': False, 'ownership': False}))
+            evidence={'reference_id': reference, 'edition_and_item_checked': True, 'official': False, 'ownership': False,
+                      'card_type_scope': 'Etiqueta del catálogo de origen; Rare no acredita clasificación oficial EA'}))

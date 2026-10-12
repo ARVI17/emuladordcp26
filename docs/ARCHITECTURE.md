@@ -40,7 +40,7 @@ El Compose base permite ejecutar Ollama sin GPU. La reserva NVIDIA se activa con
 
 ## Ediciones y persistencia
 
-`Profile.game_version` determina la edición activa. Jugadores, plantillas, desafíos, objetivos, entregas, lecturas y definiciones nuevas conservan su edición; los segmentos pertenecen a la de su desafío. Cambiar de edición selecciona otro inventario lógico: no transforma ni traslada cartas.
+`current_version()` fija FC27. El contexto y los filtros ORM restringen consultas, agregados y relaciones a esa edición y a evidencia vigente. Los datos históricos no se trasladan ni se ofrecen mediante endpoints públicos.
 
 La [migración 0005](../backend/alembic/versions/0005_fc27_club.py) conserva los datos anteriores como FC26, incorpora los campos y entidades nuevos y establece FC27 como edición inicial del perfil actualizado. Las vistas vacías de FC27 tras migrar no significan que se haya borrado el archivo FC26.
 
@@ -48,7 +48,7 @@ La [migración 0005](../backend/alembic/versions/0005_fc27_club.py) conserva los
 
 `GalleryEntry` mantiene una versión de carta en el historial local, incluso cuando deja de estar disponible. Su identidad es única dentro de cada edición y puede reconciliarse cuando se corrige un identificador. `GallerySet` almacena reglas, etiquetas y umbrales revisados; `EvolutionDefinition` contiene requisitos y caminos de mejora. Registrar o editar datos locales no modifica la Galería ni activa una evolución en EA.
 
-El historial de chat nuevo incluye edición en sus metadatos; los mensajes antiguos sin ella se consultan como FC26. Auditoría y configuración siguen siendo registros locales comunes. Los ajustes privados que empiezan por `_`, incluidos secretos y recibos de importación, quedan fuera de la API pública de ajustes.
+El historial de chat requiere FC27 y la política de resumen validado. Los mensajes anteriores permanecen ocultos. Ollama selecciona un enfoque, sin texto factual libre en respuestas. La auditoría pública también exige marca FC27; los ajustes privados que empiezan por `_` quedan fuera de la API.
 
 ## Lecturas, simulaciones y transacciones
 

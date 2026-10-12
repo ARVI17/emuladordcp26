@@ -45,8 +45,37 @@ class NewsLinks(HTMLParser):
 
 
 def builtin_content(version):
-    if version == "FC27": return deepcopy(BUILTIN)
+    if version == "FC27":
+        result = deepcopy(BUILTIN)
+        result['articles'] = [a for a in result['articles'] if active_article(a)]
+        if not active_evidence(result):
+            result.update(features=[], verified_at=None)
+        return result
     return {"game_version": version, "verified_at": None, "features": [], "articles": [], "scoring": None}
+
+
+def active_evidence(item):
+    try:
+        observed = datetime.fromisoformat(item['observed_at'])
+        until = datetime.fromisoformat(item['valid_until'])
+        return (item.get('game_version') == 'FC27' and item.get('validation_status') == 'documented'
+                and observed <= datetime.now(timezone.utc) < until)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def active_article(item):
+    if not isinstance(item, dict) or not active_evidence(item):
+        return False
+    try:
+        url = urlsplit(item['url'])
+        published = datetime.fromisoformat(item['published_at']).date()
+        return (url.scheme == 'https' and url.hostname in {'ea.com', 'www.ea.com'}
+                and not url.username and not url.password and not url.query and not url.fragment
+                and url.path.startswith('/games/ea-sports-fc/fc-27/news/')
+                and published <= datetime.fromisoformat(item['observed_at']).date())
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 def fetch_news(version):

@@ -12,7 +12,7 @@ Ya existían CRUD de inventario por edición, importación con vista previa, CP-
 
 - Titulares y Evos podían entrar al cálculo por coste: ahora son exclusiones estrictas, junto con favoritos, candados y reservas.
 - El precio desconocido era cero: ahora es `null`; un coste total incompleto permanece desconocido y no supera por omisión un límite económico.
-- La pista de formación dependía de cobertura/orden: ahora compara cobertura legal y encaje entre diez opciones. Los atributos ausentes no obtienen el peso de los presentes.
+- La pista de formación dependía de cobertura/orden: ahora compara cobertura legal y encaje entre las formaciones documentadas vigentes. Los atributos ausentes no obtienen el peso de los presentes.
 - La identidad por nombre confundía homónimos y variantes: se añadió identidad de futbolista, variante y mapeo estable de copia externa, conservando la ambigüedad de registros manuales.
 - Perfil y caché locales podían aparentar actualidad: la entrada ahora exige una comprobación, con control de dependencia también en el servidor.
 - Los locks no reservaban recursos entre planes: hay reservas persistentes de copias y compromisos económicos derivados de planes persistidos, con bloqueo transaccional al reservar.
@@ -29,7 +29,7 @@ En Plantillas se guardan rival/situación, ajuste a probar, ejercicio/métrica y
 | Capa | Archivos |
 | --- | --- |
 | Identidad y entrada | `backend/app/api/connections.py`, `backend/app/services/contexts.py`, `backend/app/services/sync.py`, `frontend/src/api/client.ts`, `frontend/src/lib/entry.ts` |
-| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0012_*`, `frontend/src/types/index.ts` |
+| Datos y contratos | `backend/app/models/planner.py`, `backend/app/models/entities.py`, `backend/app/schemas/planner.py`, `backend/alembic/versions/0006_*` a `0014_*`, `frontend/src/types/index.ts` |
 | Planes y reservas | `backend/app/api/planner.py`, `backend/app/services/planner.py`, `backend/app/services/protection.py`, `backend/app/services/joint.py` |
 | Análisis y compatibilidad | `backend/app/api/analysis.py`, `backend/app/api/routes.py`, `backend/app/api/fc27.py`, `backend/app/api/emulator.py`, `backend/app/services/squad_analysis.py`, `backend/app/optimizers/sbc.py` |
 | Referencias y catálogo | `backend/app/api/knowledge.py`, `backend/app/api/catalog.py`, `backend/app/data/fc27_references.json` |
@@ -108,7 +108,7 @@ Abre `http://localhost:8081`. Primero muestra **Integración pendiente**. **Abri
 
 Este Compose tiene nombre/red propios, puerto limitado a loopback, PostgreSQL en `tmpfs`, demo explícita, ADB desactivado y Ollama inaccesible deliberadamente. **Sus datos son desechables**: detener/recrear su base puede perderlos. El stack original `localhost:8080` y sus volúmenes se conservaron. No usar este Compose para inventario único.
 
-Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0012`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
+Los resultados exactos, comandos y pruebas pendientes están en [TESTING.md](TESTING.md). Las migraciones nuevas son `0006`–`0014`; se comprobó la colisión histórica de las dos migraciones llamadas `0005` sin editar ninguna aplicada. Antes de actualizar datos únicos debe existir un respaldo, tal como indica [FC27_UPGRADE.md](FC27_UPGRADE.md).
 
 ## Aceptación del club real pendiente
 
