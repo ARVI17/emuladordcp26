@@ -1,4 +1,5 @@
 import io
+import json
 from datetime import datetime, timezone
 from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
@@ -7,16 +8,35 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission
+from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, InventoryScan, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission
 from app.optimizers.sbc import solve, validate_solution
-from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
+from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, DcpAssistantRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
 from app.services.audit import record
 from app.services.import_export import export_players, ocr_image, parse_import
+from app.services.inventory import player_identity, remove_pending_identities
 from app.services.ollama import chat, status
 from app.services.rating import calculate_rating
 
 router = APIRouter()
 DB = Annotated[Session, Depends(get_db)]
+AI_REQUIREMENT_KEYS = {
+    "squad_size", "min_rating", "rating_strategy", "min_chemistry", "min_rare", "min_special",
+    "min_leagues", "max_leagues", "min_clubs", "max_clubs", "min_nations", "max_nations",
+    "required_league", "min_from_league", "required_club", "min_from_club", "required_nation",
+    "min_from_nation", "required_card_type", "min_card_type", "required_positions", "max_total_value",
+}
+
+def controlled_ai_requirements(requirements: dict) -> dict:
+    summary: dict = {}
+    for key in AI_REQUIREMENT_KEYS:
+        value = requirements.get(key)
+        if isinstance(value, (bool, int, float)):
+            summary[key] = value
+        elif isinstance(value, str):
+            summary[key] = value[:80]
+        elif key == "required_positions" and isinstance(value, dict):
+            summary[key] = {str(position)[:12]: int(amount) for position, amount in list(value.items())[:11] if isinstance(amount, int)}
+    return summary
 
 def player_data(p: Player) -> dict:
     return {key: getattr(p, key) for key in ("id", "name", "rating", "position", "league", "club", "nationality", "card_type", "rare", "special", "tradable", "price", "chemistry", "protected", "starter", "squad_role", "usefulness", "duplicate_untradeable", "deleted", "created_at")}
@@ -210,7 +230,8 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
     db.add(submission); db.flush()
     challenge = get_or_404(db, Challenge, segment.challenge_id)
     db.flush(); challenge.completed = all(s.completed for s in db.scalars(select(Segment).where(Segment.challenge_id == challenge.id)).all())
-    record(db, "confirm", "submission", submission.id, {"segment_id": segment.id, "players": payload.player_ids}); db.commit()
+    pending_removed = remove_pending_identities(db, {player_identity(player) for player in players})
+    record(db, "confirm", "submission", submission.id, {"segment_id": segment.id, "players": payload.player_ids, "pending_candidates_removed": pending_removed}); db.commit()
     return {"submission_id": submission.id, "confirmed": True, "consumed_players": len(players)}
 
 @router.post("/submissions/{submission_id}/restore")
@@ -249,13 +270,96 @@ async def ai_chat(payload: ChatRequest, db: DB):
     count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False))) or 0
     duplicates_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.duplicate_untradeable.is_(True))) or 0
     protected_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.protected.is_(True))) or 0
-    pending = db.scalars(select(Challenge.name).where(Challenge.completed.is_(False)).limit(10)).all()
-    context = f"DATOS REGISTRADOS: {count} jugadores; {duplicates_count} duplicados; {protected_count} protegidos; DCP pendientes: {', '.join(pending)}."
+    pending_review_count = db.scalar(select(func.coalesce(func.sum(InventoryScan.candidate_count), 0)).where(InventoryScan.status.in_(("scanning", "review")))) or 0
+    rating_rows = db.execute(
+        select(Player.rating, func.count(Player.id))
+        .where(Player.deleted.is_(False))
+        .group_by(Player.rating)
+        .order_by(Player.rating.desc())
+    ).all()
+    duplicate_rows = db.execute(
+        select(Player.name, Player.rating)
+        .where(Player.deleted.is_(False), Player.duplicate_untradeable.is_(True))
+        .order_by(Player.rating.desc(), Player.id)
+        .limit(8)
+    ).all()
+    pending_rows = db.execute(
+        select(Challenge.name, Segment.name, Segment.requirements)
+        .join(Segment, Segment.challenge_id == Challenge.id)
+        .where(Challenge.completed.is_(False), Segment.completed.is_(False))
+        .order_by(Challenge.id, Segment.id)
+        .limit(12)
+    ).all()
+    ratings = ", ".join(f"{rating}:{amount}" for rating, amount in rating_rows)
+    duplicates = ", ".join(f"{rating} {name}" for name, rating in duplicate_rows) or "ninguno"
+    pending = "; ".join(f"{challenge[:120]} / {segment[:120]}: {json.dumps(controlled_ai_requirements(requirements), ensure_ascii=False)}" for challenge, segment, requirements in pending_rows) or "ninguno"
+    context = (
+        f"DATOS REGISTRADOS: {count} jugadores importados/revisados; {duplicates_count} duplicados; {protected_count} protegidos; {pending_review_count} candidatos visuales pendientes de revisión. "
+        f"DISTRIBUCIÓN DE MEDIAS (media:cantidad): {ratings}. DUPLICADOS DESTACADOS: {duplicates}. "
+        f"SEGMENTOS DCP PENDIENTES: {pending}. "
+        "El cálculo exacto de jugadores solo lo realiza el Analizador DCP guiado de la interfaz; no inventes una solución ni afirmes que una entrega fue realizada."
+    )
     result = await chat(payload.message, context)
     db.add(ChatMessage(role="user", content=payload.message, metadata_json={"source": "local"}))
     db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model}))
     record(db, "chat", "ai", details={"available": result["available"], "message_length": len(payload.message)}); db.commit()
     return result
+
+@router.post("/ai/dcp/analyze")
+def analyze_dcp_with_assistant(payload: DcpAssistantRequest, db: DB):
+    segment = get_or_404(db, Segment, payload.segment_id)
+    if segment.completed: raise HTTPException(409, "El segmento ya está completado")
+    challenge = get_or_404(db, Challenge, segment.challenge_id)
+    starters = set(db.scalars(select(Player.id).where(Player.deleted.is_(False), Player.starter.is_(True))).all())
+    request = OptimizeRequest(
+        max_solutions=payload.max_solutions,
+        allow_protected_ids=[],
+        exclude_ids=sorted(starters) if payload.preserve_starters else [],
+    )
+    solutions = optimization_payload(db, segment, request)
+    alternative_with_starters = False
+    if payload.preserve_starters and not solutions:
+        alternative_with_starters = bool(optimization_payload(db, segment, OptimizeRequest(max_solutions=1)))
+    available_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False))) or 0
+    duplicates_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.duplicate_untradeable.is_(True))) or 0
+    protected_count = db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False), Player.protected.is_(True))) or 0
+    pending_review_count = db.scalar(select(func.coalesce(func.sum(InventoryScan.candidate_count), 0)).where(InventoryScan.status.in_(("scanning", "review")))) or 0
+    latest_scan_at = db.scalar(select(func.max(InventoryScan.created_at)))
+    pending_note = f" Hay {pending_review_count} candidatos visuales pendientes; estas propuestas usan únicamente cartas ya revisadas e importadas." if pending_review_count else ""
+    if solutions:
+        summary = f"Encontré {len(solutions)} propuesta{'s' if len(solutions) != 1 else ''} válida{'s' if len(solutions) != 1 else ''} para {challenge.name} · {segment.name}.{pending_note}"
+        question = "¿Cuál propuesta quieres revisar? Si existen candidatos pendientes, impórtalos primero para recalcular con la información más reciente. Cuando estés seguro, confirma la creación del plan; la entrega final seguirá siendo manual."
+        next_action = "review_solution"
+    elif alternative_with_starters:
+        summary = "No encontré una solución conservando todos los titulares, pero sí existe al menos una si permites usarlos."
+        question = "¿Quieres repetir el análisis permitiendo titulares? Ninguna carta será consumida por este análisis."
+        next_action = "ask_allow_starters"
+    else:
+        summary = "No encontré una solución válida con el inventario y las protecciones actuales."
+        question = "¿Quieres revisar requisitos, importar más cartas o desproteger manualmente alguna carta antes de volver a calcular?"
+        next_action = "review_inventory"
+    return {
+        "challenge": {"id": challenge.id, "name": challenge.name},
+        "segment": segment_data(segment),
+        "solutions": solutions,
+        "inventory_summary": {
+            "available": available_count,
+            "duplicates": duplicates_count,
+            "protected": protected_count,
+            "starters_excluded": len(starters) if payload.preserve_starters else 0,
+            "pending_review": pending_review_count,
+            "latest_scan_at": latest_scan_at,
+        },
+        "policy": {"preserve_starters": payload.preserve_starters, "protected_players_allowed": False},
+        "assistant": {"summary": summary, "question": question, "next_action": next_action},
+        "alternative_with_starters": alternative_with_starters,
+        "plan_confirmation_phrase": f"CREAR PLAN {segment.id}" if solutions else None,
+        "simulation": True,
+        "writes_performed": False,
+        "uses_reviewed_inventory_only": True,
+        "live_sync_scope": "visible_companion_screen",
+        "final_submission_automated": False,
+    }
 
 @router.get("/ai/history")
 def ai_history(db: DB, limit: int = Query(50, ge=1, le=200)):

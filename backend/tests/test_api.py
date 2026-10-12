@@ -1,4 +1,5 @@
 import io
+from app.api.routes import controlled_ai_requirements
 
 def test_health_seed_and_dashboard(client):
     assert client.get("/health").json()["database"] == "ok"
@@ -52,3 +53,32 @@ def test_works_without_ollama(client):
     history = client.get("/ai/history").json()
     assert [item["role"] for item in history] == ["user", "assistant"]
     assert history[0]["content"] == "Resume mi club"
+    controlled = controlled_ai_requirements({"min_rating":84,"required_nation":"Colombia","required_player_ids":[1,2],"texto_interno":"no enviar"})
+    assert controlled == {"min_rating":84,"required_nation":"Colombia"}
+
+def test_dcp_assistant_calculates_without_mutating_or_using_ollama(client):
+    segment = next(
+        segment
+        for challenge in client.get("/challenges").json()
+        if not challenge["completed"]
+        for segment in challenge["segments"]
+        if not segment["completed"]
+    )
+    before = client.get("/dashboard").json()["counts"]
+    response = client.post("/ai/dcp/analyze", json={"segment_id":segment["id"],"preserve_starters":True,"max_solutions":2})
+    assert response.status_code == 200
+    analysis = response.json()
+    assert analysis["simulation"] is True and analysis["writes_performed"] is False
+    assert analysis["final_submission_automated"] is False
+    assert analysis["plan_confirmation_phrase"] == f"CREAR PLAN {segment['id']}"
+    assert analysis["solutions"]
+    assert all(not player["starter"] and not player["protected"] for solution in analysis["solutions"] for player in solution["players"])
+    assert client.get("/dashboard").json()["counts"] == before
+
+def test_dcp_assistant_explains_when_no_solution_exists(client):
+    challenge = client.post("/challenges", json={"name":"Asistente imposible","description":"","reward":""}).json()
+    segment = client.post(f"/challenges/{challenge['id']}/segments", json={"name":"Media 99","requirements":{"squad_size":11,"min_rating":99}}).json()
+    analysis = client.post("/ai/dcp/analyze", json={"segment_id":segment["id"],"preserve_starters":False,"max_solutions":1}).json()
+    assert analysis["solutions"] == []
+    assert analysis["assistant"]["next_action"] == "review_inventory"
+    assert analysis["plan_confirmation_phrase"] is None

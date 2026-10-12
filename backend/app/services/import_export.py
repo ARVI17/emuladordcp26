@@ -145,6 +145,64 @@ def find_accessibility_inventory_action(content: bytes | str, label: str) -> tup
         if match: return tuple(int(value) for value in match.groups())
     return None
 
+OBJECTIVE_UI_WORDS = {
+    "objetivos", "objetivo", "recompensas", "recompensa", "temporada", "inicio", "volver",
+    "completado", "completada", "en curso", "ver todo", "reclamar", "xp",
+}
+
+def extract_accessibility_objectives(content: bytes | str) -> list[dict]:
+    """Return reviewable objective progress rows from the currently visible Companion screen."""
+    if isinstance(content, bytes):
+        if len(content) > 2_000_000: return []
+        content = content.decode("utf-8", "replace")
+    try:
+        root = ET.fromstring(content)
+    except (ET.ParseError, ValueError):
+        return []
+    values: list[str] = []
+    for node in root.iter("node"):
+        for attribute in ("text", "content-desc"):
+            value = re.sub(r"\s+", " ", node.attrib.get(attribute, "")).strip(" -|:")
+            if value and value not in values:
+                values.append(value)
+    if not any("objetiv" in _plain(value) or "evolucion" in _plain(value) for value in values):
+        return []
+    progress_pattern = re.compile(r"(?<!\d)(\d{1,5})\s*/\s*(\d{1,5})(?!\d)")
+    candidates: list[dict] = []
+    seen: set[str] = set()
+    for index, value in enumerate(values):
+        progress_match = progress_pattern.search(value)
+        if not progress_match:
+            continue
+        progress, target = (int(progress_match.group(1)), int(progress_match.group(2)))
+        if target < 1 or progress > target:
+            continue
+        name = ""
+        inline_name = value[:progress_match.start()].strip(" -|:")
+        search_values = [inline_name] if inline_name else []
+        search_values.extend(reversed(values[max(0, index - 6):index]))
+        for possible in search_values:
+            plain = _plain(possible)
+            if len(possible) < 3 or plain in OBJECTIVE_UI_WORDS or progress_pattern.search(possible):
+                continue
+            if possible.isdigit() or not re.search(r"[A-Za-zÀ-ÿ]", possible):
+                continue
+            name = possible[:120]
+            break
+        identity = _plain(name)
+        if not name or identity in seen:
+            continue
+        seen.add(identity)
+        candidates.append({
+            "name": name,
+            "progress": progress,
+            "target": target,
+            "category": "Evolución" if "evolucion" in identity else "Objetivo",
+        })
+        if len(candidates) >= 100:
+            break
+    return candidates
+
 def extract_inventory_candidates(text: str, page: int = 1) -> list[dict]:
     lines = [re.sub(r"\s+", " ", line).strip(" -|:") for line in text.splitlines() if len(line.strip()) > 1]
     candidates: list[dict] = []

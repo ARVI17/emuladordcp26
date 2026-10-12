@@ -2,7 +2,7 @@
 
 ## Backend
 
-Pytest crea una base SQLite temporal limpia por caso y carga el seed. Sus 30 casos comprueban health, seed, panel, CRUD/protección/eliminación, plantillas, objetivos, importación/exportación, degradación sin Ollama, DCP válido e imposible, exclusión de protegidos, duplicados, simulación, confirmación/restauración, emparejamiento ADB sin fuga del código, planes, lectura revisable del club, jerarquía temporal acotada, navegación validada, continuación por lotes, importación parcial por candidatos y extracción de requisitos.
+Pytest crea una base SQLite temporal limpia por caso y carga el seed. Sus 36 casos comprueban health, seed, panel, CRUD/protección/eliminación, plantillas, objetivos, importación/exportación, degradación sin Ollama, análisis DCP guiado sin mutación, DCP válido e imposible, exclusión de protegidos/titulares, duplicados, simulación, confirmación/restauración, emparejamiento ADB sin fuga del código, planes, lectura revisable del club, observación manual, deduplicación global contra usadas, carga completa, jerarquía temporal acotada, navegación validada, actualización DCP sin duplicarlo y objetivos visibles revisables.
 
 ```bash
 docker compose run --rm --no-deps backend pytest -q
@@ -15,7 +15,7 @@ docker compose exec backend alembic current
 docker compose exec database psql -U fc26 -d fc26 -c "select count(*) from players;"
 ```
 
-El head actual es `0004`. Para una migración limpia usa una base temporal separada, ejecuta `alembic upgrade head`, comprueba sus tablas y elimina solamente esa base de prueba.
+El head actual es `0005`. Para una migración limpia usa una base temporal separada, ejecuta `alembic upgrade head`, comprueba sus tablas y elimina solamente esa base de prueba.
 
 ## Frontend
 
@@ -26,7 +26,7 @@ docker compose run --rm frontend-test
 docker compose run --rm frontend-e2e
 ```
 
-El servicio `frontend-e2e` incluye Playwright y prueba la SPA contra Nginx en la red interna con emulación de iPhone 13. Actualmente hay 2 casos Vitest y 2 casos Playwright, incluido el límite de entrega manual de la pantalla Emulador.
+El servicio `frontend-e2e` incluye Playwright y prueba la SPA contra Nginx en la red interna con emulación de iPhone 13. Actualmente hay 2 casos Vitest y 6 casos Playwright, incluidos el límite de entrega manual, 20 formularios sin sondeo automático, cero lecturas hasta pulsar **Actualizar desde Companion**, carga global confirmada y asistente DCP con confirmación obligatoria.
 
 ## Verificación manual mínima
 

@@ -146,6 +146,7 @@ class InventoryScan(Base):
     captured_pages: Mapped[int] = mapped_column(Integer, default=0)
     capture_hashes: Mapped[list] = mapped_column(JSON, default=list)
     candidates: Mapped[list] = mapped_column(JSON, default=list)
+    candidate_count: Mapped[int] = mapped_column(Integer, default=0)
     imported_player_ids: Mapped[list] = mapped_column(JSON, default=list)
     imported_count: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)

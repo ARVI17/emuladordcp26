@@ -104,7 +104,7 @@ El entrypoint del backend ejecuta `alembic upgrade head`, luego el seed si `SEED
 - `backend/app/services/audit.py`: creación de eventos de auditoría dentro de la transacción llamante.
 - `backend/app/db/session.py`: engine y sesiones.
 - `backend/app/db/seed.py`: demo idempotente.
-- `backend/alembic/versions/`: esquema reproducible; head actual `0004` (`inventory_scans`).
+- `backend/alembic/versions/`: esquema reproducible; head actual `0005` (`candidate_count` para lecturas paginadas).
 - `frontend/src/App.tsx`: todas las vistas y mutaciones de la SPA.
 - `frontend/src/api/client.ts`: prefijo `/api`, errores y formatos locales.
 - `frontend/src/types/index.ts`: contratos TypeScript consumidos por la UI.
@@ -129,13 +129,15 @@ Estas reglas forman parte del alcance actual y no deben relajarse incidentalment
 8. No exponer el stack directamente a Internet: no tiene autenticación multiusuario. Una publicación exige primero TLS, autenticación, secretos seguros y firewall.
 9. No devolver trazas o detalles internos al cliente. Registrar el error localmente y conservar respuestas públicas genéricas.
 10. Mantener CORS restringido, consultas ORM parametrizadas, límites de carga y las cabeceras CSP/`nosniff`/`SAMEORIGIN`/Referrer-Policy.
-11. Ollama solo recibe un resumen controlado del inventario, no acceso directo a la base ni capacidad de mutación.
+11. Ollama solo recibe un resumen controlado del inventario, distribución de medias, duplicados destacados y requisitos pendientes; no obtiene acceso directo a la base ni capacidad de mutación. `/ai/dcp/analyze` calcula con CP-SAT sin Ollama, debe permanecer como simulación, excluir protegidos, respetar la opción de titulares y no crear planes/entregas como efecto secundario.
 12. La media y la química son aproximaciones locales. No presentarlas como fórmula oficial garantizada de EA.
 13. Un plan ADB exige calibración y la frase exacta `PREPARAR <id>` antes de ejecutarse. Justo antes de encolarlo vuelve a validar jugadores/requisitos, presencia del serial, resolución y ausencia de otro plan `queued`/`running` para ese dispositivo. Debe conservar `final_submission_automated=false`, poder cancelarse antes de terminar y generar únicamente pasos previos a la entrega irreversible.
 14. Las coordenadas son absolutas para una resolución/pantalla concretas. Un cambio de resolución, orientación, escala o interfaz obliga a recalibrar y revisar manualmente.
-15. Una lectura de inventario exige dispositivo/resolución estables, ignora hashes repetidos y limita 50 pantallas/1000 candidatos. Importar hasta 500 cartas exige `IMPORTAR <id>`; archivar solo nombres demo exige `REEMPLAZAR DEMO <id>`.
-16. Los requisitos detectados por OCR son un borrador local. Nunca tratarlos como restricciones verificadas hasta revisión humana.
+15. Una lectura de inventario exige dispositivo/resolución estables, ignora hashes repetidos y limita 50 pantallas/1000 candidatos. Importar hasta 500 cartas revisadas exige `IMPORTAR <id>`; archivar solo nombres demo exige `REEMPLAZAR DEMO <id>`. La carga global del servidor admite como máximo 5000 pendientes y exige `IMPORTAR TODO EL CLUB`.
+16. Los requisitos DCP detectados por OCR y los objetivos visibles detectados por accesibilidad son borradores locales. Nunca tratarlos como datos verificados hasta revisión humana; guardar exige respectivamente `ACTUALIZAR DCP` y `ACTUALIZAR OBJETIVOS`.
 17. `POST /emulator/pair` acepta únicamente código temporal ADB de seis dígitos. Puede usarlo como argumento de proceso, pero nunca persistirlo, devolverlo, incluirlo en errores propios ni auditarlo.
+18. `POST /emulator/scans/{scan_id}/observe` debe permanecer como una acción manual de una sola lectura: jerarquía únicamente, sin temporizador, captura/OCR, Ollama, toque/deslizamiento ni mutación ante otra pantalla o una firma repetida.
+19. La identidad visual para deduplicar inventario es nombre normalizado + media + posición. Las importaciones deben compararla con cartas activas y eliminadas para no resucitar una carta consumida desde una lectura vieja; confirmar un DCP retira candidatos pendientes con la misma identidad. La carga global no debe hidratar formularios masivos en la SPA y deja liga, club y nacionalidad como no disponibles hasta revisión.
 
 Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`, `completed`, `failed` y `cancelled`. `completed` significa únicamente que terminó la colocación prevista; nunca significa que el DCP fue entregado. Las rutas de conexión, toque/deslizamiento manual, calibración y cambios de plan relevantes se auditan; cada paso ejecutado crea un `AuditLog` `execute_step`, y un error crea `execute_failed` además de persistir `last_error`.
 
@@ -173,7 +175,7 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 - Actualiza `frontend/src/types/index.ts` cuando cambie una respuesta y mantén validación Zod/Pydantic coherente.
 - Conserva navegación y controles utilizables en ancho móvil; el E2E usa emulación iPhone 13.
 - El tema sí se persiste en `localStorage`; los datos del dominio pertenecen a PostgreSQL.
-- La pantalla activa `CompanionPage` consulta estado/lecturas cada 5 s y planes cada 2,5 s; conserva estas actualizaciones o proporciona un reemplazo explícito para reflejar progreso/cancelación.
+- La pantalla activa `CompanionPage` consulta el estado cada 10 s y planes cada 2,5 s. El inventario de Companion solo se observa al pulsar **Actualizar desde Companion**; las lecturas locales se actualizan manualmente, sus resúmenes nunca incluyen candidatos y la revisión detallada conserva como máximo 20 formularios. La carga completa ocurre en el servidor desde un resumen y una frase explícita; no restaures el sondeo, la observación automática ni miles de controles DOM.
 
 ### Docker, secretos y archivos
 
@@ -185,7 +187,7 @@ Los estados persistidos de un plan son `draft`, `prepared`, `queued`, `running`,
 
 ## Pruebas según el cambio
 
-Suite registrada en este estado: **30 Pytest, 2 Vitest y 2 Playwright**.
+Suite registrada en este estado: **36 Pytest, 2 Vitest y 6 Playwright**.
 
 | Cambio | Verificación mínima |
 | --- | --- |
@@ -196,7 +198,7 @@ Suite registrada en este estado: **30 Pytest, 2 Vitest y 2 Playwright**.
 | ADB/planes/calibración | `test_emulator.py`, OpenAPI y degradación sin dispositivo; con hardware, inspección manual y comprobación de que no existe submit final |
 | Lectura de inventario/requisitos | Pytest de escaneo/revisión/importación y extractores; con hardware, contraste manual contra cartas visibles |
 | Frontend o tipos | Vitest y `npm run build` mediante imagen/servicio |
-| Navegación/layout/PWA | 2 casos Playwright iPhone y revisión manual a ~390 px, incluida la pantalla Emulador |
+| Navegación/layout/PWA | 6 casos Playwright iPhone y revisión manual a ~390 px, incluidas las pantallas Emulador e IA |
 | Nginx/Docker | `docker compose config --quiet`, reconstrucción, `docker compose ps` y checks HTTP externos |
 | Backup/restore | Probar con datos desechables y confirmar la copia previa; nunca usar primero datos únicos |
 

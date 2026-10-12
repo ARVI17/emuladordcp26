@@ -12,7 +12,7 @@ La aplicación implementa:
 - plantillas, duplicación, protección conjunta y recomendación simple 4-3-3;
 - desafíos DCP con solver CP-SAT, simulación, confirmación y restauración;
 - objetivos/evoluciones y perfil local;
-- historial y chat de solo consulta con Ollama;
+- asistente DCP guiado con cálculo CP-SAT de solo lectura e historial/chat explicativo con Ollama;
 - control ADB local asistido: conexión TCP, captura/OCR, lectura revisable del club/requisitos DCP, toques, calibración y planes que preparan una combinación;
 - auditoría de mutaciones relevantes;
 - respaldo/restauración de PostgreSQL mediante scripts de PowerShell;
@@ -133,7 +133,7 @@ Los valores de `AppSetting["optimizer"]` creados por el seed no alimentan todav�
 
 ## API HTTP
 
-El OpenAPI actual contiene 54 operaciones, incluidas 20 bajo `/emulator`. Todos los paths de esta sección se consumen externamente como `/api<path>`, salvo el acceso cómodo `/health`, que Nginx también reenvía directamente. Swagger está en `/api/docs`.
+El OpenAPI actual contiene 66 operaciones, incluidas 31 bajo `/emulator`. Todos los paths de esta sección se consumen externamente como `/api<path>`, salvo el acceso cómodo `/health`, que Nginx también reenvía directamente. Swagger está en `/api/docs`.
 
 ### Salud y resumen
 
@@ -203,12 +203,20 @@ Una evolución es un `Objective` con `category="Evolución"`; no hay tabla o mot
 | `GET /emulator/screenshot` | — | devuelve PNG en memoria con `Cache-Control: no-store` |
 | `POST /emulator/inspect` | — | captura, OCR y tamaño de pantalla; devuelve `source="ADB"`, `saved=false` |
 | `POST /emulator/dcp/inspect` | — | extrae requisitos frecuentes y devuelve un borrador revisable; no crea ni ejecuta el DCP |
+| `POST /emulator/dcp/sync` | `DcpSyncRequest` | exige `ACTUALIZAR DCP`; crea o actualiza por nombre un segmento pendiente revisado |
+| `POST /emulator/objectives/inspect` | — | lee solo la jerarquía visible de Objetivos y devuelve nombre/progreso/meta revisables |
+| `POST /emulator/objectives/sync` | `ObjectiveSyncRequest` | exige `ACTUALIZAR OBJETIVOS`; crea/actualiza por nombre sin eliminar ausentes |
 | `POST /emulator/tap` | `EmulatorTapRequest {x,y}` | envía toque manual y audita `tap` |
 | `POST /emulator/swipe` | `EmulatorSwipeRequest {x1,y1,x2,y2,duration_ms}` | envía deslizamiento manual y audita `swipe` |
 | `GET /emulator/calibration` | — | devuelve calibración guardada o `null` |
 | `PUT /emulator/calibration` | `EmulatorCalibration` | valida resolución/coordenadas, guarda en `AppSetting["emulator"]` y audita `calibrate` |
-| `GET /emulator/scans` | query `limit` 1–100 | sesiones recientes con candidatos/progreso, nunca imágenes |
+| `GET /emulator/scans` | query `limit` 1–100 | resúmenes recientes con `candidate_count`, sin cargar/devolver candidatos o imágenes |
+| `GET /emulator/scans/bulk-preview` | — | resume todos los lotes: nuevas únicas, duplicadas, ya registradas/usadas e incompletas |
+| `POST /emulator/scans/reconcile` | — | elimina solo candidatos pendientes repetidos o ya registrados/usados; conserva el primero único |
+| `POST /emulator/scans/bulk-import` | `InventoryBulkImportRequest` | exige `IMPORTAR TODO EL CLUB`; procesa hasta 5000 pendientes en servidor e importa todas las completas únicas |
+| `GET /emulator/scans/{scan_id}/candidates` | query `offset` ≥ 0, `limit` 1–50 | página de candidatos revisables; la SPA solicita 20 |
 | `POST /emulator/scans` | — | exige dispositivo listo y crea una sesión ligada a serial/resolución; 201 |
+| `POST /emulator/scans/{scan_id}/observe` | — | una pulsación hace una lectura ligera de la jerarquía visible; no captura, no usa OCR/Ollama, no toca el dispositivo y omite otras pantallas/firmas repetidas |
 | `POST /emulator/scans/{scan_id}/continue` | — | después del límite crea otro lote ligado a la huella de la última página, sin copiar candidatos |
 | `POST /emulator/scans/{scan_id}/capture` | — | captura temporal; prioriza filas de accesibilidad y usa OCR como respaldo, rechaza la misma página y acumula candidatos revisables |
 | `POST /emulator/scans/{scan_id}/advance` | — | valida pantalla/lista/botón, desplaza, pulsa únicamente `Siguiente`, verifica que cambió la página y añade hasta 20 filas estructuradas |
@@ -232,14 +240,15 @@ Los cuerpos aplican estos límites:
 
 `emulator_config` y `save_emulator_config` copian el diccionario JSON para que SQLAlchemy detecte de forma segura los cambios de address/serial/calibración. Al ejecutar se rechaza otro `AutomationPlan` `queued` o `running` con el mismo `device_serial`. El serial debe aparecer en `adb devices` con estado `device`, y `screen_size` debe coincidir con la calibración guardada tanto antes de encolar como al empezar la tarea de fondo.
 
-`InventoryScan` limita 50 páginas, 1000 candidatos y 500 jugadores por solicitud de importación. La lectura estructurada valida el título `Futb. de Mi Club`, clases/estado/límites del botón y serial/resolución; el XML temporal se limita a 2 MB, se elimina del dispositivo y nunca se persiste o devuelve. Guarda SHA-256 de la imagen o de la firma estructurada para evitar páginas idénticas y no persiste PNG ni `raw_text`. `IMPORTAR <id>` agrega únicamente los `candidate_ids` seleccionados y deja el resto en `review` para otro lote; `REEMPLAZAR DEMO <id>` además marca `deleted=true` únicamente para los 132 nombres deterministas del seed.
+`InventoryScan` limita 50 páginas, 1000 candidatos por lote y 500 jugadores por importación detallada. La observación manual valida serial/resolución y el título `Futb. de Mi Club`; solo lee el XML temporal acotado y nunca cae a captura/OCR ni pulsa la pantalla. Nombre normalizado+media+posición se compara con otros lotes y con todos los `Player`, incluidos eliminados, para no resucitar una carta consumida desde datos viejos. La carga global procesa hasta 5000 pendientes en el servidor, mantiene las incompletas en revisión y no crea formularios masivos en la SPA. `IMPORTAR <id>`, `REEMPLAZAR DEMO <id>` e `IMPORTAR TODO EL CLUB` son confirmaciones distintas.
 
 ### IA, OCR, perfil, settings y auditoría
 
 | Método y path | Entrada | Salida/efecto |
 | --- | --- | --- |
 | `GET /ai/status` | — | disponibilidad de Ollama y modelo configurado |
-| `POST /ai/chat` | `ChatRequest {message}` (1–2000) | envía pregunta + resumen agregado, persiste ambos mensajes y audita |
+| `POST /ai/chat` | `ChatRequest {message}` (1–2000) | envía pregunta + resumen agregado acotado, persiste ambos mensajes y audita |
+| `POST /ai/dcp/analyze` | `DcpAssistantRequest {segment_id,preserve_starters,max_solutions}` | simulación CP-SAT de 1–3 propuestas, sin Ollama ni escrituras; excluye protegidos y opcionalmente titulares |
 | `GET /ai/history` | query `limit` 1–200 | últimos mensajes devueltos en orden cronológico |
 | `POST /ocr/preview` | multipart `file` JPEG/PNG/WebP | texto máximo 5000 caracteres, un candidato y `requires_confirmation=true`; no persiste |
 | `GET /profile` | — | primer perfil local |
@@ -248,11 +257,11 @@ Los cuerpos aplican estos límites:
 | `PUT /settings/{key}` | cuerpo JSON objeto | upsert de clave alfanumérica/guion bajo, máximo 80 caracteres |
 | `GET /audit` | query `limit` 1–200 | últimos eventos, de más nuevo a más antiguo |
 
-El chat resume conteo total, duplicados, protegidos y hasta 10 nombres de DCP pendientes. No entrega registros completos a Ollama y no ejecuta herramientas ni mutaciones basadas en la respuesta.
+El chat resume conteo total, distribución de medias, hasta 8 duplicados destacados y hasta 12 segmentos/requisitos pendientes. No entrega registros completos a Ollama y no ejecuta herramientas ni mutaciones basadas en la respuesta. El análisis guiado usa el solver determinista, devuelve `simulation=true`, `writes_performed=false`, una pregunta de siguiente paso y la frase `CREAR PLAN <segmento>` cuando hay soluciones; crear/ejecutar el plan permanece en rutas separadas con revisión humana.
 
 ## Persistencia
 
-Head de Alembic: `0004` (`0001` crea el esquema inicial, `0002` agrega chat, `0003` crea `automation_plans` y `0004` crea `inventory_scans`).
+Head de Alembic: `0005` (`0001` crea el esquema inicial, `0002` agrega chat, `0003` crea `automation_plans`, `0004` crea `inventory_scans` y `0005` agrega el conteo paginable de candidatos).
 
 | Modelo / tabla | Campos y relaciones relevantes |
 | --- | --- |
@@ -268,7 +277,7 @@ Head de Alembic: `0004` (`0001` crea el esquema inicial, `0002` agrega chat, `00
 | `AppSetting` / `app_settings` | clave primaria string y valor JSON |
 | `ChatMessage` / `chat_messages` | rol, contenido, metadata JSON, fecha |
 | `AutomationPlan` / `automation_plans` | nombre/tipo/estado, serial, FK opcional a segmento, IDs, snapshot y pasos JSON, progreso/error, aprobación/ejecución/creación |
-| `InventoryScan` / `inventory_scans` | estado, serial/resolución, páginas/hashes/candidatos JSON, IDs y conteo importados, error y fechas |
+| `InventoryScan` / `inventory_scans` | estado, serial/resolución, páginas/hashes/candidatos JSON, conteo de candidatos, IDs y conteo importados, error y fechas |
 
 Relaciones principales:
 
@@ -319,13 +328,13 @@ TanStack Query usa `staleTime=15s`, un reintento en consultas y cero reintentos 
 | DCP | `/challenges` | crear desafío+segmento, optimizar, crear plan con **Preparar en emulador**, confirmar entrega local con diálogo |
 | Objetivos | `/objectives` | crear, sumar progreso, completar |
 | Duplicados | `/duplicates`, `/challenges` | marcar duplicado utilizado |
-| IA | `/ai/status` cada 30s, `/ai/history` | enviar chat |
-| Emulador | estado/lecturas cada 5s, planes cada 2,5s | conectar, capturar, calibrar por clic, leer DCP/club, revisar/importar y preparar/ejecutar/cancelar planes |
+| IA | `/ai/status` cada 30s, `/ai/history`, `/ai/dcp/analyze` manual | elegir DCP/política, calcular 1–3 propuestas, confirmar borrador de plan y enviar chat |
+| Emulador | estado cada 10s, lecturas del club solo por botón y planes cada 2,5s | actualizar una vez desde Companion, cargar todos los lotes únicos, revisar 20 candidatos, actualizar DCP/objetivos visibles y preparar/ejecutar/cancelar planes |
 | Ajustes | `/profile` | editar perfil, cambiar tema local, OCR preview, restaurar submission |
 
 La UI de creación de DCP solo expone `squad_size=11`, `min_rating`, `min_chemistry` y `min_rare`. Los requisitos avanzados solo están accesibles por API. Cada solución ofrece **Preparar en emulador**, que crea un plan pero no lo ejecuta. La UI de OCR muestra el candidato, pero no lo transfiere automáticamente al formulario de Club.
 
-La pantalla activa `CompanionPage` parte de una calibración 1080×2400. Un clic normal toca el dispositivo, pero seleccionar un objetivo de calibración convierte el siguiente clic en medición local sin enviar pulsación. También acumula sesiones de inventario y crea borradores DCP desde OCR. Para un plan `prepared`, la ejecución permanece deshabilitada hasta que la entrada coincida con `PREPARAR <id>`.
+La pantalla activa `CompanionPage` parte de una calibración 1080×2400. Un clic normal toca el dispositivo, pero seleccionar un objetivo de calibración convierte el siguiente clic en medición local sin enviar pulsación. **Actualizar desde Companion** genera exactamente una observación ligera; no hay temporizador para inventario. La carga global se confirma una vez sin hidratar miles de controles. DCP y objetivos visibles se guardan solo después de mostrar el borrador y escribir su frase. Para un plan `prepared`, la ejecución permanece deshabilitada hasta `PREPARAR <id>`.
 
 ## Flujos de datos
 
@@ -430,14 +439,19 @@ Usuario revisa y escribe la frase exacta
 ```text
 Usuario abre Mi club e inicia InventoryScan
   -> fija serial + resolución
-  -> lee jerarquía temporal acotada -> nombre/media/posición de hasta 20 filas
+  -> cada pulsación en “Actualizar desde Companion” lee una jerarquía temporal acotada
+  -> valida “Futb. de Mi Club” -> nombre/media/posición de hasta 20 filas
+  -> sin temporizador, captura, OCR, Ollama ni entrada ADB
+  -> si la firma se repite o es otra pantalla, no modifica la sesión
+  -> opcionalmente “Leer página actual” usa el flujo explícito con respaldo OCR
   -> si no existe esa estructura: captura PNG en memoria -> SHA-256 -> OCR conservador
   -> descarta XML/PNG y persiste solo firma/candidatos/progreso
   -> “Avanzar y leer siguiente” valida pantalla + botón + cambio de página
   -> al llegar a 50 páginas/1000 candidatos puede crear un lote de continuación
-  -> usuario corrige/selecciona
-  -> frase IMPORTAR <id> o REEMPLAZAR DEMO <id>
-  -> crea Player + AuditLog; opcionalmente archiva solo nombres demo
+  -> vista global deduplica nombre+media+posición entre lotes y contra activas/usadas
+  -> usuario revisa resumen y escribe IMPORTAR TODO EL CLUB
+  -> servidor crea todas las completas únicas; mantiene incompletas para revisión
+  -> alternativa detallada: 20 visibles + IMPORTAR <id> o REEMPLAZAR DEMO <id>
 ```
 
 Estados posibles:
@@ -455,7 +469,17 @@ Un plan `running` revisa entre pasos si fue cancelado. Un plan `completed` no pu
 
 Alternar `/squads/{id}/protect` cambia `Squad.protected` y aplica el mismo booleano a todas las cartas relacionadas. Desproteger la plantilla también desprotege esas cartas aunque hubieran sido protegidas individualmente antes; no existe snapshot de protecciones previas para este flujo.
 
-### Ollama
+### Asistente DCP y Ollama
+
+```text
+Usuario elige segmento + conservar titulares + cantidad
+  -> POST /ai/dcp/analyze
+  -> CP-SAT excluye protegidos y, si se pidió, titulares
+  -> devuelve propuestas + pregunta; no escribe
+  -> usuario revisa y escribe CREAR PLAN <segmento>
+  -> POST /emulator/plans crea solo draft
+  -> Emulador todavía exige PREPARAR <plan> y nunca entrega
+```
 
 ```text
 Pregunta
@@ -476,19 +500,19 @@ La respuesta degradada también se guarda en el historial.
 
 ## Pruebas existentes
 
-### Backend: 30 casos Pytest
+### Backend: 36 casos Pytest
 
 `backend/tests/conftest.py` fija SQLite temporal antes de importar la aplicación, reconstruye todas las tablas y ejecuta el seed por caso.
 
-- `test_api.py`: health/seed/dashboard, CRUD/protección, plantillas, objetivos, CSV y degradación de Ollama/historial.
+- `test_api.py`: health/seed/dashboard, CRUD/protección, plantillas, objetivos, CSV, degradación de Ollama/historial y análisis DCP guiado factible/imposible sin mutación.
 - `test_optimizer.py`: solución válida, caso imposible, simulación/confirmación/restauración, rechazo de protegidos y bonificación de duplicados.
-- `test_emulator.py`: 17 casos para degradación, validación/emparejamiento ADB sin fuga de código, planes/frases/auditoría, ausencia de submit final, sesión de inventario, accesibilidad temporal acotada, avance validado, continuación limitada, importación parcial por IDs, captura repetida, reemplazo de demo y extractores revisables.
+- `test_emulator.py`: 21 casos para degradación, validación/emparejamiento ADB, planes y ausencia de submit final, inventario manual, deduplicación global/carga completa, accesibilidad temporal, navegación, importación parcial, actualización DCP sin duplicarlo y objetivos visibles revisables.
 - `test_rating.py`: tres estrategias y suma mínima por estrategia.
 
 ### Frontend
 
 - Vitest: 2 casos para formato monetario y fecha ausente.
-- Playwright: 2 casos iPhone 13; navegación/panel y pantalla Emulador con su aviso de entrega manual.
+- Playwright: 6 casos iPhone 13; navegación/panel, entrega manual, 20 formularios sin sondeo, actualización solo por botón, carga completa global confirmada y asistente DCP con confirmación.
 - `npm run build`: TypeScript y compilación Vite ocurren al construir la imagen frontend.
 
 ### Cobertura que todavía no existe
