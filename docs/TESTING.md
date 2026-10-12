@@ -1,5 +1,48 @@
 # Pruebas del planificador FC27
 
+## Presupuesto conjunto y preparación de imágenes (12-oct-2026)
+
+Las tres pruebas nuevas del conjunto verifican límite global, prioridad explícita, segmentos completos, exclusión de precios desconocidos bajo presupuesto, protección obligatoria y ausencia de consumo. Pasaron dentro del mismo ensayo final `0b98eba56f`: **264 Pytest, 34 Vitest y 28 Playwright**, con Nginx y PostgreSQL aislados. Los cambios del generador de objetivos y del presupuesto estaban presentes en esa imagen; se publican en commits separados por capa.
+
+Las **8 pruebas de guardas Docker** pasaron. `fc27.ps1 Estado` muestra correctamente los acentos bajo Windows PowerShell y conservó la versión principal anterior. El nuevo argumento `--build-environment local` solo etiqueta las imágenes para preparar su publicación local; no relaja el aislamiento ni despliega. Se comprobará la revisión Git limpia antes de fijar imágenes para el ensayo de recuperación y la actualización autorizada.
+
+
+## Plantillas para objetivos (12-oct-2026)
+
+El generador usa reglas auxiliares revisadas y muestra por separado composición, contexto y acciones de partido. Las pruebas cubren mínimos/máximos/exactos, once/banquillo/convocatoria, metadatos desconocidos, modalidades incompatibles, dificultad, cesiones, titulares reutilizables y propuesta sin principal. Guardar/exportar conservan principal, copias y progreso; los comprobantes caducan o se invalidan al cambiar reglas, inventario, protecciones o progreso. Dos guardados concurrentes crean una sola alternativa; nombres repetidos se rechazan. Los contadores históricos sin evidencia siguen siendo desconocidos.
+
+La primera migración nueva detectó columnas ya creadas por el modelo actual en la revisión histórica 0001; se corrigió únicamente 0016 para distinguir base nueva de instalación existente. Después pasaron 260 Pytest, y la ampliación final pasó 261. Dos recorridos de navegador señalaron selectores de prueba ambiguos (etiqueta de selector y dos encabezados de principal); se hicieron específicos, conservando las comprobaciones de exportación, guardado y estado idéntico antes/después. No se cuentan esos intentos como pases completos. Se revisaron las capturas sintéticas de la propuesta en móvil y escritorio.
+
+La repetición final conjunta con el bloque de presupuesto pasó **264 Pytest/PostgreSQL** (285,33 s), **34 Vitest**, **28 Playwright** móvil/escritorio, build, salud/OpenAPI y Alembic **0016**/check. El informe `0b98eba56f` acredita cierre temporal y principal/volúmenes sin cambios. La lectura EA real, Safari y hardware siguen sin probar; una composición manual no acredita vigencia oficial ni progreso remoto. Los logs y capturas quedan en state/ ignorado, y las suites usan bases separadas de la instalación personal.
+
+## Copias observadas y comparación con la principal (12-oct-2026)
+
+La ejecución final aislada pasó **245 Pytest/PostgreSQL** (212,61 s), **33 Vitest**, **28 Playwright**, build, arranque, salud/OpenAPI y Alembic `0015`/check. Principal y volúmenes permanecieron sin cambios; los recursos temporales se retiraron. Los casos nuevos verifican 47 copias fuera del catálogo, paginación, variantes localizadas, dos copias y Evo individual, permanencia tras caducar el catálogo, bloqueo de lectura vencida, preferencias sin sustitución de hechos, metadatos nulos, filtro de ausencia e historial de Galería sin cesiones. La comparación por puesto no altera la principal.
+
+La primera ejecución señaló dos expectativas que requerían actualización: editar una media observada ahora se rechaza en vez de invalidar el snapshot, y la prueba interna de Galería debe vincular su sesión al contexto observado. Tras corregirlas pasaron 245 pruebas. Una compilación posterior encontró dos errores de tipado en el nuevo fixture de interfaz; se completó su contrato y se corrigió el selector. La ejecución final pasó todas las capas.
+
+El CI de la entrega anterior pasó en push y falló en un recorrido de PR: dos aperturas iniciales concurrentes de React en desarrollo podían cruzar cookie y CSRF. Se confirmó en el artefacto de error, se serializó `openEntry` y una prueba nueva verifica el orden completo de ambas aperturas. No se retiró la protección CSRF. La suite final también prueba la visibilidad de Mi club ante una lectura parcial y el formulario limitado a preferencias observadas.
+
+No se probó un proveedor EA real, progreso remoto, hardware ADB ni GPU. Esta prueba del contrato interno no conecta la cuenta del propietario; tampoco actualiza por sí sola el puerto principal.
+
+## Portada, navegación y cuenta observada (12-oct-2026)
+
+**239 Pytest/PostgreSQL**, **30 Vitest**, build, Nginx, salud/OpenAPI y Alembic `0015`/check pasaron. La repetición final de frontend pasó **28 Playwright** en móvil y escritorio. Incluye Inicio sin saldos inventados, menú nativo, Atrás/Adelante/recarga, conservación de la entrada local explícita, foco, ayuda contextual, principal protegida y filtros. Se inspeccionaron las capturas reales de ambas portadas; no hubo desbordamientos.
+
+Los casos nuevos comprueban cero frente a desconocido en FC Points, artículos de distintos tipos, procedencia/fecha inmutable al consultar el panel, lector sintético autorizado sin certificar progreso, filtros de rareza/valor, mensajes españoles e importación CSV/XLSX con separadores de miles. Las fechas usan Bogotá o la zona elegida y rechazan horas inexistentes por cambio de horario.
+
+La primera ejecución pasó 237 Pytest y señaló expectativas anteriores de UI, soporte de diálogo ausente en jsdom y concurrencia de pruebas excesiva para el contenedor. Se actualizaron los contratos de prueba, se añadió el soporte del diálogo solo al arnés y se limitó Vitest a dos trabajadores. Un intento de build detectó una opción incorrecta en Testing Library; quedó corregida. La primera navegación de escritorio volvía atrás antes de terminar de abrir la página destino; el recorrido ahora espera esa vista, conserva la comprobación de foco y pasa en ambos tamaños. Cada intento cerró sus recursos y comprobó que principal y volúmenes permanecieron iguales.
+
+No se probó vínculo EA real, Safari, GPU ni dispositivo ADB. El despliegue personal permanece separado de estas verificaciones; un resultado sintético no acredita acceso al club del propietario.
+
+## Principal, filtros y operación única (12-oct-2026)
+
+La verificación aislada con PostgreSQL pasó **224 Pytest** (190,02 s), build, salud, OpenAPI y Alembic `0015`/check. La repetición de frontend pasó **27 Vitest y 26 Playwright** sobre Nginx, incluidos móvil y escritorio para seleccionar principal, comprobar exclusiones, guardar filtros y duplicar sin alterar la principal. Se revisaron ambas capturas sintéticas. La primera suite detectó un recuento que incluía protecciones ocultas y un fixture sin principal revisada; se corrigieron. La nueva prueba de navegador esperaba la navegación antes de terminar la entrada local; ahora espera la confirmación visible de esa entrada. No se sustituyeron validadores por mocks.
+
+Las pruebas nuevas cubren once/banquillo/reservas, rechazo en rutas directas, otra copia de la misma variante, propuesta para jugar con protegidos, cuarentena, ausencia de principal, comprobante de revisión y cambio concurrente bajo el bloqueo PostgreSQL. El fixture general selecciona una principal sintética; los casos de frontera conservan la falta de principal real. No hay conexión EA acreditada.
+
+Operación: 8 pruebas de scripts, arranque canónico repetido desde dos directorios y ciclo Docker real tras éxito, fallo, cancelación y caída. La revisión personal anterior se preservó con un dump restaurado y comprobado antes de retirar sus cuatro contenedores. Las suites conservaron IDs/arranques del principal y todos los volúmenes; los entornos temporales se cerraron. Evidencia local en `state/single-app/` y `state/sprints/`, excluida de Git.
+
 ## Contenido y límites FC27 (sprint 9)
 
 `python scripts/verify_docker.py --scope full` pasó en el proyecto desechable `bdacad27b7`: **212 Pytest/PostgreSQL** (157,03 s), **26 Vitest** y **24 Playwright** móvil/escritorio (aprox. 1 min). Build TypeScript/Vite/PWA, arranque, salud, OpenAPI y Alembic0014/check correctos. Se revisó la captura móvil de Novedades. El principal conservó contenedores/arranques; la limpieza temporal terminó sin borrar volúmenes.

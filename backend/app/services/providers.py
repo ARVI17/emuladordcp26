@@ -62,8 +62,8 @@ def authorized_adapter(db, context):
         return None, connection
     if connection.status != 'connected' or not adapter.required_permissions.issubset(set(connection.permissions)):
         return None, connection
-    # The current reconciler publishes only inventory and coins, not remote progress.
-    if not adapter.coverage.issubset({'inventory', 'coins'}) or not 0 < adapter.timeout_seconds <= 30:
+    # These are observed resources only, never remote gameplay progress.
+    if not adapter.coverage.issubset({'inventory', 'coins', 'fc_points', 'unassigned'}) or not 0 < adapter.timeout_seconds <= 30:
         return None, connection
     return adapter, connection
 

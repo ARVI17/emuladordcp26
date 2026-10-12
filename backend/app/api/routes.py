@@ -22,7 +22,7 @@ from starlette.concurrency import run_in_threadpool
 from app.api.analysis import SquadRecommendationRequest
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission
+from app.models.entities import AppSetting, AuditLog, Challenge, ChatMessage, Objective, Player, Profile, Segment, Squad, SquadPlayer, Submission, now
 from app.optimizers.sbc import solve, validate_solution
 from app.schemas.api import ChatRequest, ChallengeCreate, ConfirmRequest, ObjectiveCreate, ObjectiveUpdate, OptimizeRequest, PlayerCreate, PlayerUpdate, ProfileUpdate, SegmentCreate, SquadCreate
 from app.schemas.requirements import normalize_requirements
@@ -61,7 +61,10 @@ def objective_data(objective: Objective) -> dict:
     from app.services.definition_validation import is_documented, pending_result
     if not is_documented(objective):
         return pending_result(objective)
-    return {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "progress", "target", "completed", "expires_at")}
+    result = {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "target", "expires_at")}
+    evidence = objective.progress_evidence or {}
+    value = evidence.get('value') if evidence.get('origin') in {'manual', 'observed'} else None
+    return {**result, 'progress': value, 'progress_origin': evidence.get('origin', 'unknown'), 'completed': value is not None and value >= objective.target}
 
 
 def score_progress(db: Session, segment: Segment) -> int:
@@ -100,8 +103,8 @@ def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
 def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     active = [entry for entry in squad.players if entry.player and not entry.player.deleted and entry.player.game_version == squad.game_version]
     entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": entry.player.availability == "available",
-                "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
-    starters = [entry for entry in active if not entry.slot.startswith("BENCH-") and entry.player.availability == "available"]
+                "position_valid": entry.slot.startswith(("BENCH-", "RESERVE-")) or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
+    starters = [entry for entry in active if not entry.slot.startswith(("BENCH-", "RESERVE-")) and entry.player.availability == "available"]
     expected = formation_slots(squad.formation) if squad.formation in verified_formations() else []
     # Older saved squads numbered all slots globally (DFC-3, MC-7...). Count
     # positions rather than treating a legacy suffix as a missing footballer.
@@ -116,6 +119,7 @@ def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     return {
         "id": squad.id, "game_version": squad.game_version, "name": squad.name, "formation": squad.formation,
         "primary": squad.primary, "protected": squad.protected, "players": entries, "tactic": squad.tactic,
+        "objective_context": squad.objective_context,
         "tactic_status": "local_hypothesis",
         "rating": calculate_rating([entry.player.rating for entry in starters]),
         "chemistry": sum(entry.player.chemistry for entry in starters), "chemistry_approximate": True,
@@ -161,9 +165,9 @@ def dashboard(db: DB):
     profile = ensure_profile(db)
     db.commit()
     version = profile.game_version
-    available = (Player.deleted.is_(False), Player.game_version == version)
+    available = (Player.deleted.is_(False), Player.game_version == version, Player.availability == 'available')
     count = db.scalar(select(func.count(Player.id)).where(*available)) or 0
-    protected = len(effective_protected_ids(db, version))
+    protected = db.scalar(select(func.count(Player.id)).where(*available, Player.id.in_(effective_protected_ids(db, version)))) or 0
     duplicates = db.scalar(select(func.count(Player.id)).where(*available, Player.duplicate_untradeable.is_(True))) or 0
     pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
     goals = db.scalars(select(Objective).where(Objective.game_version == version, Objective.completed.is_(False)).order_by(Objective.expires_at).limit(5)).all()
@@ -178,9 +182,13 @@ def dashboard(db: DB):
 
 
 @router.get("/players")
-def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), game_version: str | None = None):
+def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), game_version: str | None = None, availability: str | None = None):
     version = version_for(db, game_version)
     conditions = [Player.deleted.is_(False), Player.game_version == version]
+    if availability:
+        if availability not in {'available', 'absent', 'review_required'}:
+            raise HTTPException(422, 'Estado de disponibilidad no reconocido')
+        conditions.append(Player.availability == availability)
     if search:
         conditions.append(or_(Player.name.ilike(f"%{search}%"), Player.club.ilike(f"%{search}%"), Player.nationality.ilike(f"%{search}%")))
     if position:
@@ -231,20 +239,27 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
         try:
             normalized = PlayerCreate.model_validate(merged).model_dump()
         except ValidationError as exc:
-            raise HTTPException(422, exc.errors(include_url=False, include_context=False, include_input=False)) from exc
+            from app.services.spanish import validation_message
+            raise HTTPException(422, [{'loc': e['loc'], 'msg': validation_message(e)} for e in exc.errors()]) from exc
         from app.services.catalog_validation import check_fields
-        if check_fields(db, normalized)[0] is None:
+        from app.services.remote_evidence import is_observed, PREFERENCES
+        observed = is_observed(db, player)
+        if observed and any(key not in PREFERENCES and value != getattr(player, key) for key, value in changes.items()):
+            raise HTTPException(409, 'Los hechos de una copia observada se actualizan con una nueva lectura autorizada. Puedes editar sus preferencias locales.')
+        if not observed and check_fields(db, normalized)[0] is None:
             raise HTTPException(409, 'La modificación no coincide con una variante FC27 documentada')
         for key, value in normalized.items():
-            setattr(player, key, value)
+            if not observed or key in PREFERENCES:
+                setattr(player, key, value)
         from app.services.catalog_validation import validate_copy
-        if set(changes) & {'game_version', 'card_id', 'name', 'rating', 'position', 'card_type', 'data_source'}:
+        if not observed and set(changes) & {'game_version', 'card_id', 'name', 'rating', 'position', 'card_type', 'data_source'}:
             validate_copy(db, player)
-        if player.unknown_fields and changes.get("data_reviewed") is True:
+        if not observed and player.unknown_fields and changes.get("data_reviewed") is True:
             player.unknown_fields = [field for field in player.unknown_fields if field not in changes]
             if player.unknown_fields:
                 player.data_reviewed = False
-        record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
+        if not observed:
+            record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
         record(db, "update", "player", player.id, {"fields": list(changes)})
         db.commit()
         return player_data(player, effective_protected_ids(db))
@@ -383,6 +398,8 @@ def mark_duplicate_used(player_id: int, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         player = available_player(db, player_id)
+        if player.id in effective_protected_ids(db):
+            raise HTTPException(409, 'Esta copia está protegida o reservada; no se puede marcar como utilizada.')
         player.duplicate_untradeable = False
         record(db, "duplicate_used", "player", player.id)
         db.commit()
@@ -422,6 +439,7 @@ def create_squad(payload: SquadCreate, db: DB):
         if payload.slots is not None:
             allowed = {slot["slot"]: slot["position"] for slot in formation_slots(payload.formation)}
             allowed.update({f"BENCH-{number}": None for number in range(1, 13)})
+            allowed.update({f"RESERVE-{number}": None for number in range(1, 13)})
             if len(payload.slots) != len(players) or len(set(payload.slots)) != len(payload.slots):
                 raise HTTPException(422, "Cada jugador requiere una plaza única")
             for player_id, slot in zip(payload.player_ids, payload.slots):
@@ -452,7 +470,7 @@ def duplicate_squad(squad_id: int, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         source = get_or_404(db, Squad, squad_id)
-        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version, tactic=dict(source.tactic or {}))
+        copy = Squad(name=f"{source.name[:92]} (copia)", formation=source.formation, game_version=source.game_version, tactic=dict(source.tactic or {}), objective_context=dict(source.objective_context or {}))
         db.add(copy)
         db.flush()
         copied = 0
@@ -467,11 +485,13 @@ def duplicate_squad(squad_id: int, db: DB):
 
 @router.patch("/squads/{squad_id}/tactics")
 def update_squad_tactics(squad_id: int, payload: TacticNotes, db: DB):
-    squad = get_or_404(db, Squad, squad_id)
-    squad.tactic = payload.model_dump()
-    record(db, "tactic_notes", "squad", squad.id, {"status": "local_hypothesis"})
-    db.commit()
-    return squad_data(squad, effective_protected_ids(db, squad.game_version))
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        squad = get_or_404(db, Squad, squad_id)
+        squad.tactic = payload.model_dump()
+        record(db, "tactic_notes", "squad", squad.id, {"status": "local_hypothesis"})
+        db.commit()
+        return squad_data(squad, effective_protected_ids(db, squad.game_version))
 
 
 @router.post("/squads/{squad_id}/protect")
@@ -497,9 +517,15 @@ def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommen
         options["formation"] = formation
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
+    if options.pop('avoid_main', False):
+        from app.services.main_squad import main_ids
+        options['excluded_player_ids'] = sorted(set(options['excluded_player_ids']) | main_ids(db))
     try:
         from app.services.contexts import require_module
-        return {**recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options), "binding": require_module(db, "squads")}
+        binding = require_module(db, 'squads')
+        result = recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options)
+        from app.services.squad_analysis import compare_main
+        return {**result, 'main_comparison': compare_main(db, result), 'binding': binding}
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
@@ -559,25 +585,37 @@ def update_segment(segment_id: int, payload: SegmentCreate, db: DB):
 
 
 def optimization_payload(db: Session, segment: Segment, request: OptimizeRequest):
+    if request.allow_protected_ids:
+        raise HTTPException(422, 'Las protecciones no se pueden exceptuar desde un DCP.')
     version = current_version(db)
     requirements = requirements_for_batch(db, segment)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
     protected = effective_protected_ids(db, version)
+    from app.services.dcp_review import eligible, issue_review
+    players = eligible(db, players, request.filters, protected)
     progress = score_progress(db, segment) if requirements["kind"] == "score" else 0
     solutions = solve(players, requirements, set(request.allow_protected_ids), set(request.exclude_ids), request.max_solutions, effective_protected_ids=protected, current_score=progress)
     by_id = {player.id: player for player in players}
-    return [{**asdict(item), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "official_validation": False} for item in solutions]
+    return [{**asdict(item), "review_token": issue_review(db, segment, item.player_ids, request.filters), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "official_validation": False} for item in solutions]
 
 
 @router.post("/segments/{segment_id}/optimize")
 def optimize_segment(segment_id: int, payload: OptimizeRequest, db: DB):
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        return optimize_segment_locked(segment_id, payload, db)
+
+
+def optimize_segment_locked(segment_id: int, payload: OptimizeRequest, db: DB):
     segment = get_or_404(db, Segment, segment_id)
     if segment.completed:
         raise HTTPException(409, "El segmento ya está completado")
     solutions = optimization_payload(db, segment, payload)
     from app.services.contexts import require_module
     binding = require_module(db, "dcp")
-    return {"binding": binding, "segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": ["La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
+    from app.services.main_squad import main_status
+    main = main_status(db)
+    return {"binding": binding, "main": main, "segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": [*([main['reason']] if not main['complete'] else []), "La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
 
 
 def _recompute_completion(db: Session, segment: Segment) -> int:
@@ -599,6 +637,8 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         raise HTTPException(409, "Revisa y aprueba una propuesta en Planes antes de registrar una entrega real")
     with resource_locks(db, "inventory"):
         db.expire_all()
+        from app.services.main_squad import require_main_ready
+        require_main_ready(db)
         segment = get_or_404(db, Segment, segment_id)
         requirements = requirements_for_batch(db, segment)
         if segment.completed:
@@ -616,6 +656,10 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         violations = validate_solution(players, requirements, current_score=progress)
         if violations:
             raise HTTPException(422, {"message": "La solución no es válida", "violations": violations})
+        from app.services.dcp_review import check_review, eligible
+        filters = check_review(db, segment, payload.player_ids, payload.review_token)
+        if len(eligible(db, players, filters, protected)) != len(players):
+            raise HTTPException(409, 'La propuesta dejó de cumplir los filtros revisados.')
         contribution = sum(player.gallery_score for player in players) if requirements["kind"] == "score" else 0
         total_value = None if any(player.price is None for player in players) else sum(player.price for player in players)
         if max(contribution, total_value or 0) > 2_147_483_647:
@@ -706,6 +750,8 @@ def create_objective(payload: ObjectiveCreate, db: DB):
         values = payload.model_dump()
         values["game_version"] = payload_version(payload, db)
         objective = Objective(**values)
+        if 'progress' in payload.model_fields_set:
+            objective.progress_evidence = {'value': payload.progress, 'origin': 'manual', 'observed_at': now().isoformat(), 'note': 'Declarado en el registro local'}
         objective.completed = objective.progress >= objective.target
         db.add(objective)
         db.flush()
@@ -719,10 +765,15 @@ def update_objective(objective_id: int, payload: ObjectiveUpdate, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         objective = get_or_404(db, Objective, objective_id)
+        if 'target' in payload.model_fields_set and payload.target != objective.target and objective.planning_rules:
+            objective.planning_rules = {**objective.planning_rules, 'reviewed': False}
         for key, value in payload.model_dump(exclude_unset=True).items():
             setattr(objective, key, value)
         if payload.completed is None:
             objective.completed = objective.progress >= objective.target
+        if 'progress' in payload.model_fields_set or 'completed' in payload.model_fields_set:
+            value = payload.progress if 'progress' in payload.model_fields_set else objective.target if payload.completed else None
+            objective.progress_evidence = {'value': value, 'origin': 'manual' if value is not None else 'unknown', 'observed_at': now().isoformat(), 'note': 'Declarado en el registro local'}
         record(db, "update", "objective", objective.id)
         db.commit()
         return objective_data(objective)
@@ -744,7 +795,7 @@ async def ai_chat(payload: ChatRequest, db: DB):
     conditions = (Player.game_version == version, Player.deleted.is_(False))
     count = db.scalar(select(func.count(Player.id)).where(*conditions)) or 0
     duplicates_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.duplicate_untradeable.is_(True))) or 0
-    protected_count = len(effective_protected_ids(db, version))
+    protected_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.id.in_(effective_protected_ids(db, version)))) or 0
     pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
     counts = {'players': count, 'duplicates': duplicates_count, 'protected': protected_count, 'dcp': pending}
     context = f'DATOS FC27: {json.dumps(counts)}'

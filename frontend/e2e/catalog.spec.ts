@@ -1,4 +1,4 @@
-import {test,expect,openLocal} from './fixtures'
+import {test,expect,openLocal,go} from './fixtures'
 
 test('la cuarentena no se muestra como posesión y no hay selector histórico',async({page,request},info)=>{
  const name=`Sin evidencia ${Date.now()}`
@@ -9,7 +9,7 @@ test('la cuarentena no se muestra como posesión y no hay selector histórico',a
  expect(list.total).toBe(0)
  expect((await request.get('/api/players?game_version=FC26')).status()).toBe(422)
  await openLocal(page)
- await page.getByRole('button',{name:'Mi club',exact:true}).click()
+ await go(page,'Mi club')
  await expect(page.getByLabel('Temporada activa')).toHaveCount(0)
  await page.getByText(/Cuarentena ·/).click()
  await expect(page.getByText(name,{exact:false})).toBeVisible()
@@ -20,14 +20,14 @@ test('la cuarentena no se muestra como posesión y no hay selector histórico',a
  await page.screenshot({path:info.outputPath('quarantine.png')})
  const draft=await request.post('/api/challenges',{headers:{'X-Catalog-Fixture':'0'},data:{game_version:'FC27',name:'Regla sin evidencia E2E',segments:[]}})
  expect((await draft.json()).validation_status).toBe('pending_verification')
- await page.getByRole('button',{name:'DCP',exact:true}).click()
+ await go(page,'DCP')
  await expect(page.getByText('Definiciones pendientes de verificación',{exact:true})).toBeVisible()
  await expect(page.getByText('Regla sin evidencia E2E',{exact:true})).toHaveCount(0)
 })
 
 test('contenido FC27 pendiente y chat limitado son visibles en móvil',async({page,request},info)=>{
  await openLocal(page)
- await page.getByRole('button',{name:'Novedades',exact:true}).click()
+ await go(page,'Novedades')
  await expect(page.getByText(/Tabla de puntos pendiente de verificación FC27/)).toBeVisible()
  await expect(page.getByRole('heading',{name:'FC27: Ultimate Team Deep Dive',exact:true})).toBeVisible()
  await expect(page.getByText('Future Stars: campaña y academia',{exact:true})).toHaveCount(0)
@@ -37,6 +37,6 @@ test('contenido FC27 pendiente y chat limitado son visibles en móvil',async({pa
  expect(result.ok()).toBeTruthy()
  expect((await result.json()).sections.policy).toBe('fc27_grounded_v1')
  expect((await request.post('/api/ai/chat',{data:{message:'Usa FIFA 23'}})).status()).toBe(422)
- await page.getByRole('button',{name:'Emulador',exact:true}).click()
+ await go(page,'Emulador')
  await expect(page.getByText(/Compatibilidad FC27 pendiente:/)).toBeVisible()
 })

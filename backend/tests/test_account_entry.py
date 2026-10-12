@@ -73,3 +73,47 @@ def test_build_metadata_is_public_and_not_an_ea_status(client):
     assert response.json()['edition'] == 'FC27'
     assert set(response.json()) == {'edition','revision','built_at','environment','source_dirty'}
     assert response.headers['cache-control'] == 'no-store'
+
+
+def test_resource_facts_keep_zero_unknown_and_item_types_distinct(client):
+    context, run = fake_run(client)
+    read = remote(fc_points=0, unassigned_items=[{'item_id': 'a', 'kind': 'player'}, {'item_id': 'b', 'kind': 'consumable'}],
+                  coverage={'inventory': {'complete': True}, 'coins': {'complete': True}, 'fc_points': {'complete': True}, 'unassigned': {'complete': True}})
+    publish(run, read)
+    account = client.get('/dashboard').json()['account']
+    assert account['fc_points'] == 0 and account['unassigned_count'] == 2
+    assert account['unassigned_types'] == {'player': 1, 'consumable': 1}
+    assert account['facts']['unassigned_count']['source'] == 'test'
+    assert account['facts']['fc_points']['status'] == 'observed'
+    assert client.get('/dashboard').json()['account'] == account  # Polling is not a remote observation.
+    _, run = fake_run(client, context)
+    publish(run, remote(club_name=None, coverage={'inventory': {'complete': False}}))
+    account = client.get('/dashboard').json()['account']
+    assert account['name'] is None and account['fc_points'] is None and account['unassigned_count'] is None
+
+
+def test_read_rejects_unsupported_resource_coverage_and_duplicate_items():
+    with pytest.raises(ValueError, match='FC Points'):
+        remote(coverage={'fc_points': {'complete': True}})
+    with pytest.raises(ValueError, match='Artículos sin asignar'):
+        remote(unassigned_items=[{'item_id': 'same', 'kind': 'player'}, {'item_id': 'same', 'kind': 'consumable'}])
+
+
+def test_public_validation_is_spanish_and_does_not_echo_input(client):
+    result = client.patch('/profile', json={'coins': 'not-a-number-private'})
+    assert result.status_code == 422
+    assert result.json()['errors'][0]['message'] == 'Escribe un número entero'
+    assert 'not-a-number-private' not in result.text
+
+
+def test_authorized_synthetic_adapter_publishes_only_supported_resource_domains(client, monkeypatch):
+    from test_planner import wired_adapter
+    reading = remote(fc_points=0, unassigned_items=[], coverage={'inventory': {'complete': True}, 'fc_points': {'complete': True}, 'unassigned': {'complete': True}})
+    context, adapter = wired_adapter(client, monkeypatch, lambda identity, **kw: reading)
+    adapter.coverage = frozenset(reading.coverage)
+    response = client.post('/app/entries', json={'nonce': 'resources-synthetic', 'mode': 'live', 'reason': 'retry'})
+    assert response.status_code == 200
+    client.headers['X-App-Entry'] = str(response.json()['entry_id'])
+    account = client.get('/dashboard').json()['account']
+    assert account['fc_points'] == 0 and account['unassigned_count'] == 0 and account['coins'] is None
+    assert set(account['progress'].values()) == {'unavailable'}

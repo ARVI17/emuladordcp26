@@ -20,6 +20,35 @@ from app.services.import_export import (
 BASE = {"name": "Jugador", "rating": "86", "position": "MC", "league": "Liga", "club": "Club", "nationality": "Colombia"}
 
 
+@pytest.mark.parametrize('value', ['18,536', '18.536', '18536'])
+@pytest.mark.parametrize('extension', ['csv', 'xlsx'])
+def test_integer_thousands_in_both_import_formats(value, extension):
+    row = {**BASE, 'price': value}
+    if extension == 'csv':
+        import csv
+        text = io.StringIO()
+        writer = csv.DictWriter(text, fieldnames=row)
+        writer.writeheader()
+        writer.writerow(row)
+        content = text.getvalue().encode()
+    else:
+        from openpyxl import Workbook
+        book = Workbook()
+        book.active.append(list(row))
+        book.active.append(list(row.values()))
+        output = io.BytesIO()
+        book.save(output)
+        book.close()
+        content = output.getvalue()
+    assert parse_import(content, 'synthetic.'+extension)[0]['price'] == 18536
+
+
+@pytest.mark.parametrize('value', ['18,53', '18.53', '1,23,456', '1.234,50'])
+def test_money_import_rejects_fractions_and_mixed_groups(value):
+    with pytest.raises(ValueError, match='price'):
+        normalize_player_record({**BASE, 'price': value})
+
+
 @pytest.mark.parametrize(("field", "value"), [("price", "-500"), ("chemistry", "99")])
 def test_import_rejects_ranges_with_row_context(field, value):
     data = f"name,rating,position,league,club,nationality,{field}\nJugador,86,MC,Liga,Club,Colombia,{value}\n".encode()

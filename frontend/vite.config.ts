@@ -13,5 +13,5 @@ export default defineConfig({
     workbox:{navigateFallbackDenylist:[/^\/api(?:\/|$)/]},
   })],
   server:{proxy:{'/api':{target:'http://127.0.0.1:8000',changeOrigin:true,rewrite:path=>path.replace(/^\/api/,'')}}},
-  test:{environment:'jsdom',setupFiles:'./src/test/setup.ts',globals:true,include:['src/**/*.test.{ts,tsx}']},
+  test:{maxWorkers:2,environment:'jsdom',setupFiles:'./src/test/setup.ts',globals:true,include:['src/**/*.test.{ts,tsx}']},
 })

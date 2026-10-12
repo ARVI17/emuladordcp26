@@ -119,6 +119,11 @@ def normalize_player_record(raw: dict, *, row_number: int | None = None) -> dict
                 continue
             if field in BOOLEAN_FIELDS:
                 value = _strict_bool(value, field)
+            if field in {'price', 'gallery_score'} and isinstance(value, str):
+                # Monetary/score integers: English and Colombian thousands groups
+                # are unambiguous here. Decimal fractions remain invalid.
+                if re.fullmatch(r'[1-9]\d{0,2}([.,])\d{3}(?:\1\d{3})*', value):
+                    value = value.replace(',', '').replace('.', '')
             if field in JSON_FIELDS and isinstance(value, str):
                 try:
                     value = json.loads(value)
@@ -136,7 +141,8 @@ def normalize_player_record(raw: dict, *, row_number: int | None = None) -> dict
     except ValidationError as exc:
         error = exc.errors()[0]
         field = ".".join(map(str, error["loc"]))
-        message = f"{field}: {error['msg']}"
+        from app.services.spanish import validation_message
+        message = f"{field}: {validation_message(error)}"
     except (ValueError, TypeError) as exc:
         message = str(exc)
     prefix = f"Fila {row_number}: " if row_number is not None else ""

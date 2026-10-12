@@ -23,7 +23,10 @@ def evolution_rules(definition):
 
 def inventory_fingerprint(db):
     fields = ("id", "club_context_id", "game_version", "name", "rating", "position", "alternate_positions", "card_id", "athlete_id", "price", "gallery_score", "protected", "starter", "favorite", "is_evolution", "is_loan", "tradable", "deleted", "availability", "attributes", "data_reviewed", "updated_at")
-    return hash_json([{key: utc(getattr(p, key)).isoformat() if key == "updated_at" else getattr(p, key) for key in fields} for p in db.scalars(select(Player).order_by(Player.id))])
+    from app.services.main_squad import main_status
+    from app.models.entities import Squad, SquadPlayer
+    squads = [(s.id, s.protected, [(m.player_id, m.slot) for m in s.players]) for s in db.scalars(select(Squad).where(Squad.protected.is_(True)).execution_options(include_historical_squads=True, include_quarantine=True))]
+    return hash_json({'players': [{key: utc(getattr(p, key)).isoformat() if key == "updated_at" else getattr(p, key) for key in fields} for p in db.scalars(select(Player).order_by(Player.id))], 'main': main_status(db)['state_hash'], 'protected_squads': squads})
 
 
 def valid_quote(db, quote_id, *, variant=None):
@@ -113,10 +116,13 @@ def preview(db, payload: PlanInput):
         if incompatible:
             used.update(action.player_ids)
         from app.services.protection import reserved_ids
-        if set(action.player_ids) & reserved_ids(db):
+        if action.kind not in {'gallery', 'keep'} and set(action.player_ids) & reserved_ids(db):
             raise HTTPException(409, "Hay copias reservadas por otro plan")
         if action.kind in {"sell", "dcp"} and protected & set(action.player_ids):
             raise HTTPException(409, "Titulares, favoritos, Evos, reservas y cartas protegidas quedan excluidos")
+        if action.kind in {'sell', 'dcp'}:
+            from app.services.main_squad import require_main_ready
+            require_main_ready(db)
         if action.kind == "sell" and any(not p.tradable or p.is_loan for p in players):
             raise HTTPException(409, "La venta exige copias transferibles sin cesión")
         if action.kind == "dcp":
@@ -184,9 +190,15 @@ def documented_plan(db, plan):
             return False
     ids = {pid for a in plan.inputs.get('actions', []) for pid in a.get('player_ids', [])}
     found = set(db.scalars(select(Player.id).where(Player.id.in_(ids)))) if ids else set()
+    from app.services.remote_evidence import is_observed, IDENTITY_FIELDS
+    def admitted_snapshot(copy):
+        if check_fields(db, copy)[0] is not None:
+            return True
+        current = db.get(Player, copy.get('id'))
+        return bool(current and is_observed(db, current) and all(copy.get(key) == getattr(current, key) for key in IDENTITY_FIELDS))
     return (plan.inputs.get('binding', {}).get('game_version') == 'FC27'
         and ids == found
-        and all(check_fields(db, p)[0] is not None for a in plan.inputs.get('actions', []) for p in a.get('copies', []))
+        and all(admitted_snapshot(p) for a in plan.inputs.get('actions', []) for p in a.get('copies', []))
         and all(find_variant(db, q.get('variant_id')) is not None for q in plan.inputs.get('quotes', {}).values()))
 
 

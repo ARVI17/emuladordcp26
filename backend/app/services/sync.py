@@ -35,6 +35,8 @@ class RemoteRead(InputModel):
     pagination: dict
     items: list[RemoteItem] = Field(max_length=20000)
     coins: int | None = Field(default=None, ge=0)
+    fc_points: int | None = Field(default=None, ge=0)
+    unassigned_items: list[dict] | None = Field(default=None, max_length=20000)
     club_name: str | None = Field(default=None, min_length=1, max_length=100)
 
     @model_validator(mode="after")
@@ -47,6 +49,16 @@ class RemoteRead(InputModel):
             raise ValueError("La revisión cambió durante la lectura")
         if self.coverage.get("coins", {}).get("complete") and self.coins is None:
             raise ValueError("No hay saldo observado que respalde la cobertura de monedas")
+        if self.coverage.get("fc_points", {}).get("complete") and self.fc_points is None:
+            raise ValueError("Falta el saldo observado de FC Points")
+        if self.coverage.get("unassigned", {}).get("complete") and self.unassigned_items is None:
+            raise ValueError("Falta la lectura de artículos sin asignar")
+        if self.unassigned_items is not None:
+            ids = set()
+            for item in self.unassigned_items:
+                if set(item) - {'item_id', 'kind'} or item.get('kind') not in {'player', 'consumable', 'other', 'unknown'} or not isinstance(item.get('item_id'), str) or not 1 <= len(item['item_id']) <= 120 or item['item_id'] in ids:
+                    raise ValueError("Artículos sin asignar: identidad única y tipo válidos obligatorios")
+                ids.add(item['item_id'])
         if self.coverage.get("inventory", {}).get("complete"):
             if not self.pagination.get("documented_end") or not self.pagination.get("all_locations"):
                 raise ValueError("No hay prueba de fin de paginación y cobertura de ubicaciones")
@@ -101,7 +113,10 @@ def publish_read(db, run_id: int, read: RemoteRead):
             # historical snapshot, never masquerade as newly observed current facts.
             missing_details = {"attributes": {}, "alternate_positions": [], "playstyles": [],
                                "playstyles_plus": [], "roles": {}, "skill_moves": None,
-                               "weak_foot": None, "gallery_score": None}
+                               "weak_foot": None, "gallery_score": None,
+                               "league": "No disponible", "club": "No disponible", "nationality": "No disponible",
+                               "card_type": "No disponible", "rare": False, "special": False,
+                               "chemistry": 0, "base_card_id": None, "is_holographic": False}
             for key, empty in missing_details.items():
                 if key not in item.fields:
                     fields[key] = empty
@@ -117,7 +132,9 @@ def publish_read(db, run_id: int, read: RemoteRead):
         db.add(snapshot)
         db.flush()
         conflicts = []
-        pending_variants = []
+        from app.services.main_squad import main_ids, state_row
+        structural = main_ids(db)
+        affected_main = set()
         for item, mapping, player, fields in prepared:
             if player is None:
                 player = Player(**{**fields, "athlete_id": item.athlete_id})
@@ -127,6 +144,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
                                               location=item.location, last_snapshot_id=snapshot.id)
                 db.add(mapping)
             else:
+                if player.id in structural and (player.card_id != item.variant_id or any(getattr(player, key) != fields[key] for key in item.fields)):
+                    affected_main.add(player.id)
                 if player.athlete_id != item.athlete_id or player.consumed_by_submission_id is not None:
                     conflicts.append(player.id)
                     player.availability = "review_required"
@@ -141,13 +160,14 @@ def publish_read(db, run_id: int, read: RemoteRead):
                 player.unknown_fields = fields["unknown_fields"]
                 player.data_reviewed = fields["data_reviewed"]
             mapping.location = item.location
-            from app.services.catalog_validation import validate_copy
-            if not validate_copy(db, player):
-                pending_variants.append(player.id)
+            from app.services.remote_evidence import observe_copy
+            observe_copy(player, item, snapshot, read)
             mapping.last_snapshot_id = snapshot.id
             mapping.available = True
             player.deleted = False
             player.availability = "available" if item.location in {"club", "sbc_storage"} else "unavailable"
+            if player.id in structural and player.availability != 'available':
+                affected_main.add(player.id)
         if read.coverage.get("inventory", {}).get("complete"):
             for copy_id, mapping in mappings.items():
                 if copy_id not in unique:
@@ -155,22 +175,30 @@ def publish_read(db, run_id: int, read: RemoteRead):
                     mapping.available = False
                     player.availability = "absent"
                     # Absence does not invent a sale, submission, or discard.
+                    if player.id in structural:
+                        affected_main.add(player.id)
                     if player.protected or player.starter or player.favorite or player.is_evolution:
                         conflicts.append(player.id)
+        if affected_main:
+            main = state_row(db)
+            main.snapshot = {**main.snapshot, 'needs_review': True, 'changed_copy_ids': sorted(affected_main)}
+            main.revision += 1
+            conflicts.extend(sorted(affected_main))
+            record(db, 'main_external_change', 'squad', main.squad_id, {'copy_ids': sorted(affected_main), 'locks_preserved': True})
         if read.coverage.get("coins", {}).get("complete") and read.coins is not None:
             context.coins = read.coins
         if read.club_name is not None:
             context.name = read.club_name
         context.snapshot_id = snapshot.id
-        if pending_variants:
-            snapshot.coverage = {**snapshot.coverage, 'inventory': {**snapshot.coverage.get('inventory', {}), 'complete': False, 'pending_variants': len(pending_variants)}}
         entry.snapshot_id = snapshot.id
         entry.status = "review_required" if conflicts else "ready" if snapshot.coverage.get("inventory", {}).get("complete") else "partial"
         run.status = entry.status
         run.finished_at = now()
-        run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": len(pending_variants), "revision": read.revision, "count": len(unique)}
-        run.manifest = {**run.manifest, "account": {"name": context.name,
-            "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None}}
+        run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": 0, "revision": read.revision, "count": len(unique)}
+        run.manifest = {**run.manifest, "account": {"name": read.club_name,
+            "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None,
+            "fc_points": read.fc_points if read.coverage.get("fc_points", {}).get("complete") else None,
+            "unassigned_items": read.unassigned_items if read.coverage.get("unassigned", {}).get("complete") else None}}
         record(db, "publish_snapshot", "inventory_snapshot", snapshot.id, {"count": len(unique), "conflicts": len(conflicts)})
         db.commit()
         return snapshot

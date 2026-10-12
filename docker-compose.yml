@@ -52,7 +52,7 @@ services:
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-2m}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://127.0.0.1:8080}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-10}
-      ADB_ENABLED: ${ADB_ENABLED:-true}
+      ADB_ENABLED: ${ADB_ENABLED:-false}
       ADB_DEFAULT_ADDRESS: ${ADB_DEFAULT_ADDRESS:-host.docker.internal:5555}
       ADB_SERVER_SOCKET: ${ADB_SERVER_SOCKET:-tcp:host.docker.internal:5037}
       SEED_DEMO: ${SEED_DEMO:-false}

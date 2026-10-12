@@ -111,6 +111,16 @@ def activate_seed():
                 witness_definition(row)
         for row in db.scalars(select(Squad)):
             row.origin = 'manual'
+        # Synthetic evidence includes an explicitly chosen, complete main squad.
+        # Production never infers this from old flags. Boundary tests omit this fixture.
+        from app.models.squad_safety import MainSquadState
+        squad = db.scalar(select(Squad).where(Squad.primary.is_(True)))
+        if squad and db.scalar(select(MainSquadState.id)) is None:
+            members = [{'player_id': m.player_id, 'slot': m.slot} for m in squad.players]
+            db.add(MainSquadState(squad_id=squad.id, snapshot={'name': squad.name, 'formation': squad.formation,
+                'tactic': squad.tactic, 'manager': None, 'source': 'synthetic_user_selection', 'complete': True,
+                'members': members, 'observed_at': now().isoformat(), 'ea_active_squad': False},
+                locked_copy_ids=[m['player_id'] for m in members], history=[]))
         db.commit()
 
 

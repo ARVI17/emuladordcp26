@@ -80,7 +80,7 @@ def reserve_plan(plan_id: int, db: Session = Depends(get_db)):
         revalidate(db, plan)
         if plan.status not in {"reviewed", "reserved"}:
             raise HTTPException(409, "Revisa el plan antes de reservar")
-        ids = {pid for action in plan.inputs["actions"] for pid in action["player_ids"]}
+        ids = {pid for action in plan.inputs["actions"] if action['kind'] != 'gallery' for pid in action["player_ids"]}
         for player_id in sorted(ids):
             old = db.get(Reservation, player_id)
             if old and old.plan_id != plan.id and utc(old.expires_at) > now():
@@ -152,6 +152,12 @@ def confirm_action(plan_id: int, action_id: int, payload: ActionConfirmation, db
         if action.kind in {"buy", "sell", "evolution"} and payload.actual_amount is None:
             raise HTTPException(422, "Registra el importe real de la operación")
         db.info["executing_plan"] = plan.id
+        if action.kind in {'dcp', 'sell'}:
+            from app.services.main_squad import require_main_ready
+            require_main_ready(db)
+            from app.services.squad_analysis import effective_protected_ids
+            if set(action.player_ids) & effective_protected_ids(db):
+                raise HTTPException(409, 'Las copias están protegidas; vuelve a revisar el plan.')
         players = [owned(db, Player, pid) for pid in action.player_ids]
         if any(p.deleted or p.availability != "available" for p in players):
             raise HTTPException(409, "Confirma la disponibilidad de las copias antes de registrar otro paso")

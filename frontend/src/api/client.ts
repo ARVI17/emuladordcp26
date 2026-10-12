@@ -1,3 +1,4 @@
+import {timeZone,zonedInput} from '../lib/i18n'
 let csrfToken:string|null=null,appEntry:number|null=null
 export function setSessionHeaders(csrf:string|null,entry:number|null){csrfToken=csrf;appEntry=entry}
 export function sessionHeaders(){const headers=new Headers();if(csrfToken)headers.set('X-CSRF-Token',csrfToken);if(appEntry)headers.set('X-App-Entry',String(appEntry));return headers}
@@ -57,12 +58,7 @@ export async function downloadInventory(format:'csv'|'xlsx',season:string){
 export const shortDate=(value:string|null|undefined)=>{
   if(!value)return 'Sin vencimiento'
   const date=new Date(value)
-  return Number.isNaN(date.getTime())?'Fecha por revisar':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric'}).format(date)
+  return Number.isNaN(date.getTime())?'Fecha por revisar':new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',year:'numeric',timeZone:timeZone()}).format(date)
 }
 
-export const dateTimeInput=(value:string|null|undefined)=>{
-  if(!value)return ''
-  const date=new Date(value)
-  if(Number.isNaN(date.getTime()))return ''
-  return new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16)
-}
+export const dateTimeInput=zonedInput

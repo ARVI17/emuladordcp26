@@ -1,3 +1,4 @@
+import {observedDate} from '../lib/i18n'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from '../api/client'
@@ -19,6 +20,6 @@ export function MatchDiary(){
   <p>Muestra {query.data?.game_version}: {query.data?.sample_size||0} partidos{query.data?.truncated?' (limitada a los últimos 100)':''}.</p>
   <div className="form-grid">{[{label:'Muestra A',value:groupA,set:setGroupA},{label:'Muestra B',value:groupB,set:setGroupB}].map(f=><label key={f.label}>{f.label}<select value={f.value} onChange={e=>f.set(e.target.value)}><option value="">Seleccionar</option>{groups.map(g=><option key={groupKey(g)} value={groupKey(g)}>{g.tactic} · {g.change_tested}</option>)}</select></label>)}</div>
   {selected.map((g,i)=>g&&<p key={i}>{i?'B':'A'}: {g.sample_size} partidos, {g.minutes} minutos. Por 90 min: {g.per_90.chances} ocasiones; {g.per_90.dangerous_losses} pérdidas; {g.per_90.conceded} goles concedidos.</p>)}
-  {query.data?.items.map(m=><p key={m.id}>{new Date(m.played_at).toLocaleDateString('es-CO')} · {m.tactic} · {m.minutes} min · {m.chances} ocasiones · {m.dangerous_losses} pérdidas · {m.conceded} goles concedidos. Cambio: {m.change_tested}{m.practice_id?' · práctica #'+m.practice_id:''}</p>)}
+  {query.data?.items.map(m=><p key={m.id}>{observedDate(m.played_at)} · {m.tactic} · {m.minutes} min · {m.chances} ocasiones · {m.dangerous_losses} pérdidas · {m.conceded} goles concedidos. Cambio: {m.change_tested}{m.practice_id?' · práctica #'+m.practice_id:''}</p>)}
  </details>
 }

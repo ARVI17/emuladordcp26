@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ollama_keep_alive: str = "2m"
     cors_origins: str = "http://localhost:8080,http://127.0.0.1:8080"
     max_upload_mb: int = 10
-    adb_enabled: bool = True
+    adb_enabled: bool = False
     adb_path: str = "adb"
     adb_default_address: str = "host.docker.internal:5555"
     seed_demo: bool = False

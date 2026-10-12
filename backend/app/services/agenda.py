@@ -77,7 +77,7 @@ def agenda(db, budget, reserve_coins, priority_ids):
         floor = max(floor, item['reserve_coins'])
         used.update(item['copy_ids'])
         selected.append({**item, 'balance_after': available})
-    objectives = [{'id': o.id, 'name': o.name, 'expires_at': o.expires_at, 'expired': bool(o.expires_at and utc(o.expires_at) <= now()), 'progress': o.progress, 'target': o.target} for o in db.scalars(select(Objective).where(Objective.game_version == current_version(db), Objective.completed.is_(False)).order_by(Objective.expires_at.asc().nulls_last(), Objective.id).limit(50))]
+    objectives = [{'id': o.id, 'name': o.name, 'expires_at': o.expires_at, 'expired': bool(o.expires_at and utc(o.expires_at) <= now()), 'progress': (o.progress_evidence or {}).get('value'), 'target': o.target} for o in db.scalars(select(Objective).where(Objective.game_version == current_version(db), Objective.completed.is_(False)).order_by(Objective.expires_at.asc().nulls_last(), Objective.id).limit(50))]
     return {'binding': binding, 'selected': selected, 'pending': pending, 'objectives': objectives,
             'committed_coins': committed, 'remaining_coins': available, 'reserve_coins': floor,
             'truncated': truncated, 'simulation': True, 'resources_reserved': False,

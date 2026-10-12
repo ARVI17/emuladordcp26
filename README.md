@@ -6,7 +6,7 @@ El repositorio conserva el nombre `emuladordcp26` y sus volúmenes. **FC27 es la
 
 **Revisión del planificador, 11 de octubre de 2026:** la entrada comprueba sesión, contexto y capacidades. La conexión EA muestra **Integración pendiente**: falta autorización/documentación para este proyecto. Solo la elección explícita de **Abrir registro local** habilita simulaciones con datos locales. Incluye planes revisables, reservas de cartas/monedas, cinco perfiles de plantilla, fichajes condicionados a datos verificados, mercado/diario y 50 referencias. [Implementación, comparación y límites](docs/FC27_PLANNER.md).
 
-Para probar esta rama con datos desechables y sin usar los volúmenes normales: `docker compose -f docker-compose.review.yml up --build -d`, luego abre `http://localhost:8081`. La base de revisión usa memoria temporal; no guardes datos únicos en ella.
+La instalación personal utiliza únicamente `emuladordcp26` en `http://localhost:8080`. Inicia los contenedores existentes con `powershell -File scripts/fc27.ps1 Inicio`; consulta `Estado` o detén con `Parada`. El script no construye, recrea ni actualiza la instalación. Las pruebas usan `python scripts/verify_docker.py --scope full` y cierran sus recursos al terminar. [Operación y pruebas](docs/DEVELOPMENT_WORKFLOW.md).
 
 ## Qué puedes hacer
 
@@ -28,8 +28,8 @@ Los datos pertenecen a tu instalación. El proyecto no inicia sesión en EA ni u
 Requiere Docker Engine/Desktop con Compose. Ollama y un emulador consumen memoria adicional; el stack base ya no exige GPU.
 
 ```bash
-# Copia .env.example a .env si necesitas cambiar puertos o configuración.
-docker compose up --build -d
+# Instalación existente, desde cualquier carpeta/worktree:
+powershell -ExecutionPolicy Bypass -File scripts/fc27.ps1 Inicio
 ```
 
 Abre [la aplicación](http://localhost:8080), [la documentación HTTP](http://localhost:8080/api/docs) o [el health check](http://localhost:8080/health).
@@ -39,7 +39,7 @@ Una instalación nueva crea un perfil vacío y referencias documentales, sin car
 ### Si ya utilizabas FC26
 
 1. Crea un respaldo de tu instalación antes de actualizar.
-2. Actualiza el código y ejecuta `docker compose up --build -d`.
+2. Prepara imágenes identificadas por commit, restaura el respaldo en un entorno aislado y revisa el procedimiento de actualización antes de aplicarlo al principal.
 3. Alembic llega a `0014`: conserva cartas, saldos y reglas históricas. Las copias y definiciones sin evidencia vigente quedan fuera de las funciones activas, sin borrarse.
 4. Abre el registro manual FC27. Revisa las declaraciones en cuarentena contra el catálogo exacto; una marca manual no certifica una variante ni recupera saldos históricos.
 

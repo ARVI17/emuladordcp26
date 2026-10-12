@@ -1,28 +1,16 @@
-.PHONY: up down restart logs test seed reset backup restore emulator-status emulator-connect
+.PHONY: up down status test backup restore emulator-status emulator-connect
 
 up:
-	docker compose up --build -d
+	powershell -ExecutionPolicy Bypass -File scripts/fc27.ps1 Inicio
 
 down:
-	docker compose down
+	powershell -ExecutionPolicy Bypass -File scripts/fc27.ps1 Parada
 
-restart:
-	docker compose restart
-
-logs:
-	docker compose logs -f --tail=200
+status:
+	powershell -ExecutionPolicy Bypass -File scripts/fc27.ps1 Estado
 
 test:
-	docker compose run --rm --no-deps backend pytest -q
-	docker compose run --rm frontend-test
-	docker compose run --rm frontend-e2e
-
-seed:
-	docker compose exec backend python -m app.db.seed
-
-reset:
-	docker compose down -v
-	docker compose up --build -d
+	python scripts/verify_docker.py --scope full
 
 backup:
 	powershell -ExecutionPolicy Bypass -File scripts/backup.ps1

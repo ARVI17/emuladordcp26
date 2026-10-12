@@ -10,6 +10,9 @@ from app.api.knowledge import router as knowledge_router
 from app.api.practice import router as practice_router
 from app.api.market_insights import router as market_insights_router
 from app.api.agenda import router as agenda_router
+from app.api.squad_safety import router as squad_safety_router
+from app.api.dcp_filters import router as dcp_filters_router
+from app.api.objective_planning import router as objective_planning_router
 from app.api.planner import router as planner_router
 from app.api.connections import router as connections_router
 from app.api.routes import router
@@ -39,7 +42,8 @@ def build_metadata():
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={"detail": "Datos de entrada inválidos", "errors": [{"field": ".".join(map(str, e["loc"])), "message": e["msg"]} for e in exc.errors()]})
+    from app.services.spanish import validation_message
+    return JSONResponse(status_code=422, content={"detail": "Datos de entrada inválidos", "errors": [{"field": ".".join(map(str, e["loc"])), "message": validation_message(e)} for e in exc.errors()]})
 
 @app.exception_handler(Exception)
 async def unexpected_error(request: Request, exc: Exception):
@@ -53,6 +57,9 @@ async def busy_resource(_: Request, exc: ResourceBusy):
 app.include_router(router)
 app.include_router(emulator_router)
 app.include_router(analysis_router)
+app.include_router(squad_safety_router)
+app.include_router(dcp_filters_router)
+app.include_router(objective_planning_router)
 app.include_router(fc27_router)
 
 app.include_router(connections_router)

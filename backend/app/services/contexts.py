@@ -179,7 +179,7 @@ def scope_writes(db, *_):
         context = db.get(ClubContext, context_id)
         context.revision += 1
         if context.verified and not db.info.get("remote_reconciliation"):
-            preferences = {"notes", "favorite", "protected", "starter", "usefulness", "squad_role", "updated_at"}
+            preferences = {"notes", "favorite", "price", "protected", "starter", "usefulness", "squad_role", "updated_at"}
             factual_change = any(obj in db.new or obj in db.deleted or any(a.history.has_changes() and a.key not in preferences for a in inspect(obj).attrs) for obj in changed)
             if factual_change:
                 session = db.info.get("local_session")

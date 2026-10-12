@@ -30,8 +30,8 @@ def capabilities():
             "opening_official_app_links_this_project": False,
             "blocker": BLOCKER, "capabilities": {field: {"status": "unverified", "evidence": EA_SOURCE, "reason": "No hay concesión documentada para esta aplicación"} for field in fields},
             "approved_partners": ["FUTBIN", "FUT.GG", "FUTWIZ"], "automated_ea_operations": "unsupported",
-            "implemented_reconciliation": ["inventory", "coins"],
-            "pending_reconciliation": ["squads", "gallery", "dcp", "evolutions", "history"],
+            "implemented_reconciliation": ["inventory", "coins", "fc_points", "unassigned"],
+            "pending_reconciliation": ["squads", "gallery", "dcp", "evolutions", "objectives", "history"],
             "alternative": "Registro local revisado explícitamente; no verifica la cuenta ni sincroniza el club."}
 
 

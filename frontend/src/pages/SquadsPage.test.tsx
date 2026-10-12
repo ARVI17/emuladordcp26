@@ -24,7 +24,7 @@ it('selecciona la formación por nombre accesible y guarda la edición y los pue
   fireEvent.change(formation,{target:{value:'4-3-3'}})
   expect(formation).toHaveValue('4-3-3')
   fireEvent.click(screen.getByRole('button',{name:'Proponer once y suplentes'}))
-  await waitFor(()=>expect(vi.mocked(api)).toHaveBeenCalledWith('/squads/recommend',{method:'POST',body:JSON.stringify({formation:'4-3-3',style:'balanced',locked_player_ids:[],excluded_player_ids:[],bench_size:7,include_loans:true,include_unreviewed:false,use_alternate_positions:true})}))
+  await waitFor(()=>expect(vi.mocked(api)).toHaveBeenCalledWith('/squads/recommend',{method:'POST',body:JSON.stringify({formation:'4-3-3',style:'balanced',locked_player_ids:[],excluded_player_ids:[],bench_size:7,include_loans:true,avoid_main:false,include_unreviewed:false,use_alternate_positions:true})}))
   fireEvent.click(await screen.findByRole('button',{name:'Guardar plantilla'}))
   await waitFor(()=>expect(vi.mocked(api)).toHaveBeenCalledWith('/squads',{method:'POST',body:JSON.stringify({game_version:'FC27',name:'Mi equipo',formation:'4-3-3',player_ids:[...lineup.map(item=>item.player.id),...bench.map(p=>p.id)],slots:[...lineup.map(item=>item.slot),...bench.map((_,i)=>`BENCH-${i+1}`)]})}))
   expect(await screen.findByText('Plantilla guardada. Puedes proteger el equipo completo.')).toBeInTheDocument()

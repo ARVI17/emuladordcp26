@@ -12,6 +12,8 @@ Se necesita aprobación específica y documentación de identidad, permisos, con
 
 `/dashboard.account` separa observaciones remotas del perfil manual. Nombre y saldo se capturan juntos en el manifiesto de la lectura publicada; los snapshots anteriores sin esos datos devuelven desconocido. Una lectura posterior sin monedas no reutiliza el saldo anterior como si fuese reciente. El presupuesto manual permanece en `profile.max_budget`.
 
+La cabecera y portada consumen ese resumen. `fc_points` y `unassigned_count` distinguen cero observado de `null`; cada recurso lleva `facts` con procedencia, cobertura, snapshot y fecha de observación. Consultar la API local no renueva esa fecha. La lectura de artículos admite jugadores, consumibles, otros y tipo desconocido, sin convertir el recuento en jugadores.
+
 El resumen cuenta copias del snapshot, sin confundir ausencia de catálogo público con ausencia de posesión. Las 22 variantes públicas no constituyen el universo del juego. La admisión para cálculos todavía exige el catálogo vigente: normalización específica del proveedor, variantes fuera de la muestra y evoluciones por copia siguen pendientes de un protocolo autorizado; esta entrega no declara resueltos esos casos. No se amplían simulaciones para sustituir la integración. Plantillas remotas, Galería, DCP, evoluciones, objetivos e historial continúan sin reconciliador acreditado. No se dispone de una fuente de arte autorizada por variante en el contrato actual.
 
 Las pruebas usan datos sintéticos y no acreditan lectura de una cuenta personal. El diagnóstico del host, dumps y capturas permanecen en directorios ignorados.
@@ -22,6 +24,6 @@ Frontend `/build.json`, API `/api/build` y etiquetas OCI de ambas imágenes expo
 
 La interfaz señala discrepancias entre frontend y API. HTML, service worker y metadatos revalidan su caché; no se borran datos del navegador. Esto no inspecciona ni modifica el perfil personal del navegador.
 
-`docker-compose.review.yml` es una revisión aislada en loopback, normalmente `http://localhost:8081`, sin demo ni proveedor. PostgreSQL usa tmpfs: **no es una instalación permanente** y pierde sus datos al detenerse. No introducir secretos ni el único inventario personal. Antes de detener una revisión existente, clasificar sus datos y respaldar/verificar cualquier dato único. El verificador crea únicamente bases propias desechables en otro puerto.
+`docker-compose.review.yml` es un componente del verificador aislado, sin proveedor real. Se utiliza mediante `python scripts/verify_docker.py`, con etiquetas y bloqueo propios, base tmpfs sintética y retirada automática; no se entrega como segunda instalación. La revisión antigua en 8081 se respaldó, restauró y comparó antes de retirar sus contenedores por ID. La única URL personal es `http://localhost:8080`, con PostgreSQL persistente. Los detalles privados se conservan en `state/single-app/`.
 
 Actualizar `8080` requiere autorización específica, respaldo verificado, imágenes anteriores conservadas y un plan de rollback con código/base compatibles. No basta hacer push. Las migraciones preservan FC26 aislado; un downgrade no sustituye la restauración de un respaldo. El trabajo apilado debe revisarse junto con sus PR base antes de merge.
