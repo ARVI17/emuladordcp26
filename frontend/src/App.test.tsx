@@ -9,11 +9,12 @@ vi.mock('./api/client',async()=>({...await vi.importActual('./api/client'),api:v
 it('solo ofrece FC27 sin selector de archivo',async()=>{
   vi.mocked(api).mockImplementation(async(path)=>{
     if(path==='/profile')return profile
-    if(path.startsWith('/dashboard?'))return {profile,counts:{players:0,protected:0,duplicates:0,pending_challenges:0},objectives:[],alerts:[]}
+    if(path==='/dashboard')return {mode:'local',profile,account:{identity_verified:false,name:null,platform:null,coins:null,fc_points:null,unassigned_count:null,observed_at:null},counts:{players:0,protected:0,duplicates:0,pending_challenges:0},objectives:[],alerts:[]}
     throw new Error(path)
   })
   renderClub(<App/>)
-  await screen.findByRole('button',{name:'Añadir mis jugadores'})
+  await screen.findByRole('heading',{name:'Inicio'})
+  expect(screen.getByRole('region',{name:'Artículos sin asignar'})).toHaveTextContent('Sin consultar')
   expect(screen.getByRole('heading',{name:'Club Lab FC27'})).toBeInTheDocument()
   expect(screen.queryByLabelText('Temporada activa')).not.toBeInTheDocument()
   expect(vi.mocked(api).mock.calls.every(([path])=>!path.includes('FC26'))).toBe(true)

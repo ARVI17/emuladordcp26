@@ -1,3 +1,4 @@
+import {statusLabel} from '../lib/i18n'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from '../api/client'
@@ -27,15 +28,15 @@ function ProfileResult({group:g,binding}:{group:Group;binding:SquadBinding}){
 }
 
 export function PlanningAnalysis(){
-  const [disjoint,setDisjoint]=useState(false),[locked,setLocked]=useState<Player[]>([]),[excluded,setExcluded]=useState<Player[]>([]),[loans,setLoans]=useState(true)
+  const [avoidMain,setAvoidMain]=useState(false),[disjoint,setDisjoint]=useState(false),[locked,setLocked]=useState<Player[]>([]),[excluded,setExcluded]=useState<Player[]>([]),[loans,setLoans]=useState(true)
   const [players,setPlayers]=useState<Player[]>([]),[segments,setSegments]=useState<number[]>([])
-  const profiles=useMutation({mutationFn:()=>api<Profiles>('/club/profiles',{method:'POST',body:JSON.stringify({disjoint,bench_size:7,locked_player_ids:locked.map(p=>p.id),excluded_player_ids:excluded.map(p=>p.id),include_loans:loans})})})
+  const profiles=useMutation({mutationFn:()=>api<Profiles>('/club/profiles',{method:'POST',body:JSON.stringify({disjoint,avoid_main:avoidMain,bench_size:7,locked_player_ids:locked.map(p=>p.id),excluded_player_ids:excluded.map(p=>p.id),include_loans:loans})})})
   const challenges=useQuery({queryKey:['challenges','joint'],queryFn:()=>api<Challenge[]>('/challenges')})
   const joint=useMutation({mutationFn:()=>api<{status:string;reason?:string;solutions:{segment_id:number;player_ids:number[]}[]}>('/dcp/joint-preview',{method:'POST',body:JSON.stringify({segment_ids:segments,player_ids:players.map(p=>p.id)})})})
   const invalid=locked.length>11||locked.some(p=>excluded.some(e=>e.id===p.id))||(disjoint&&locked.length>0)
   return <><section className="panel"><h3>Comparar cinco objetivos de plantilla</h3>
     <p>Equilibrio, defensa, ataque por bandas, combinación interior y mejor once sin compras. Los perfiles que coinciden se agrupan.</p>
-    <fieldset disabled={profiles.isPending}>
+    <fieldset disabled={profiles.isPending}><label className="check"><input type="checkbox" checked={avoidMain} onChange={e=>{setAvoidMain(e.target.checked);profiles.reset()}}/>No reutilizar mi principal</label>
       <PlayerPicker label="Fijados en los cinco perfiles" selected={locked} onChange={v=>{setLocked(v);profiles.reset()}}/>
       <PlayerPicker label="Excluir de los cinco perfiles" selected={excluded} onChange={v=>{setExcluded(v);profiles.reset()}}/>
       <label className="check"><input type="checkbox" checked={loans} onChange={e=>{setLoans(e.target.checked);profiles.reset()}}/>Incluir cesiones para jugar</label>
@@ -51,6 +52,6 @@ export function PlanningAnalysis(){
     <PlayerPicker label="Cartas disponibles para comparar" selected={players} onChange={setPlayers}/>
     {challenges.data?.flatMap(c=>c.segments.filter(s=>!s.completed).map(s=><label className="check" key={s.id}><input type="checkbox" checked={segments.includes(s.id)} onChange={e=>setSegments(e.target.checked?[...segments,s.id]:segments.filter(id=>id!==s.id))}/>{c.name} · {s.name}</label>))}
     <button disabled={joint.isPending||players.length>24||!players.length||!segments.length||segments.length>6} onClick={()=>joint.mutate()}>Simular conjunto sin consumir</button>
-    <ErrorBox error={joint.error}/>{joint.data&&<><p>Resultado: {joint.data.status} {joint.data.reason}</p>{joint.data.solutions.map(s=><p key={s.segment_id}>Segmento {s.segment_id}: {s.player_ids.map(id=>players.find(p=>p.id===id)?.name).join(', ')}</p>)}</>}
+    <ErrorBox error={joint.error}/>{joint.data&&<><p>Resultado: {statusLabel(joint.data.status)} {joint.data.reason}</p>{joint.data.solutions.map(s=><p key={s.segment_id}>Segmento {s.segment_id}: {s.player_ids.map(id=>players.find(p=>p.id===id)?.name).join(', ')}</p>)}</>}
   </section></>
 }

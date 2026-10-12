@@ -231,7 +231,8 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
         try:
             normalized = PlayerCreate.model_validate(merged).model_dump()
         except ValidationError as exc:
-            raise HTTPException(422, exc.errors(include_url=False, include_context=False, include_input=False)) from exc
+            from app.services.spanish import validation_message
+            raise HTTPException(422, [{'loc': e['loc'], 'msg': validation_message(e)} for e in exc.errors()]) from exc
         from app.services.catalog_validation import check_fields
         if check_fields(db, normalized)[0] is None:
             raise HTTPException(409, 'La modificación no coincide con una variante FC27 documentada')

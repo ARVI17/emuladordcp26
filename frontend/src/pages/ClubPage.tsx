@@ -1,3 +1,4 @@
+import {useHelpSelection} from '../components/ContextHelp'
 import {useEffect,useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from '../api/client'
@@ -15,6 +16,7 @@ export function ClubPage(){
   const season=useSeason(),qc=useQueryClient()
   const [search,setSearch]=useState(''),[debounced,setDebounced]=useState(''),[position,setPosition]=useState(''),[protection,setProtection]=useState(''),[sort,setSort]=useState('rating'),[page,setPage]=useState(1)
   const [editor,setEditor]=useState<Player|'new'|null>(null),[message,setMessage]=useState('')
+  useHelpSelection({player_ids:typeof editor==='object'&&editor?[editor.id]:[]})
   const [catalogDraft,setCatalogDraft]=useState<Partial<PlayerInput>>()
   useEffect(()=>{const timer=setTimeout(()=>{setDebounced(search);setPage(1)},250);return()=>clearTimeout(timer)},[search])
   const params=new URLSearchParams({game_version:season,search:debounced,position,sort,order:sort==='name'?'asc':'desc',limit:'24',offset:String((page-1)*24)})

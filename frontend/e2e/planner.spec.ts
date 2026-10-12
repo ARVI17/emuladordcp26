@@ -1,11 +1,11 @@
-import {test,expect,openLocal} from './fixtures'
+import {test,expect,openLocal,go} from './fixtures'
 
 test('compara rutas y la agenda conserva una sola reserva posible por copia',async({page,request},testInfo)=>{
  const name=`Agenda ${Date.now()}`
  const created=await request.post('/api/players',{data:{name,rating:80,position:'MC',league:'Prueba',club:'Prueba',nationality:'CO',price:null}})
  expect(created.ok()).toBeTruthy()
  await openLocal(page)
- await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await go(page,'Planes')
  await page.getByLabel('Copias exactas').fill(name)
  await page.getByRole('button',{name:new RegExp(name)}).click()
  await page.getByRole('button',{name:'Añadir acción a la propuesta'}).click()
@@ -35,7 +35,7 @@ test('aplica comisión configurable y muestra alerta basada en cotización fecha
  const quote=await request.post('/api/market/quotes',{data:{variant_id:variant,game_version:'FC27',market:'PC',kind:'listing',amount:900,observed_at:observed,expires_at:new Date(Date.now()+3600000).toISOString(),source_url:'https://example.com/synthetic',coverage:'Observación sintética E2E'}})
  expect(quote.ok()).toBeTruthy()
  await openLocal(page)
- await page.getByRole('button',{name:'Mercado',exact:true}).click()
+ await go(page,'Transferibles')
  await page.getByLabel('Comisión supuesta (%)').fill('10')
  await page.getByLabel('Otros costes supuestos').fill('100')
  await page.getByRole('button',{name:'Calcular con hipótesis del 10 %'}).click()
@@ -55,7 +55,7 @@ test('aplica comisión configurable y muestra alerta basada en cotización fecha
 
 test('planifica práctica por plataforma y vincula un partido de la misma edición',async({page},testInfo)=>{
  await openLocal(page)
- await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await go(page,'Planes')
  await page.getByText('Rutina de práctica FC27',{exact:true}).click()
  await page.getByRole('combobox',{name:'Técnica',exact:true}).selectOption('runs')
  await page.getByLabel('Tiempo disponible (min)').fill('15')
@@ -88,7 +88,7 @@ test('planifica práctica por plataforma y vincula un partido de la misma edici�
 test('guarda once y siete suplentes y conserva la táctica por rival',async({page,request},testInfo)=>{
  test.setTimeout(60000)
  await openLocal(page)
- await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await go(page,'Planes')
  await page.getByRole('button',{name:'Comparar perfiles',exact:true}).click()
  const card=page.locator('.profile-result').first()
  await expect(card.getByRole('button',{name:'Guardar once y siete suplentes'})).toBeEnabled()
@@ -100,7 +100,7 @@ test('guarda once y siete suplentes y conserva la táctica por rival',async({pag
  expect(response.ok()).toBeTruthy()
  const squad=await response.json()
  expect(squad.players).toHaveLength(18)
- await page.getByRole('button',{name:'Plantillas',exact:true}).click()
+ await go(page,'Plantillas')
  const panel=page.locator('article.panel').filter({has:page.getByRole('heading',{name,exact:true})})
  await panel.getByText('Táctica y alternativa por rival',{exact:true}).click()
  await panel.getByLabel('Rival o situación').fill('Presión alta de prueba')
@@ -116,8 +116,11 @@ test('guarda once y siete suplentes y conserva la táctica por rival',async({pag
 
 test('al abrir no certifica datos locales como club conectado',async({page},testInfo)=>{
  await page.goto('/')
+ await expect(page.getByRole('heading',{name:'Inicio',exact:true})).toBeVisible()
+ await go(page,'Análisis')
+ await expect(page.getByRole('heading',{name:'Lectura pendiente',exact:true})).toBeVisible()
+ await go(page,'Mi cuenta')
  await expect(page.getByRole('heading',{name:'Integración pendiente',exact:true})).toBeVisible()
- await page.getByRole('button',{name:'Análisis',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Mi cuenta / Mi club'})).toBeVisible()
  await expect(page.getByRole('link',{name:'Abrir FC27 oficial ↗'})).toHaveAttribute('target','_blank')
  await expect(page.getByText('No vinculada',{exact:true})).toBeVisible()
@@ -136,19 +139,19 @@ test('al abrir no certifica datos locales como club conectado',async({page},test
 
 test('calcula el neto y mantiene las 50 referencias públicas',async({page,request},testInfo)=>{
  await openLocal(page)
- await page.getByRole('button',{name:'Mercado',exact:true}).click()
+ await go(page,'Transferibles')
  await page.getByRole('button',{name:'Calcular con hipótesis del 5 %'}).click()
  await expect(page.getByText(/Beneficio estimado: 450/)).toBeVisible()
  const variants=await (await request.get('/api/catalog/variants')).json()
  const trade=variants.items[testInfo.project.name.includes('Móvil')?0:1].variant_id
  await page.getByLabel('Variante exacta de la carta').fill(trade)
  await page.getByLabel('Importe observado').fill('10000')
- await page.getByLabel('Fecha de observación').fill(new Date(Date.now()-60000).toISOString().slice(0,16))
+ await page.getByLabel('Fecha de observación').fill(new Date(Date.now()-5*3600000-60000).toISOString().slice(0,16))
  await page.getByLabel('Evidencia',{exact:true}).fill('Compra sintética contrastada en prueba')
  await page.getByLabel('Escribe REGISTRAR OPERACION').fill('REGISTRAR OPERACION')
  await page.getByRole('button',{name:'Registrar operación contrastada'}).click()
  await expect(page.getByText(`${trade} · Compra · 10.000 · comisión 0`)).toBeVisible()
- await page.getByRole('button',{name:'Referencias',exact:true}).click()
+ await go(page,'Referencias')
  await expect(page.getByRole('heading',{name:'Referencias FC27'})).toBeVisible()
  await expect(page.locator('.card-grid article')).toHaveCount(50)
  await page.getByLabel('Filtrar referencias').fill('R20')
@@ -163,7 +166,7 @@ test('revisa, reserva y cancela un plan sin consumir la carta',async({page,reque
  const created=await request.post('/api/players',{data:{name,rating:80,position:'MC',league:'Prueba',club:'Prueba',nationality:'CO',price:null}})
  expect(created.ok()).toBeTruthy()
  await openLocal(page)
- await page.getByRole('button',{name:'Planes',exact:true}).click()
+ await go(page,'Planes')
  await page.getByLabel('Nombre',{exact:true}).fill(name)
  await page.getByLabel('Copias exactas').fill(name)
  await page.getByRole('button',{name:new RegExp(name)}).click()

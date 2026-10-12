@@ -1,5 +1,15 @@
 # Pruebas del planificador FC27
 
+## Portada, navegación y cuenta observada (12-oct-2026)
+
+**239 Pytest/PostgreSQL**, **30 Vitest**, build, Nginx, salud/OpenAPI y Alembic `0015`/check pasaron. La repetición final de frontend pasó **28 Playwright** en móvil y escritorio. Incluye Inicio sin saldos inventados, menú nativo, Atrás/Adelante/recarga, conservación de la entrada local explícita, foco, ayuda contextual, principal protegida y filtros. Se inspeccionaron las capturas reales de ambas portadas; no hubo desbordamientos.
+
+Los casos nuevos comprueban cero frente a desconocido en FC Points, artículos de distintos tipos, procedencia/fecha inmutable al consultar el panel, lector sintético autorizado sin certificar progreso, filtros de rareza/valor, mensajes españoles e importación CSV/XLSX con separadores de miles. Las fechas usan Bogotá o la zona elegida y rechazan horas inexistentes por cambio de horario.
+
+La primera ejecución pasó 237 Pytest y señaló expectativas anteriores de UI, soporte de diálogo ausente en jsdom y concurrencia de pruebas excesiva para el contenedor. Se actualizaron los contratos de prueba, se añadió el soporte del diálogo solo al arnés y se limitó Vitest a dos trabajadores. Un intento de build detectó una opción incorrecta en Testing Library; quedó corregida. La primera navegación de escritorio volvía atrás antes de terminar de abrir la página destino; el recorrido ahora espera esa vista, conserva la comprobación de foco y pasa en ambos tamaños. Cada intento cerró sus recursos y comprobó que principal y volúmenes permanecieron iguales.
+
+No se probó vínculo EA real, Safari, GPU ni dispositivo ADB. El despliegue personal permanece separado de estas verificaciones; un resultado sintético no acredita acceso al club del propietario.
+
 ## Principal, filtros y operación única (12-oct-2026)
 
 La verificación aislada con PostgreSQL pasó **224 Pytest** (190,02 s), build, salud, OpenAPI y Alembic `0015`/check. La repetición de frontend pasó **27 Vitest y 26 Playwright** sobre Nginx, incluidos móvil y escritorio para seleccionar principal, comprobar exclusiones, guardar filtros y duplicar sin alterar la principal. Se revisaron ambas capturas sintéticas. La primera suite detectó un recuento que incluía protecciones ocultas y un fixture sin principal revisada; se corrigieron. La nueva prueba de navegador esperaba la navegación antes de terminar la entrada local; ahora espera la confirmación visible de esa entrada. No se sustituyeron validadores por mocks.

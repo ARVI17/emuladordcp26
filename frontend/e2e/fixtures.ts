@@ -13,7 +13,17 @@ export const test=base.extend({
 })
 export {expect}
 export async function openLocal(page:Page){
- await page.goto('/')
+ await page.goto('/#/cuenta')
  await page.getByRole('button',{name:'Abrir registro local',exact:true}).click()
  await expect(page.getByText(/Registro local sin vincular · Simulaciones/)).toBeVisible()
+ await go(page,'Inicio')
+}
+
+export async function go(page:Page,label:string){
+ const mobile=await page.getByRole('button',{name:'Abrir menú',exact:true}).isVisible()
+ if(mobile)await page.getByRole('button',{name:'Abrir menú',exact:true}).click()
+ const nav=page.getByRole('navigation',{name:mobile?'Navegación móvil':'Navegación principal',exact:true})
+ const target=nav.getByRole('button',{name:label,exact:true})
+ if(!await target.isVisible())await nav.getByText('Asistente',{exact:true}).click()
+ await target.click()
 }

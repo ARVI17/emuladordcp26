@@ -1,4 +1,4 @@
-import {test,expect,openLocal} from './fixtures'
+import {test,expect,openLocal,go} from './fixtures'
 
 test('principal revisada, filtros DCP y alternativa conservan las mismas copias',async({page,request},testInfo)=>{
  test.setTimeout(60000)
@@ -8,7 +8,7 @@ test('principal revisada, filtros DCP y alternativa conservan las mismas copias'
  expect(saved.ok()).toBeTruthy()
  const squad=await saved.json()
  await openLocal(page)
- await page.getByRole('button',{name:'Plantillas',exact:true}).click()
+ await go(page,'Plantillas')
  const protection=page.getByRole('region',{name:'Protección de la principal'})
  await protection.getByText('Revisar cambio de principal',{exact:true}).click()
  await protection.getByLabel('Plantilla principal elegida').selectOption(String(squad.id))
@@ -21,10 +21,8 @@ test('principal revisada, filtros DCP y alternativa conservan las mismas copias'
  const primaryCard=squad.players[0].player.id
  expect((await request.delete(`/api/players/${primaryCard}`)).status()).toBe(409)
  await page.reload()
- // Hash-route navigation is verified separately when the new shell is installed.
- await page.getByRole('button',{name:'Abrir registro local',exact:true}).click()
  await expect(page.getByText(/Registro local sin vincular · Simulaciones/)).toBeVisible()
- await page.getByRole('button',{name:'DCP',exact:true}).click()
+ await go(page,'DCP')
  await page.getByText(/Protegidas: no se usarán/).click()
  await expect(page.getByText(/Plantilla principal o reservas conservadas/).first()).toBeVisible()
  await page.getByText('Filtrar cartas y guardar preferencias',{exact:true}).click()

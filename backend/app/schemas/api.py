@@ -209,10 +209,11 @@ class DcpFilters(InputModel):
     tradable: bool | None = None
     duplicate: bool | None = None
     special: bool | None = None
+    rare: bool | None = None
     max_price: int | None = Field(default=None, ge=0, le=100_000_000)
     location: Literal['club', 'sbc_storage', 'unassigned', 'transfer_list', 'local'] | None = None
     availability: Literal['available', 'all'] = 'available'
-    preset: Literal['available', 'duplicates', 'keep_special', 'limit_value'] = 'available'
+    preset: Literal['available', 'duplicates', 'keep_special', 'limit_value', 'keep_valuable_tradables'] = 'available'
 
     @field_validator('position')
     @classmethod
@@ -223,7 +224,7 @@ class DcpFilters(InputModel):
     def ordered(self):
         if self.min_rating > self.max_rating:
             raise ValueError('La media mínima no puede superar la máxima.')
-        if self.preset == 'limit_value' and self.max_price is None:
+        if self.preset in {'limit_value', 'keep_valuable_tradables'} and self.max_price is None:
             raise ValueError('Indica el precio conocido máximo para este filtro.')
         return self
 

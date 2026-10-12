@@ -149,3 +149,26 @@ def test_concurrent_principal_switch_invalidates_old_confirm_under_postgres_lock
     with SessionLocal() as db:
         assert not db.get(Player, p['id']).deleted
         assert db.scalar(select(Submission.id).where(Submission.segment_id == sid)) is None
+
+
+def test_rare_valuable_and_pending_filters_never_unlock_consumption(client):
+    from app.services.dcp_review import matches
+    from app.schemas.api import DcpFilters
+    p = card(client, rare=True, tradable=True, price=None)
+    with SessionLocal() as db:
+        copy = db.get(Player, p['id'])
+        assert matches(copy, DcpFilters(rare=True))
+        assert not matches(copy, DcpFilters(rare=False))
+        filters = DcpFilters(preset='keep_valuable_tradables', max_price=1000)
+        assert not matches(copy, filters)
+        copy.price = 999
+        assert matches(copy, filters)
+        copy.price = 1001
+        assert not matches(copy, filters)
+        copy.tradable = False
+        assert matches(copy, filters)
+        copy.validation_status = 'pending_verification'
+        db.commit()
+    # Inspection of a pending copy never changes its admission or availability.
+    assert any(row['id'] == p['id'] and not row['consumable'] for row in client.get('/dcp/exclusions?show_pending=true&limit=100').json()['items'])
+    assert all(row['id'] != p['id'] for row in client.get('/players?limit=500').json()['items'])

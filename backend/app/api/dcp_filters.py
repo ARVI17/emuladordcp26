@@ -33,7 +33,7 @@ def save_preferences(payload: DcpFilters, db: DB):
 
 
 @router.get('/dcp/exclusions')
-def exclusions(db: DB, offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100)):
+def exclusions(db: DB, offset: int = Query(0, ge=0), limit: int = Query(50, ge=1, le=100), show_pending: bool = False):
     protected, structural = effective_protected_ids(db), main_ids(db)
     active = set(db.scalars(select(Player.id)))
     rows = list(db.scalars(select(Player).where(Player.deleted.is_(False)).execution_options(include_quarantine=True).order_by(Player.id)))
@@ -42,6 +42,8 @@ def exclusions(db: DB, offset: int = Query(0, ge=0), limit: int = Query(50, ge=1
         reason = exclusion_reason(p, protected, structural)
         if not reason and p.id not in active:
             reason = 'Variante pendiente de verificación'
+        if not show_pending and p.id not in active and p.id not in protected:
+            continue
         if reason:
             items.append(dict(id=p.id, name=p.name, rating=p.rating, reason=reason, consumable=False))
     return dict(items=items[offset:offset+limit], total=len(items), offset=offset, limit=limit, main=main_status(db))

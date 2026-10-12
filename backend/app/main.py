@@ -41,7 +41,8 @@ def build_metadata():
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(_: Request, exc: RequestValidationError):
-    return JSONResponse(status_code=422, content={"detail": "Datos de entrada inválidos", "errors": [{"field": ".".join(map(str, e["loc"])), "message": e["msg"]} for e in exc.errors()]})
+    from app.services.spanish import validation_message
+    return JSONResponse(status_code=422, content={"detail": "Datos de entrada inválidos", "errors": [{"field": ".".join(map(str, e["loc"])), "message": validation_message(e)} for e in exc.errors()]})
 
 @app.exception_handler(Exception)
 async def unexpected_error(request: Request, exc: Exception):

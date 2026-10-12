@@ -1,12 +1,10 @@
-import {test,expect,openLocal} from './fixtures'
+import {test,expect,openLocal,go} from './fixtures'
 
 test('el panel y la navegación de FC 27 caben en una pantalla móvil',async({page})=>{
   await openLocal(page)
   await expect(page.getByRole('heading',{name:'Club Lab FC27'})).toBeVisible()
-  await expect(page.getByRole('navigation',{name:'Navegación principal'})).toBeVisible()
-  await expect(page.getByRole('button',{name:'Mi club',exact:true})).toBeVisible()
   await expect(page.getByLabel('Temporada activa')).toHaveCount(0)
-  await page.getByRole('button',{name:'Mi club',exact:true}).click()
+  await go(page,'Mi club')
   await expect(page.getByRole('heading',{name:'Mi club',exact:true})).toBeVisible()
   const widths=await page.evaluate(()=>({viewport:window.innerWidth,document:document.documentElement.scrollWidth}))
   expect(widths.document).toBeLessThanOrEqual(widths.viewport)
@@ -15,7 +13,7 @@ test('el panel y la navegación de FC 27 caben en una pantalla móvil',async({pa
 test('Companion conserva la revisión y la entrega manual cuando ADB no está conectado',async({page})=>{
   await page.route('**/emulator/status',route=>route.fulfill({json:{enabled:false,available:false,devices:[],config:{},message:'ADB desactivado para esta prueba'}}))
   await openLocal(page)
-  await page.getByRole('button',{name:'Emulador',exact:true}).click()
+  await go(page,'Emulador')
   await expect(page.getByRole('heading',{name:'Conexión con Companion'})).toBeVisible()
   await expect(page.getByRole('heading',{name:'Leer mi inventario'})).toBeVisible()
   await expect(page.getByText(/no realiza compras, ventas, inicio de sesión ni la pulsación final/i)).toBeVisible()
@@ -51,7 +49,7 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
     }
     await openLocal(page)
     await expect(page.getByRole('heading',{name:'Club Lab FC27'})).toBeVisible()
-    await page.getByRole('button',{name:'Análisis',exact:true}).click()
+    await go(page,'Análisis')
     await expect(page.getByRole('heading',{name:'Análisis de mi club'})).toBeVisible()
     await page.getByRole('button',{name:/^Armar un /}).click()
     await expect(page.getByRole('heading',{name:'Armar mi equipo'})).toBeVisible()
@@ -71,7 +69,7 @@ test('FC27: analiza un club, guarda un once completo y registra su Galería',asy
     await page.getByRole('button',{name:'Guardar plantilla',exact:true}).click()
     expect((await saved).ok()).toBeTruthy()
     await expect(page.getByRole('heading',{name:squadName,exact:true})).toBeVisible()
-    await page.getByRole('button',{name:'Galería',exact:true}).click()
+    await go(page,'Galería')
     await expect(page.getByRole('heading',{name:'Galería local'})).toBeVisible()
     const registered=page.waitForResponse(response=>response.url().endsWith('/api/gallery/record-inventory')&&response.request().method()==='POST')
     await page.getByRole('button',{name:'Registrar mi colección'}).click()

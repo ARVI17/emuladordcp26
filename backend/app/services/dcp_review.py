@@ -18,13 +18,15 @@ def locations(db):
 def matches(player, filters, location='local'):
     if not filters.min_rating <= player.rating <= filters.max_rating:
         return False
-    for field in ('position', 'league', 'club', 'nationality', 'card_type', 'tradable', 'special'):
+    for field in ('position', 'league', 'club', 'nationality', 'card_type', 'tradable', 'special', 'rare'):
         expected = getattr(filters, field)
         if expected is not None and (field in (player.unknown_fields or []) or getattr(player, field) != expected):
             return False
     if filters.duplicate is not None and player.duplicate_untradeable != filters.duplicate:
         return False
-    if filters.max_price is not None and (player.price is None or player.price > filters.max_price):
+    if filters.preset == 'keep_valuable_tradables' and ('tradable' in (player.unknown_fields or []) or player.tradable and (player.price is None or player.price > filters.max_price)):
+        return False
+    if filters.preset != 'keep_valuable_tradables' and filters.max_price is not None and (player.price is None or player.price > filters.max_price):
         return False
     if filters.location is not None and filters.location != location:
         return False

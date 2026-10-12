@@ -35,6 +35,8 @@ class RemoteRead(InputModel):
     pagination: dict
     items: list[RemoteItem] = Field(max_length=20000)
     coins: int | None = Field(default=None, ge=0)
+    fc_points: int | None = Field(default=None, ge=0)
+    unassigned_items: list[dict] | None = Field(default=None, max_length=20000)
     club_name: str | None = Field(default=None, min_length=1, max_length=100)
 
     @model_validator(mode="after")
@@ -47,6 +49,16 @@ class RemoteRead(InputModel):
             raise ValueError("La revisión cambió durante la lectura")
         if self.coverage.get("coins", {}).get("complete") and self.coins is None:
             raise ValueError("No hay saldo observado que respalde la cobertura de monedas")
+        if self.coverage.get("fc_points", {}).get("complete") and self.fc_points is None:
+            raise ValueError("Falta el saldo observado de FC Points")
+        if self.coverage.get("unassigned", {}).get("complete") and self.unassigned_items is None:
+            raise ValueError("Falta la lectura de artículos sin asignar")
+        if self.unassigned_items is not None:
+            ids = set()
+            for item in self.unassigned_items:
+                if set(item) - {'item_id', 'kind'} or item.get('kind') not in {'player', 'consumable', 'other', 'unknown'} or not isinstance(item.get('item_id'), str) or not 1 <= len(item['item_id']) <= 120 or item['item_id'] in ids:
+                    raise ValueError("Artículos sin asignar: identidad única y tipo válidos obligatorios")
+                ids.add(item['item_id'])
         if self.coverage.get("inventory", {}).get("complete"):
             if not self.pagination.get("documented_end") or not self.pagination.get("all_locations"):
                 raise ValueError("No hay prueba de fin de paginación y cobertura de ubicaciones")
@@ -184,8 +196,10 @@ def publish_read(db, run_id: int, read: RemoteRead):
         run.status = entry.status
         run.finished_at = now()
         run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": len(pending_variants), "revision": read.revision, "count": len(unique)}
-        run.manifest = {**run.manifest, "account": {"name": context.name,
-            "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None}}
+        run.manifest = {**run.manifest, "account": {"name": read.club_name,
+            "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None,
+            "fc_points": read.fc_points if read.coverage.get("fc_points", {}).get("complete") else None,
+            "unassigned_items": read.unassigned_items if read.coverage.get("unassigned", {}).get("complete") else None}}
         record(db, "publish_snapshot", "inventory_snapshot", snapshot.id, {"count": len(unique), "conflicts": len(conflicts)})
         db.commit()
         return snapshot

@@ -1,3 +1,4 @@
+import {observedDate} from '../lib/i18n'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from '../api/client'
@@ -15,7 +16,7 @@ export function VariantReview({onChoose}:{onChoose:(p:Partial<PlayerInput>)=>voi
  const review=useMutation({mutationFn:(player:PlayerInput)=>api<{quarantined?:boolean;message?:string}>(`/inventory/quarantine/${edit!.id}/review`,{method:'POST',body:JSON.stringify({player,source_url:source,confirmation})}),onSuccess:r=>{setMessage(r.quarantined?r.message!:'Copia FC27 documentada activada en el registro manual.');setEdit(null);void invalidateClub(qc)}})
  return <>
   <details className="panel"><summary>Catálogo FC27 documentado · no son mis cartas</summary><p>Fichas contrastadas con su fuente y fecha. No acreditan posesión, atributos completos ni precios. Las variantes pendientes quedan excluidas. El tipo conserva la etiqueta del catálogo de origen; no certifica la clasificación oficial de EA.</p><label>Buscar variante<input value={search} onChange={e=>setSearch(e.target.value)}/></label><ErrorBox error={catalog.error}/>
-   {catalog.data?.items.map(v=><div key={v.id} className="list-row"><div><strong>{v.name} · {v.rating} · {v.position}</strong><p>{v.card_type} · ID {v.variant_id} · <a href={v.source_url} target="_blank" rel="noreferrer">Fuente</a> · {new Date(v.observed_at).toLocaleDateString('es-CO')}</p></div><button onClick={()=>onChoose({game_version:'FC27',name:v.name,rating:v.rating,position:v.position,card_type:v.card_type,card_id:v.variant_id})}>Revisar copia que poseo</button></div>)}
+   {catalog.data?.items.map(v=><div key={v.id} className="list-row"><div><strong>{v.name} · {v.rating} · {v.position}</strong><p>{v.card_type} · ID {v.variant_id} · <a href={v.source_url} target="_blank" rel="noreferrer">Fuente</a> · {observedDate(v.observed_at)}</p></div><button onClick={()=>onChoose({game_version:'FC27',name:v.name,rating:v.rating,position:v.position,card_type:v.card_type,card_id:v.variant_id})}>Revisar copia que poseo</button></div>)}
    {catalog.data?.has_more&&<p>Afina la búsqueda para ver otras variantes.</p>}
   </details>
   <details className="panel"><summary>Cuarentena · {pending.data?.total??0} declaraciones pendientes</summary><p>{pending.data?.message}</p><ErrorBox error={pending.error}/>

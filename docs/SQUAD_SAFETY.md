@@ -8,6 +8,8 @@ El servidor rechaza consumo, archivo, marca de duplicado utilizado y cambios inc
 
 `/dcp/preferences` conserva filtros por contexto en las preferencias locales; `/dcp/exclusions` pagina las razones de exclusión. Los filtros de media, posición, liga, club, nacionalidad, tipo, transferibilidad, duplicado, precio conocido y ubicación nunca exceptúan protecciones. Un precio desconocido no cumple un precio máximo. Las ubicaciones autorizadas provienen del mapeo de copias; las entradas manuales se identifican como registro local.
 
+La rareza también se filtra. «Conservar transferibles valiosos» excluye transferibles por encima del umbral y aquellos sin precio conocido; no obliga a excluir intransferibles por ese umbral. «Mostrar también variantes pendientes» amplía únicamente la inspección de exclusiones, sin admitirlas al solver. Las recomendaciones de juego ofrecen «No reutilizar mi principal» de forma independiente de los candados de consumo.
+
 Cada solución de `/segments/{id}/optimize` incluye `review_token`. Una selección manual puede revisarse en `/segments/{id}/review`. Confirmar exige ese comprobante firmado y revalida las copias, las reglas, el progreso, el contexto, la entrada, el inventario, las reservas, los filtros y la principal dentro de la misma exclusión transaccional. Caduca a los cinco minutos. El comprobante no acredita una entrega en EA ni autoriza a automatizarla.
 
 Las pruebas usan inventario sintético. El fixture general selecciona expresamente su principal sintética; los tests de límite no lo hacen. Ningún mock de identidad, proveedor o catálogo está habilitado en producción.
