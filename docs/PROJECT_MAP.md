@@ -6,7 +6,7 @@ Principal y DCP: [SQUAD_SAFETY.md](SQUAD_SAFETY.md). `models/squad_safety.py`, `
 
 Entrada de cuenta, diagnóstico y procedencia de build: [ACCOUNT_ACCESS.md](ACCOUNT_ACCESS.md). `/dashboard.account` muestra observaciones separadas del perfil manual; `/api/build` y `/build.json` permiten contrastar la versión servida.
 
-Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `api/variants.py` y `VariantReview.tsx`; migración `0013`. [Contrato y procedencia](FC27_EXCLUSIVE.md). El filtro ORM exige evidencia vigente antes de agregar, paginar o cargar relaciones de cartas. El arranque normal crea perfil vacío y referencias documentales; el inventario sintético solo existe en el arnés de pruebas.
+Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `api/variants.py` y `VariantReview.tsx`; migración `0013`. [Contrato y procedencia](FC27_EXCLUSIVE.md). El filtro ORM exige evidencia documental vigente o la prueba interna de copia observada de `services/remote_evidence.py`, antes de agregar, paginar o cargar relaciones. La posesión observada no caduca con una referencia del catálogo; los módulos conservan su control de cobertura/vigencia. El arranque normal crea perfil vacío y referencias documentales; el inventario sintético solo existe en el arnés de pruebas.
 
 Definiciones activas: `services/definition_validation.py`, mixin `DefinitionEvidence`, migración `0014`, resumen `/catalog/pending` y `PendingDefinitions.tsx`. Los cambios de reglas invalidan evidencia; los borradores no llegan a optimización ni a los totales activos. `Profile.origin` y `Squad.origin` conservan los valores legados fuera de las vistas normales.
 
@@ -167,7 +167,7 @@ Un plan tradicional pasa por `draft → prepared → queued → running → comp
 
 ## Interfaz
 
-`App.tsx` guarda la página seleccionada en estado; no usa router de URL. Las vistas son Inicio, Club, Análisis, Plantillas, DCP, Galería, Evoluciones, Novedades, Objetivos, Duplicados, IA, Emulador y Ajustes. El selector de temporada cambia el perfil local; el tema se guarda en `localStorage`.
+`App.tsx` sincroniza la sección con rutas hash de `lib/navigation.ts`; conserva Atrás/Adelante y recarga. Las vistas son Inicio, Club, Análisis, Plantillas, DCP, Galería, Evoluciones, Novedades, Objetivos, Duplicados, IA, Emulador y Ajustes. Solo se ofrece FC27; el tema y la zona horaria se guardan en `localStorage`.
 
 Las mutaciones usan `api()` e invalidación de claves de dominio compartidas. El importador conserva la revisión exacta del archivo y bloquea confirmaciones dobles. Companion calcula coordenadas según la imagen realmente mostrada y sigue el estado de scans/planes; errores se muestran junto a la operación. La navegación y los formularios se adaptan al móvil.
 

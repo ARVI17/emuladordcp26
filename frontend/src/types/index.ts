@@ -3,19 +3,20 @@ export type PendingDefinition = {id:number;game_version:'FC27';validation_status
 export type PendingDefinitionsResponse = {game_version:'FC27';counts:Record<string,number>;validation_status:'pending_verification';message:string}
 export type AttributeKey = 'pace'|'shooting'|'passing'|'dribbling'|'defending'|'physical'|'diving'|'handling'|'kicking'|'reflexes'|'speed'|'positioning'
 export type Player = {
+  ownership_source?:'observed'|'manual';observed_at?:string|null;metadata_pending?:string[];
   validation_status?:string;variant_evidence?:Record<string,unknown>;
   id:number; name:string; rating:number; position:string; league:string; club:string; nationality:string;
-  card_type:string; rare:boolean; special:boolean; tradable:boolean|null; price:number|null; chemistry:number;
+  card_type:string; rare:boolean|null; special:boolean|null; tradable:boolean|null; price:number|null; chemistry:number|null;
   favorite?:boolean;notes?:string;athlete_id?:string|null;
   protected:boolean; effective_protected?:boolean; starter:boolean; squad_role:string; usefulness:number;
   duplicate_untradeable:boolean; deleted:boolean; created_at:string; game_version:GameVersion;
   card_id:string|null; base_card_id:string|null; alternate_positions:string[];
   attributes:Partial<Record<AttributeKey,number>>; playstyles:string[]; playstyles_plus:string[]; roles:Record<string,string>;
-  skill_moves:number|null; weak_foot:number|null; is_loan:boolean|null; is_evolution:boolean|null; is_holographic:boolean;
+  skill_moves:number|null; weak_foot:number|null; is_loan:boolean|null; is_evolution:boolean|null; is_holographic:boolean|null;
   unknown_fields?:string[]; availability?:string;
   gallery_score:number|null; data_source:string; data_reviewed:boolean;
 }
-export type PlayerInput = Omit<Player,'id'|'deleted'|'created_at'|'effective_protected'|'unknown_fields'|'availability'|'tradable'|'is_loan'|'is_evolution'>&{tradable:boolean;is_loan:boolean;is_evolution:boolean}
+export type PlayerInput = Omit<Player,'id'|'deleted'|'created_at'|'effective_protected'|'unknown_fields'|'availability'|'tradable'|'is_loan'|'is_evolution'|'ownership_source'|'observed_at'|'metadata_pending'>&{tradable:boolean;is_loan:boolean;is_evolution:boolean}
 export type Profile = {id:number;name:string;coins:number;platform:string;max_budget:number;risk_level:string;preferences:Record<string,unknown>;game_version:GameVersion}
 export type Segment = {id:number;name:string;requirements:Record<string,unknown>;completed:boolean;current_score?:number;target_score?:number;remaining_score?:number}
 export type Challenge = {id:number;name:string;description:string;reward:string;completed:boolean;expires_at:string|null;segments:Segment[];game_version?:GameVersion}
@@ -27,7 +28,8 @@ export type AccountSummary = {identity_verified:boolean;provider:string|null;nam
 export type Dashboard = {account:AccountSummary;mode:'live'|'local';profile:Profile;counts:{players:number;protected:number;duplicates:number;pending_challenges:number};objectives:Objective[];alerts:{level:string;message:string}[]}
 export type Solution = {review_token:string;player_ids:number[];players:Player[];total_cost:number|null;optimization_score?:number;rating:number;chemistry:number;valid:boolean;violations:string[];uses_protected:boolean;duplicate_count:number;score_contribution?:number;current_score?:number;projected_score?:number;remaining_score?:number;partial?:boolean;will_complete?:boolean}
 export type Formation = {id:string;name:string;slots:{slot:string;position:string}[]}
-export type SquadRecommendation = {binding?:SquadBinding;game_version:GameVersion;formation:string;recommendation:true;simulation:true;complete:boolean;rating:number;chemistry:number;chemistry_approximate:true;players:Player[];lineup:{slot:string;position:string;player:Player;fit_score:number;used_alternate_position:boolean;explanation:string}[];bench:Player[];gaps:{slot:string;position:string;reason:string}[];warnings:string[];explanations:string[];style:string;eligible_count:number}
+export type MainComparison = {available:boolean;squad_id:number|null;additional_cost:number;reason:string|null;main_formation?:string;proposed_formation?:string;rows:{slot:string;position:string;main_id:number|null;main_name:string|null;proposed_id:number;proposed_name:string;main_fit:number|null;proposed_fit:number;delta:number|null}[]}
+export type SquadRecommendation = {main_comparison?:MainComparison;binding?:SquadBinding;game_version:GameVersion;formation:string;recommendation:true;simulation:true;complete:boolean;rating:number;chemistry:number|null;chemistry_approximate:true;players:Player[];lineup:{slot:string;position:string;player:Player;fit_score:number;used_alternate_position:boolean;explanation:string}[];bench:Player[];gaps:{slot:string;position:string;reason:string}[];warnings:string[];explanations:string[];style:string;eligible_count:number}
 export type ClubAnalysis = {game_version:GameVersion;counts:{players:number;reviewed:number;unreviewed:number;protected:number;loans:number;evolutions:number;holographic:number;duplicates:number};average_rating:number;positions:{position:string;count:number;best_rating:number;best_player_id:number}[];top_players:Player[];gaps:{position:string;reason:string}[];warnings:string[];recommended_formation:string|null;simulation:true}
 export type EmulatorDevice = {serial:string;state:string;details:string}
 export type EmulatorStatus = {game_version?:GameVersion;compatibility_status?:'pending_verification';app_build?:null;visual_actions_allowed?:false;enabled:boolean;available:boolean;devices:EmulatorDevice[];config:{address?:string;serial?:string;calibration?:EmulatorCalibration|null};message:string|null}

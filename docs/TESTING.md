@@ -1,5 +1,15 @@
 # Pruebas del planificador FC27
 
+## Copias observadas y comparación con la principal (12-oct-2026)
+
+La ejecución final aislada pasó **245 Pytest/PostgreSQL** (212,61 s), **33 Vitest**, **28 Playwright**, build, arranque, salud/OpenAPI y Alembic `0015`/check. Principal y volúmenes permanecieron sin cambios; los recursos temporales se retiraron. Los casos nuevos verifican 47 copias fuera del catálogo, paginación, variantes localizadas, dos copias y Evo individual, permanencia tras caducar el catálogo, bloqueo de lectura vencida, preferencias sin sustitución de hechos, metadatos nulos, filtro de ausencia e historial de Galería sin cesiones. La comparación por puesto no altera la principal.
+
+La primera ejecución señaló dos expectativas que requerían actualización: editar una media observada ahora se rechaza en vez de invalidar el snapshot, y la prueba interna de Galería debe vincular su sesión al contexto observado. Tras corregirlas pasaron 245 pruebas. Una compilación posterior encontró dos errores de tipado en el nuevo fixture de interfaz; se completó su contrato y se corrigió el selector. La ejecución final pasó todas las capas.
+
+El CI de la entrega anterior pasó en push y falló en un recorrido de PR: dos aperturas iniciales concurrentes de React en desarrollo podían cruzar cookie y CSRF. Se confirmó en el artefacto de error, se serializó `openEntry` y una prueba nueva verifica el orden completo de ambas aperturas. No se retiró la protección CSRF. La suite final también prueba la visibilidad de Mi club ante una lectura parcial y el formulario limitado a preferencias observadas.
+
+No se probó un proveedor EA real, progreso remoto, hardware ADB ni GPU. Esta prueba del contrato interno no conecta la cuenta del propietario; tampoco actualiza por sí sola el puerto principal.
+
 ## Portada, navegación y cuenta observada (12-oct-2026)
 
 **239 Pytest/PostgreSQL**, **30 Vitest**, build, Nginx, salud/OpenAPI y Alembic `0015`/check pasaron. La repetición final de frontend pasó **28 Playwright** en móvil y escritorio. Incluye Inicio sin saldos inventados, menú nativo, Atrás/Adelante/recarga, conservación de la entrada local explícita, foco, ayuda contextual, principal protegida y filtros. Se inspeccionaron las capturas reales de ambas portadas; no hubo desbordamientos.

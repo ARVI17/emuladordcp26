@@ -113,7 +113,10 @@ def publish_read(db, run_id: int, read: RemoteRead):
             # historical snapshot, never masquerade as newly observed current facts.
             missing_details = {"attributes": {}, "alternate_positions": [], "playstyles": [],
                                "playstyles_plus": [], "roles": {}, "skill_moves": None,
-                               "weak_foot": None, "gallery_score": None}
+                               "weak_foot": None, "gallery_score": None,
+                               "league": "No disponible", "club": "No disponible", "nationality": "No disponible",
+                               "card_type": "No disponible", "rare": False, "special": False,
+                               "chemistry": 0, "base_card_id": None, "is_holographic": False}
             for key, empty in missing_details.items():
                 if key not in item.fields:
                     fields[key] = empty
@@ -132,7 +135,6 @@ def publish_read(db, run_id: int, read: RemoteRead):
         from app.services.main_squad import main_ids, state_row
         structural = main_ids(db)
         affected_main = set()
-        pending_variants = []
         for item, mapping, player, fields in prepared:
             if player is None:
                 player = Player(**{**fields, "athlete_id": item.athlete_id})
@@ -158,9 +160,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
                 player.unknown_fields = fields["unknown_fields"]
                 player.data_reviewed = fields["data_reviewed"]
             mapping.location = item.location
-            from app.services.catalog_validation import validate_copy
-            if not validate_copy(db, player):
-                pending_variants.append(player.id)
+            from app.services.remote_evidence import observe_copy
+            observe_copy(player, item, snapshot, read)
             mapping.last_snapshot_id = snapshot.id
             mapping.available = True
             player.deleted = False
@@ -189,13 +190,11 @@ def publish_read(db, run_id: int, read: RemoteRead):
         if read.club_name is not None:
             context.name = read.club_name
         context.snapshot_id = snapshot.id
-        if pending_variants:
-            snapshot.coverage = {**snapshot.coverage, 'inventory': {**snapshot.coverage.get('inventory', {}), 'complete': False, 'pending_variants': len(pending_variants)}}
         entry.snapshot_id = snapshot.id
         entry.status = "review_required" if conflicts else "ready" if snapshot.coverage.get("inventory", {}).get("complete") else "partial"
         run.status = entry.status
         run.finished_at = now()
-        run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": len(pending_variants), "revision": read.revision, "count": len(unique)}
+        run.manifest = {"pagination": read.pagination, "coverage": snapshot.coverage, "conflicts": conflicts, "pending_variants": 0, "revision": read.revision, "count": len(unique)}
         run.manifest = {**run.manifest, "account": {"name": read.club_name,
             "coins": read.coins if read.coverage.get("coins", {}).get("complete") else None,
             "fc_points": read.fc_points if read.coverage.get("fc_points", {}).get("complete") else None,

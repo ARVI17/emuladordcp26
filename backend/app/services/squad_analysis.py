@@ -55,6 +55,14 @@ PLAYER_FIELDS = (
 def serialize_player(player: Player, protected_ids: set[int] | None = None) -> dict:
     result = {key: getattr(player, key, None) for key in PLAYER_FIELDS}
     result.update(validation_status=player.validation_status, variant_evidence=player.validation_evidence)
+    from app.services.remote_evidence import field_known
+    evidence = player.validation_evidence or {}
+    result['ownership_source'] = 'observed' if evidence.get('kind') == 'observed_copy' else 'manual'
+    result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') == 'observed_copy' else None
+    result['metadata_pending'] = [key for key in ('league', 'club', 'nationality', 'card_type', 'rare', 'special', 'chemistry', 'alternate_positions', 'attributes', 'playstyles', 'roles', 'is_loan', 'is_evolution', 'tradable', 'is_holographic') if not field_known(player, key)]
+    for key in ('rare', 'special', 'chemistry', 'is_holographic', 'tradable', 'is_loan', 'is_evolution'):
+        if not field_known(player, key):
+            result[key] = None
     for key in (getattr(player, "unknown_fields", None) or []):
         if key in result:
             result[key] = None
@@ -186,7 +194,8 @@ def recommend_owned_squad(players: list[Player], *, game_version: str, formation
     locked, excluded = set(locked_player_ids or []), set(excluded_player_ids or [])
     if locked & excluded:
         raise ValueError("Una carta no puede estar fijada y excluida a la vez")
-    candidates = sorted((p for p in players if not p.deleted and getattr(p, "availability", "available") in {None, "available"} and p.game_version == game_version and p.id not in excluded and (include_loans or not p.is_loan) and (include_unreviewed or p.data_reviewed)), key=lambda p: (-p.rating, p.id))
+    from app.services.remote_evidence import field_known
+    candidates = sorted((p for p in players if not p.deleted and getattr(p, "availability", "available") in {None, "available"} and p.game_version == game_version and p.id not in excluded and (include_loans or field_known(p, 'is_loan') and not p.is_loan) and (include_unreviewed or p.data_reviewed or (p.validation_evidence or {}).get('kind') == 'observed_copy')), key=lambda p: (-p.rating, p.id))
     by_id = {p.id: p for p in candidates}
     if not locked.issubset(by_id):
         raise ValueError("Una carta fijada no está disponible en esta edición o está pendiente de revisión")
@@ -256,7 +265,7 @@ def recommend_owned_squad(players: list[Player], *, game_version: str, formation
         warnings.append("Algunas cartas no tienen atributos detallados; su encaje utiliza la media registrada.")
     if any(not p.data_reviewed for p in chosen.values()):
         warnings.append("Incluiste datos pendientes de revisión; confirma esos valores antes de usar esta recomendación.")
-    if any(not p.base_card_id for p in candidates):
+    if any(not p.base_card_id and not p.athlete_id for p in candidates):
         warnings.append("Sin identificador base, las versiones del mismo futbolista se agrupan por nombre; revisa homónimos y nombres abreviados.")
     if status == cp_model.FEASIBLE:
         warnings.append("Se encontró una asignación válida dentro del límite de tiempo; no se ha probado que sea la mejor posible.")
@@ -266,10 +275,33 @@ def recommend_owned_squad(players: list[Player], *, game_version: str, formation
         "game_version": game_version, "formation": formation, "style": style, "recommendation": True, "simulation": True,
         "complete": len(lineup) == 11, "players": [row["player"] for row in lineup], "lineup": lineup,
         "bench": [serialize_player(p, protected_ids) for p in bench], "gaps": gaps, "warnings": warnings,
-        "rating": calculate_rating([p.rating for p in chosen.values()]), "chemistry": sum(p.chemistry for p in chosen.values()),
+        "rating": calculate_rating([p.rating for p in chosen.values()]), "chemistry": sum(p.chemistry for p in chosen.values()) if all(field_known(p, "chemistry") for p in chosen.values()) else None,
         "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "solver_status": "optimal" if status == cp_model.OPTIMAL else "feasible" if status == cp_model.FEASIBLE else "infeasible" if status == cp_model.INFEASIBLE else "timeout", "objective_bound": solver.best_objective_bound, "eligible_count": len(candidates),
         "explanations": ["Se prioriza cubrir los once puestos con cartas propias de la edición activa.", "Encaje local: 70 % media y 30 % atributos disponibles ponderados por puesto; ajuste por rol registrado; PlayStyles sin bonificación numérica.", "Las cartas protegidas sí pueden jugar; su protección únicamente impide consumirlas en DCP.", "No se repite la misma carta, identificador base o nombre de futbolista entre titulares y suplentes."],
     }
+
+
+def compare_main(db: Session, proposal: dict) -> dict:
+    """Read-only local fit comparison; it neither changes nor activates a squad."""
+    from app.services.main_squad import main_status
+    main = main_status(db)
+    result = dict(available=False, squad_id=main['squad_id'], additional_cost=0, rows=[],
+                  reason=main['reason'], official_performance=False)
+    if not main['complete']:
+        return result
+    members = {m['slot']: m['player_id'] for m in main['snapshot']['members']}
+    players = {p.id: p for p in db.scalars(select(Player).where(Player.id.in_(members.values())))}
+    rows = []
+    for row in proposal['lineup']:
+        previous = players.get(members.get(row['slot']))
+        score = _fit(previous, row['position'], proposal['style'])[0] if previous else None
+        rows.append(dict(slot=row['slot'], position=row['position'], proposed_id=row['player']['id'],
+            proposed_name=row['player']['name'], main_id=previous.id if previous else None,
+            main_name=previous.name if previous else None, main_fit=score, proposed_fit=row['fit_score'],
+            delta=round(row['fit_score']-score, 2) if score is not None else None))
+    result.update(available=True, rows=rows, reason='Comparación del encaje local en puestos equivalentes; usa la media cuando faltan atributos. No predice resultados ni química oficial.',
+        main_formation=main['snapshot']['formation'], proposed_formation=proposal['formation'])
+    return result
 
 
 def _formation_coverage(players: list[Player], formation: str) -> int:
@@ -296,7 +328,7 @@ def analyze_club(db: Session) -> dict:
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
     protected = effective_protected_ids(db, version) & {p.id for p in players}
-    reviewed = [p for p in players if p.data_reviewed]
+    reviewed = [p for p in players if p.data_reviewed or (p.validation_evidence or {}).get("kind") == "observed_copy"]
     alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in verified_formations()]
     recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])), default={"formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]})
     recommended = recommendation["formation"]

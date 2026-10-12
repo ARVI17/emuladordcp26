@@ -13,3 +13,13 @@ Actualmente el reconciliador admite **inventario, monedas, FC Points y artículo
 Cada copia observada incluye nombre/media/posición actuales; no se completan desde historia. Si omite atributos, posiciones alternativas, roles, PlayStyles, estrellas o puntos de Galería, esos detalles quedan vacíos/desconocidos en el estado actual. La instantánea histórica conserva la evidencia anterior; favoritos y notas locales se mantienen. Los indicadores críticos omitidos continúan como desconocidos y bloquean acciones incompatibles. No se presume un delta sin un protocolo documentado.
 
 Esta implementación prueba el ciclo interno con datos sintéticos. No demuestra login EA, compatibilidad con la Community API, cobertura de un club real ni sincronización de progreso privado.
+
+## Admisión por copia observada
+
+La posesión observada no depende de las 22 variantes del catálogo documental ni de su vencimiento. `remote_evidence.py` comprueba en SQL, antes de paginar o contar, contexto verificado, snapshot/run publicado, identidad de variante y mapeo proveedor/copy_id. La evidencia solo la escribe el reconciliador interno. No hay un endpoint para subirla o marcar una copia como remota; la etiqueta `provider_verified` por sí sola es insuficiente.
+
+Nombre, media y posición son obligatorios en cada lectura. Las etiquetas localizadas y evoluciones individuales conservan su variante y copy_id; el athlete_id evita alinear dos versiones del mismo futbolista. Metadatos omitidos no se heredan como hechos nuevos. `metadata_pending`, `ownership_source` y `observed_at` acompañan cada DTO. Los campos que exige un DCP deben estar conocidos tanto en el solver como en el validador; una propuesta de juego puede usar una copia cuyo estado de transferencia todavía sea desconocido.
+
+Una lectura parcial o vencida conserva Mi club visible para inspección, pero no habilita cálculos dependientes de cobertura/vigencia. La ausencia completa se muestra como ausente, sin inventar venta o entrega; no se cuenta como disponible. El historial elegible de Galería conserva la observación aunque ya no haya una copia disponible. Las cesiones no se registran como adquisiciones y una Evo exige base conocida.
+
+El formulario de una copia observada permite notas, favorito y precio local. Las rutas rechazan sustituir hechos observados por una edición manual. Los precios anotados no son cotizaciones de mercado. Las preferencias y sus candados permanecen separados de la evidencia del proveedor.

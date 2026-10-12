@@ -54,6 +54,9 @@ def test_playing_and_saving_an_alternative_preserves_main_exactly(client):
     pid = squad['players'][0]['player']['id']
     rec = client.post('/squads/recommend', json={'locked_player_ids': [pid]}).json()
     assert pid in [p['id'] for p in rec['players']]
+    comparison = rec['main_comparison']
+    assert comparison['available'] and comparison['additional_cost'] == 0
+    assert len(comparison['rows']) == 11 and all(r['delta'] == round(r['proposed_fit']-r['main_fit'], 2) for r in comparison['rows'])
     copy = client.post(f"/squads/{squad['id']}/duplicate")
     assert copy.status_code == 200 and copy.json()['id'] != squad['id']
     assert client.get('/squads/main').json() == state

@@ -190,9 +190,15 @@ def documented_plan(db, plan):
             return False
     ids = {pid for a in plan.inputs.get('actions', []) for pid in a.get('player_ids', [])}
     found = set(db.scalars(select(Player.id).where(Player.id.in_(ids)))) if ids else set()
+    from app.services.remote_evidence import is_observed, IDENTITY_FIELDS
+    def admitted_snapshot(copy):
+        if check_fields(db, copy)[0] is not None:
+            return True
+        current = db.get(Player, copy.get('id'))
+        return bool(current and is_observed(db, current) and all(copy.get(key) == getattr(current, key) for key in IDENTITY_FIELDS))
     return (plan.inputs.get('binding', {}).get('game_version') == 'FC27'
         and ids == found
-        and all(check_fields(db, p)[0] is not None for a in plan.inputs.get('actions', []) for p in a.get('copies', []))
+        and all(admitted_snapshot(p) for a in plan.inputs.get('actions', []) for p in a.get('copies', []))
         and all(find_variant(db, q.get('variant_id')) is not None for q in plan.inputs.get('quotes', {}).values()))
 
 

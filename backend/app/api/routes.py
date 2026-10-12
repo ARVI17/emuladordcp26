@@ -161,7 +161,7 @@ def dashboard(db: DB):
     profile = ensure_profile(db)
     db.commit()
     version = profile.game_version
-    available = (Player.deleted.is_(False), Player.game_version == version)
+    available = (Player.deleted.is_(False), Player.game_version == version, Player.availability == 'available')
     count = db.scalar(select(func.count(Player.id)).where(*available)) or 0
     protected = db.scalar(select(func.count(Player.id)).where(*available, Player.id.in_(effective_protected_ids(db, version)))) or 0
     duplicates = db.scalar(select(func.count(Player.id)).where(*available, Player.duplicate_untradeable.is_(True))) or 0
@@ -178,9 +178,13 @@ def dashboard(db: DB):
 
 
 @router.get("/players")
-def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), game_version: str | None = None):
+def list_players(db: DB, search: str = "", position: str | None = None, league: str | None = None, protected: bool | None = None, duplicate: bool | None = None, sort: str = "rating", order: str = "desc", limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), game_version: str | None = None, availability: str | None = None):
     version = version_for(db, game_version)
     conditions = [Player.deleted.is_(False), Player.game_version == version]
+    if availability:
+        if availability not in {'available', 'absent', 'review_required'}:
+            raise HTTPException(422, 'Estado de disponibilidad no reconocido')
+        conditions.append(Player.availability == availability)
     if search:
         conditions.append(or_(Player.name.ilike(f"%{search}%"), Player.club.ilike(f"%{search}%"), Player.nationality.ilike(f"%{search}%")))
     if position:
@@ -234,18 +238,24 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
             from app.services.spanish import validation_message
             raise HTTPException(422, [{'loc': e['loc'], 'msg': validation_message(e)} for e in exc.errors()]) from exc
         from app.services.catalog_validation import check_fields
-        if check_fields(db, normalized)[0] is None:
+        from app.services.remote_evidence import is_observed, PREFERENCES
+        observed = is_observed(db, player)
+        if observed and any(key not in PREFERENCES and value != getattr(player, key) for key, value in changes.items()):
+            raise HTTPException(409, 'Los hechos de una copia observada se actualizan con una nueva lectura autorizada. Puedes editar sus preferencias locales.')
+        if not observed and check_fields(db, normalized)[0] is None:
             raise HTTPException(409, 'La modificación no coincide con una variante FC27 documentada')
         for key, value in normalized.items():
-            setattr(player, key, value)
+            if not observed or key in PREFERENCES:
+                setattr(player, key, value)
         from app.services.catalog_validation import validate_copy
-        if set(changes) & {'game_version', 'card_id', 'name', 'rating', 'position', 'card_type', 'data_source'}:
+        if not observed and set(changes) & {'game_version', 'card_id', 'name', 'rating', 'position', 'card_type', 'data_source'}:
             validate_copy(db, player)
-        if player.unknown_fields and changes.get("data_reviewed") is True:
+        if not observed and player.unknown_fields and changes.get("data_reviewed") is True:
             player.unknown_fields = [field for field in player.unknown_fields if field not in changes]
             if player.unknown_fields:
                 player.data_reviewed = False
-        record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
+        if not observed:
+            record_player(db, player, score_changed="gallery_score" in payload.model_fields_set)
         record(db, "update", "player", player.id, {"fields": list(changes)})
         db.commit()
         return player_data(player, effective_protected_ids(db))
@@ -508,7 +518,10 @@ def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommen
         options['excluded_player_ids'] = sorted(set(options['excluded_player_ids']) | main_ids(db))
     try:
         from app.services.contexts import require_module
-        return {**recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options), "binding": require_module(db, "squads")}
+        binding = require_module(db, 'squads')
+        result = recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options)
+        from app.services.squad_analysis import compare_main
+        return {**result, 'main_comparison': compare_main(db, result), 'binding': binding}
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 

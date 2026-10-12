@@ -101,6 +101,8 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
             pending.append({"profile": name, "reason": "No se pudo verificar una formación con estas copias fijadas/excluidas; revisa elegibilidad e identidad"})
             continue
         best = max(choices, key=lambda r: (len(r["lineup"]), sum(row["fit_score"] for row in r["lineup"])))
+        from app.services.squad_analysis import compare_main
+        best['main_comparison'] = compare_main(db, best)
         signature = (best["formation"], tuple((r["slot"], r["player"]["id"]) for r in best["lineup"]), tuple(p['id'] for p in best['bench']))
         same = next((row for row in groups if row["signature"] == signature), None)
         if same:

@@ -394,15 +394,15 @@ def test_uncertain_partial_action_does_not_consume_or_release_for_reuse(client):
         assert not db.get(Player,p['id']).deleted
 
 
-def test_local_fact_edit_invalidates_verified_snapshot_but_preference_does_not(client):
+def test_local_fact_edit_cannot_replace_observed_snapshot_and_preferences_remain_local(client):
     context,run=fake_run(client)
     publish(run,remote())
     p=client.get('/players').json()['items'][0]
     assert client.patch(f"/players/{p['id']}",json={'favorite':True}).status_code==200
     assert client.get(f'/club-contexts/{context}/sync-state').json()['modules']['analysis']['ready']
-    assert client.patch(f"/players/{p['id']}",json={'rating':81}).status_code==200
-    assert not client.get(f'/club-contexts/{context}/sync-state').json()['modules']['analysis']['ready']
-    assert client.get('/club/analysis').status_code==409
+    assert client.patch(f"/players/{p['id']}",json={'rating':81}).status_code==409
+    assert client.get('/players').json()['items'][0]['rating']==p['rating']
+    assert client.get(f'/club-contexts/{context}/sync-state').json()['modules']['analysis']['ready']
 
 
 def test_failure_at_commit_keeps_previous_snapshot_and_inventory(client,monkeypatch):

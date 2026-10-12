@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.models.entities import Player, now
 from app.models.planner import ExternalItemMapping, Reservation
 from app.schemas.api import DcpFilters
+from app.services.remote_evidence import field_known
 
 
 def locations(db):
@@ -20,7 +21,7 @@ def matches(player, filters, location='local'):
         return False
     for field in ('position', 'league', 'club', 'nationality', 'card_type', 'tradable', 'special', 'rare'):
         expected = getattr(filters, field)
-        if expected is not None and (field in (player.unknown_fields or []) or getattr(player, field) != expected):
+        if expected is not None and (not field_known(player, field) or getattr(player, field) != expected):
             return False
     if filters.duplicate is not None and player.duplicate_untradeable != filters.duplicate:
         return False
@@ -30,7 +31,7 @@ def matches(player, filters, location='local'):
         return False
     if filters.location is not None and filters.location != location:
         return False
-    if filters.preset == 'keep_special' and (player.special or player.is_evolution or 'special' in (player.unknown_fields or [])):
+    if filters.preset == 'keep_special' and (player.special or player.is_evolution or not field_known(player, 'special')):
         return False
     return True
 

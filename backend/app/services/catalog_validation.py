@@ -1,7 +1,7 @@
 """Fail closed on unknown editions/variants. HTTP review cannot certify a source."""
 from datetime import timezone
 from fastapi import HTTPException
-from sqlalchemy import and_, exists, select
+from sqlalchemy import and_, or_, exists, select
 from app.models.catalog import CardVariant
 from app.models.entities import Player, now
 
@@ -16,12 +16,13 @@ def variant_conditions():
 def active_player_clause():
     # Correlation is explicit: joins/aliases and count queries must enforce this
     # before pagination, not remove rows after producing totals.
+    from app.services.remote_evidence import observed_copy_clause
     return and_(Player.game_version == 'FC27', Player.validation_status.in_(ACCEPTED),
-                Player.data_source != 'demo', exists(select(CardVariant.id).where(
+                Player.data_source != 'demo', or_(observed_copy_clause(), exists(select(CardVariant.id).where(
                     *variant_conditions(), CardVariant.id == Player.catalog_variant_id,
                     CardVariant.variant_id == Player.card_id,
                     CardVariant.name == Player.name, CardVariant.rating == Player.rating,
-                    CardVariant.position == Player.position, CardVariant.card_type == Player.card_type)))
+                    CardVariant.position == Player.position, CardVariant.card_type == Player.card_type))))
 
 
 def find_variant(db, variant_id):
@@ -33,11 +34,15 @@ def find_variant(db, variant_id):
 def active_gallery_clause():
     from app.models.entities import GalleryEntry
     snapshot = GalleryEntry.snapshot
+    from app.services.remote_evidence import snapshot_proof, IDENTITY_FIELDS
+    evidence = snapshot['variant_evidence']
+    remote = and_(snapshot_proof(evidence, GalleryEntry.club_context_id),
+        *(snapshot[key].as_integer() == evidence['identity'][key].as_integer() if key == 'rating' else snapshot[key].as_string() == evidence['identity'][key].as_string() for key in IDENTITY_FIELDS))
     return and_(snapshot['game_version'].as_string() == 'FC27', snapshot['validation_status'].as_string().in_(ACCEPTED),
-        exists(select(CardVariant.id).where(*variant_conditions(),
+        or_(remote, exists(select(CardVariant.id).where(*variant_conditions(),
             CardVariant.variant_id == snapshot['card_id'].as_string(), CardVariant.name == snapshot['name'].as_string(),
             CardVariant.rating == snapshot['rating'].as_integer(), CardVariant.position == snapshot['position'].as_string(),
-            CardVariant.card_type == snapshot['card_type'].as_string())))
+            CardVariant.card_type == snapshot['card_type'].as_string()))))
 
 
 def require_variant(db, variant_id):

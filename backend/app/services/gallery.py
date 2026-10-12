@@ -30,11 +30,12 @@ def snapshot_player(player):
 
 
 def base_for_gallery(db, player):
-    if player.is_loan:
+    from app.services.remote_evidence import field_known
+    if player.is_loan or not field_known(player, 'is_loan') or not field_known(player, 'is_evolution'):
         return None
     if not player.is_evolution:
         return player
-    if not player.base_card_id:
+    if not player.base_card_id or not field_known(player, 'base_card_id'):
         return None
     return db.scalar(select(Player).where(
         Player.game_version == player.game_version, Player.card_id == player.base_card_id,
@@ -101,16 +102,17 @@ def record_player(db, player, *, score_changed=False):
     if snapshot["score_reviewed"] or score_changed:
         keys = {key, *snapshot["identity_keys"]}
         for copy in db.scalars(select(Player).where(Player.game_version == base.game_version, Player.is_evolution.is_(False))):
-            if item_key(copy) in keys:
+            if item_key(copy) in keys and (copy.validation_evidence or {}).get('kind') != 'observed_copy':
                 copy.gallery_score = snapshot.get("gallery_score")
     db.flush()
     return entry
 
 
 def owned_index(players):
+    from app.services.remote_evidence import field_known
     result = defaultdict(list)
     for player in players:
-        if not player.deleted and not player.is_loan and not player.is_evolution and getattr(player, "availability", "available") in {None, "available", "unavailable"}:
+        if not player.deleted and not player.is_loan and not player.is_evolution and field_known(player, 'is_loan') and field_known(player, 'is_evolution') and getattr(player, "availability", "available") in {None, "available", "unavailable"}:
             result[item_key(player)].append(player.id)
     return result
 

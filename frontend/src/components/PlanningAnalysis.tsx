@@ -1,3 +1,4 @@
+import {MainComparison} from './MainComparison'
 import {statusLabel} from '../lib/i18n'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
@@ -20,7 +21,7 @@ function ProfileResult({group:g,binding}:{group:Group;binding:SquadBinding}){
     <p>Suplentes ({g.squad.bench.length}/7): {g.squad.bench.map(p=>p.name).join(', ')||'Sin suplentes elegibles'}</p>
     <p>Huecos: {g.squad.gaps.map(r=>r.position).join(', ')||'Ninguno en esta simulación'}. Suplentes pendientes: {g.bench_missing}.</p>
     <p>Compras adicionales: 0 monedas. Química oficial: desconocida. Atributos registrados en {g.data_quality.cards_with_attributes}/{g.data_quality.cards} cartas.</p>
-    <small>{g.practice} {g.vulnerability}</small>
+    <MainComparison value={g.squad.main_comparison}/><small>{g.practice} {g.vulnerability}</small>
     <label>Nombre del equipo propuesto<input value={name} maxLength={100} onChange={e=>setName(e.target.value)}/></label>
     <button disabled={save.isPending||save.isSuccess||!g.squad.complete||g.bench_missing>0||!name.trim()} onClick={()=>save.mutate()}>Guardar once y siete suplentes</button>
     <ErrorBox error={save.error}/>{save.isSuccess&&<Notice>Equipo guardado; puedes ajustar su táctica en Plantillas.</Notice>}

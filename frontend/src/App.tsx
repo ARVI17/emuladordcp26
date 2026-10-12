@@ -55,14 +55,15 @@ export default function App(){
     objetivos:<ObjectivesPage/>,duplicados:<DuplicatesPage/>,ia:<AiPage/>,
     emulador:<CompanionPage/>,configuracion:<SettingsPage dark={dark} setDark={setDark}/>,
   }
-  const blocked=entry?.mode==='live'&&!!dependencies[page]&&!effectiveEntry?.modules[dependencies[page]!]?.ready
+  const observedClub=page==='club'&&effectiveEntry?.identity_verified&&!!effectiveEntry.snapshot_id
+  const blocked=!observedClub&&entry?.mode==='live'&&!!dependencies[page]&&!effectiveEntry?.modules[dependencies[page]!]?.ready
   const squadSection=['plantillas','recomendadas','plantillas-objetivos'].includes(page)
   return <SeasonContext.Provider value={season}><div className="app-shell single-app">
     <a className="skip-link" href="#contenido" onClick={e=>{e.preventDefault();document.getElementById('contenido')?.focus()}}>Saltar al contenido</a>
     <AccountHeader page={page} account={dashboard.data?.account}/><AppNavigation page={page}/>
     <main id="contenido" className="content" tabIndex={-1}>{entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>navigate('conexiones')}>Ver conexión</button></div>}
       {squadSection&&<nav className="section-tabs" aria-label="Secciones de Plantillas">{(['plantillas','recomendadas','plantillas-objetivos'] as Page[]).map(id=><button key={id} aria-current={page===id?'page':undefined} onClick={()=>navigate(id)}>{id==='plantillas'?'Principal':sections[id].label}</button>)}</nav>}
-      {entering?<Loading/>:!entry?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')}/>:blocked?<><SectionTitle title={sections[page].label}/><section className="panel"><h3>Lectura pendiente</h3><p>{effectiveEntry?.modules[dependencies[page]!]?.reason||'Esta sección requiere datos revisados de tu club.'}</p><button onClick={()=>navigate('conexiones')}>Revisar Mi cuenta</button></section></>:<div className="page-content" key={`${page}-${season}`}><ContextHelpScope page={page} entry={effectiveEntry}>{pages[page]}</ContextHelpScope></div>}</main>
+      {entering?<Loading/>:!entry?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')}/>:blocked?<><SectionTitle title={sections[page].label}/><section className="panel"><h3>Lectura pendiente</h3><p>{effectiveEntry?.modules[dependencies[page]!]?.reason||'Esta sección requiere datos revisados de tu club.'}</p><button onClick={()=>navigate('conexiones')}>Revisar Mi cuenta</button></section></>:<div className="page-content" key={`${page}-${season}`}><ContextHelpScope page={page} entry={effectiveEntry} account={dashboard.data?.account}>{pages[page]}</ContextHelpScope></div>}</main>
     <footer className="app-footer"><BuildStatus entry={effectiveEntry}/></footer>
   </div></SeasonContext.Provider>
 }
