@@ -14,4 +14,3 @@ class MainSquadState(ClubScoped, Base):
     snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     locked_copy_ids: Mapped[list] = mapped_column(JSON, default=list)
     history: Mapped[list] = mapped_column(JSON, default=list)
-
