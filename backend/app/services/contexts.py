@@ -52,7 +52,7 @@ def session_for(db, request, *, mutate=False):
     context = db.get(ClubContext, session.context_id)
     if context is None or context.owner_id != session.owner_id or context.game_version != "FC27":
         raise HTTPException(404, "Contexto no disponible")
-    db.info.update(club_context_id=context.id, local_session=session, context=context)
+    db.info.update(club_context_id=context.id, local_session=session, context=context, assisted_context=context.provider == 'visual_assisted')
     return session, context
 
 
@@ -64,6 +64,17 @@ MODULE_FIELDS = {
 
 
 def sync_state(db, context, entry=None):
+    if context.provider == 'visual_assisted':
+        from app.models.assisted import VisualReading
+        latest = db.scalar(select(VisualReading).where(VisualReading.status == 'reviewed', VisualReading.club_context_id == context.id).order_by(VisualReading.id.desc()))
+        return dict(entry_id=entry.id if entry else None, club_context_id=context.id, game_version='FC27',
+            status='partial', label='Lectura asistida', identity_verified=False, snapshot_id=None,
+            revision=context.revision, remote_revision=None, observed_at=utc(latest.observed_at).isoformat() if latest else None,
+            imported_at=utc(latest.reviewed_at).isoformat() if latest else None, last_attempt=utc(entry.checked_at).isoformat() if entry else None,
+            coverage={'inventory': {'complete': False, 'source': 'visual_assisted'}},
+            modules={name: dict(ready=bool(latest) and name in {'squads','analysis','chat'}, missing=[],
+                reason='Se analizan solo observaciones revisadas; las funciones restantes requieren datos específicos.') for name in MODULE_FIELDS},
+            next_action='Comparte la pestaña o adjunta una captura para realizar otra lectura manual.', local_history_available=True)
     snapshot = db.get(InventorySnapshot, context.snapshot_id) if context.snapshot_id else None
     fresh = bool(snapshot and now() - utc(snapshot.observed_at) <= timedelta(minutes=15))
     checked = bool(entry and entry.snapshot_id == context.snapshot_id and entry.status in {"ready", "partial"})
@@ -97,6 +108,11 @@ def require_module(db, name, *, allow_local=True, expected_plan=None):
     context = db.info.get("context")
     if session is None or context is None:
         raise HTTPException(401, "Se requiere una sesión local")
+    if session.mode == 'assisted' and context.provider == 'visual_assisted' and not context.verified:
+        if name in {'squads', 'analysis', 'chat', 'gallery'}:
+            return dict(scope='reviewed_visual_partial', game_version='FC27', entry_id=session.entry_id,
+                        club_context_id=context.id, snapshot_id=None, revision=context.revision, complete=False)
+        raise HTTPException(409, 'Esta acción requiere reglas y evidencia específicas. La lectura parcial no autoriza consumos, ventas ni cambios en EA.')
     if allow_local and session.mode == "local" and not context.verified:
         return {"scope": "local_unlinked", "game_version": current_version(db), "entry_id": session.entry_id, "club_context_id": context.id, "snapshot_id": None, "revision": context.revision}
     entry = db.get(AppEntry, session.entry_id) if session.entry_id else None
@@ -121,6 +137,9 @@ def scope_reads(execute_state):
     if context_id is not None and execute_state.is_select:
         execute_state.statement = execute_state.statement.options(with_loader_criteria(
             ClubScoped, lambda cls: cls.club_context_id == context_id, include_aliases=True))
+        if execute_state.session.info.get('assisted_context'):
+            execute_state.statement = execute_state.statement.options(with_loader_criteria(
+                Player, (Player.data_source == 'visual_assisted') & (Player.validation_status == 'visual_reviewed'), include_aliases=True))
         # Includes aggregates, aliases and relationship loads. Historical access is
         # internal only (unbound sessions used by backups/migrations).
         from app.db.base import Base

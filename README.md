@@ -141,3 +141,7 @@ La [ejecución CI del 10 de octubre de 2026](https://github.com/ARVI17/emuladord
 Consulta [TESTING.md](docs/TESTING.md) para comandos, alcance de la evidencia y pruebas pendientes con el stack Docker completo, PowerShell y hardware Companion. Todos los inventarios de prueba son ficticios y desechables.
 
 Documentación: [guía de usuario](docs/USER_GUIDE.md), [actualización FC27](docs/FC27_UPGRADE.md), [mapa técnico](docs/PROJECT_MAP.md), [arquitectura](docs/ARCHITECTURE.md), [optimizadores](docs/OPTIMIZER.md), [seguridad](docs/SECURITY.md) y [limitaciones](docs/KNOWN_LIMITATIONS.md).
+
+### Lectura asistida web
+
+En Mi cuenta puedes crear un contexto de lectura, compartir voluntariamente una pestaña o adjuntar una captura, revisar cartas y requisitos y conservar observaciones privadas. [Recorrido y límites](docs/ASSISTED_READING.md). Permite proteger la principal, calcular equipos y DCP, registrar historia local de Galería y seguir una guía manual de plantilla para objetivos con comprobación visual. No autentica EA ni ejecuta compras, ventas o entregas.

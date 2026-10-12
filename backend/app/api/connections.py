@@ -63,7 +63,7 @@ def open_session(request: Request, response: Response, db: Session = Depends(raw
 class EntryInput(InputModel):
     nonce: str = Field(min_length=8, max_length=80)
     reason: Literal["open", "resume", "switch", "retry"] = "open"
-    mode: Literal["live", "local"] = "live"
+    mode: Literal["live", "local", "assisted"] = "live"
     context_id: int | None = Field(default=None, ge=1)
 
 
@@ -77,6 +77,8 @@ def enter(payload: EntryInput, request: Request, background: BackgroundTasks, db
             raise HTTPException(404, "Contexto no disponible")
         if payload.mode == "local" and target.verified:
             raise HTTPException(409, "El historial de un club vinculado no se convierte en inventario local editable")
+        if (payload.mode == 'assisted') != (target.provider == 'visual_assisted'):
+            raise HTTPException(409, 'Selecciona el modo de lectura correspondiente a este contexto')
         previous = db.scalar(select(AppEntry).where(AppEntry.session_id == session.id, AppEntry.nonce == payload.nonce))
         if previous:
             if previous.id != session.entry_id or previous.club_context_id != target.id or session.mode != payload.mode:
@@ -111,7 +113,7 @@ def enter(payload: EntryInput, request: Request, background: BackgroundTasks, db
 @router.get("/club-contexts")
 def contexts(request: Request, db: Session = Depends(raw_db)):
     session, _ = session_for(db, request)
-    return [{"id": row.id, "name": row.name, "verified": row.verified, "game_version": row.game_version, "platform": row.platform} for row in db.scalars(select(ClubContext).where(ClubContext.owner_id == session.owner_id, ClubContext.game_version == "FC27"))]
+    return [{"id": row.id, "name": row.name, "verified": row.verified, "mode": 'assisted' if row.provider == 'visual_assisted' else 'live' if row.verified else 'local', "game_version": row.game_version, "platform": row.platform} for row in db.scalars(select(ClubContext).where(ClubContext.owner_id == session.owner_id, ClubContext.game_version == "FC27"))]
 
 
 @router.get("/club-contexts/{context_id}/sync-state")

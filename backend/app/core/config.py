@@ -1,6 +1,6 @@
 from functools import lru_cache
 from urllib.parse import quote
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ollama_keep_alive: str = "2m"
     cors_origins: str = "http://localhost:8080,http://127.0.0.1:8080"
     max_upload_mb: int = 10
+    assisted_draft_retention_minutes: int = Field(default=30, ge=1, le=1440)
     adb_enabled: bool = False
     adb_path: str = "adb"
     adb_default_address: str = "host.docker.internal:5555"

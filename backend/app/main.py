@@ -79,3 +79,8 @@ app.include_router(agenda_router)
 
 app.include_router(catalog_router)
 app.include_router(variants_router)
+
+from app.api.assisted import router as assisted_router
+from app.api.guided import router as guided_router
+app.include_router(assisted_router)
+app.include_router(guided_router)

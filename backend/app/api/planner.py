@@ -19,7 +19,7 @@ router = APIRouter(tags=["Planificación y mercado"])
 
 def owned(db, model, identifier):
     row = db.get(model, identifier)
-    if row is None:
+    if row is None or isinstance(row, ClubPlan) and row.inputs.get('mode') == 'assisted_guided':
         raise HTTPException(404, "Registro no disponible")
     return row
 
@@ -53,7 +53,7 @@ def save_plan(payload: PlanInput, db: Session = Depends(get_db)):
 def list_plans(db: Session = Depends(get_db)):
     from app.services.editions import current_version
     from app.services.planner import documented_plan
-    return [plan_data(db, row) for row in db.scalars(select(ClubPlan).order_by(ClubPlan.id.desc()).limit(100)) if documented_plan(db, row)]
+    return [plan_data(db, row) for row in db.scalars(select(ClubPlan).order_by(ClubPlan.id.desc()).limit(100)) if row.inputs.get('mode') != 'assisted_guided' and documented_plan(db, row)]
 
 
 @router.post("/plans/{plan_id}/review")

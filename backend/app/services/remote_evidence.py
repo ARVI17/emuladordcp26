@@ -57,7 +57,7 @@ def field_known(player, field):
     evidence = getattr(player, 'validation_evidence', None) or {}
     if field in (getattr(player, 'unknown_fields', None) or []):
         return False
-    return evidence.get('kind') != 'observed_copy' or field in evidence.get('observed_fields', []) or field in PREFERENCES
+    return evidence.get('kind') not in {'observed_copy', 'visual_copy'} or field in evidence.get('observed_fields', []) or field in PREFERENCES
 
 
 def missing_for_dcp(player, requirements):
@@ -76,7 +76,7 @@ def missing_for_dcp(player, requirements):
 
 @event.listens_for(Session, 'before_flush')
 def immutable_observation(db, *_):
-    if 'club_context_id' not in db.info or db.info.get('remote_reconciliation'):
+    if 'club_context_id' not in db.info or db.info.get('remote_reconciliation') or db.info.get('visual_reconciliation'):
         return
     for row in db.dirty:
         if not isinstance(row, Player):
@@ -84,7 +84,7 @@ def immutable_observation(db, *_):
         state = inspect(row)
         histories = state.attrs.validation_evidence.history.deleted
         evidence = histories[0] if histories else row.validation_evidence or {}
-        if evidence.get('kind') != 'observed_copy':
+        if evidence.get('kind') not in {'observed_copy', 'visual_copy'}:
             continue
         mutable = PREFERENCES | {'deleted', 'availability', 'consumed_by_submission_id', 'duplicate_untradeable', 'updated_at'}
         if any(a.history.has_changes() and a.key not in mutable for a in state.attrs):

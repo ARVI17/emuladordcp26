@@ -26,6 +26,12 @@ def item_key(player):
 
 
 def snapshot_player(player):
+    if (player.validation_evidence or {}).get('kind') == 'visual_copy':
+        from app.services.squad_analysis import serialize_player
+        values = serialize_player(player)
+        return {key:values.get(key) for key in PlayerCreate.model_fields} | {
+            'validation_status':player.validation_status,'variant_evidence':player.validation_evidence,
+            'unknown_fields':player.unknown_fields,'ownership_source':'user_reviewed_visual'}
     return {key: getattr(player, key, None) for key in PlayerCreate.model_fields} | {'validation_status': player.validation_status, 'variant_evidence': player.validation_evidence}
 
 
@@ -50,7 +56,10 @@ def reviewed_score(snapshot):
 def record_player(db, player, *, score_changed=False):
     """Part of the caller's transaction. Never records an action in EA's service."""
     db.flush()
-    if player.game_version != 'FC27' or player.is_loan or player.validation_status not in ('documented', 'provider_verified'):
+    from app.services.remote_evidence import field_known
+    if (player.validation_evidence or {}).get('kind') == 'visual_copy' and not field_known(player, 'card_type'):
+        return None
+    if player.game_version != 'FC27' or player.is_loan or player.validation_status not in ('documented', 'provider_verified', 'visual_reviewed'):
         return None
     base = base_for_gallery(db, player)
     if base is None:
@@ -86,9 +95,9 @@ def record_player(db, player, *, score_changed=False):
         aliases.add(key)
         key = entry.item_key
         snapshot["card_id"] = entry.snapshot.get("card_id")
-    snapshot["score_reviewed"] = bool(base.data_reviewed and base.gallery_score is not None)
+    snapshot["score_reviewed"] = bool(base.data_reviewed and base.gallery_score is not None and field_known(base,'gallery_score'))
     snapshot["identity_keys"] = sorted(aliases - {key})
-    if entry is not None and not score_changed and not snapshot["score_reviewed"] and reviewed_score(entry.snapshot) is not None:
+    if entry is not None and not score_changed and not snapshot["score_reviewed"] and reviewed_score(entry.snapshot) is not None and (base.validation_evidence or {}).get('kind') != 'visual_copy':
         snapshot["gallery_score"] = reviewed_score(entry.snapshot)
         snapshot["score_reviewed"] = True
     if entry is None:
@@ -102,7 +111,7 @@ def record_player(db, player, *, score_changed=False):
     if snapshot["score_reviewed"] or score_changed:
         keys = {key, *snapshot["identity_keys"]}
         for copy in db.scalars(select(Player).where(Player.game_version == base.game_version, Player.is_evolution.is_(False))):
-            if item_key(copy) in keys and (copy.validation_evidence or {}).get('kind') != 'observed_copy':
+            if item_key(copy) in keys and (copy.validation_evidence or {}).get('kind') not in {'observed_copy', 'visual_copy'}:
                 copy.gallery_score = snapshot.get("gallery_score")
     db.flush()
     return entry

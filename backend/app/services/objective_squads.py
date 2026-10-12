@@ -112,7 +112,7 @@ def validate_composition(players, lineup, bench_ids, goals, formation, bench_siz
 
 def solve_objective_squad(players, goals, *, formation='4-3-3', bench_size=7, excluded=(), protected=(), competitive=True, seconds=4):
     candidates = sorted((p for p in players if not p.deleted and p.game_version == 'FC27'
-        and p.validation_status in {'documented', 'provider_verified'} and p.availability == 'available'
+        and p.validation_status in {'documented', 'provider_verified', 'visual_reviewed'} and p.availability == 'available'
         and p.id not in excluded and loan_eligible(p, goals)
         and (p.data_reviewed or (p.validation_evidence or {}).get('kind') == 'observed_copy')), key=lambda p:p.id)
     slots = formation_slots(formation)

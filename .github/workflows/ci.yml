@@ -85,6 +85,10 @@ jobs:
         working-directory: backend
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
+      - name: Install the local OCR engine used by the assisted browser flow
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa
       - name: Real API and desktop/mobile flows on a disposable database
         shell: bash
         env:

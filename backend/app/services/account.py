@@ -6,6 +6,23 @@ from app.services.contexts import utc
 
 def account_summary(db):
     context = db.info.get('context')
+    if context and context.provider == 'visual_assisted':
+        from sqlalchemy import select, func
+        from app.models.assisted import VisualReading
+        from app.models.entities import Player
+        from app.services.assisted import coverage
+        rows = list(db.scalars(select(VisualReading).where(VisualReading.status == 'reviewed').order_by(VisualReading.id.desc()).limit(1000)))
+        values, facts = {}, {}
+        for key, field in [('name','club_name'),('coins','coins'),('unassigned_types','unassigned')]:
+            row = next((r for r in rows if r.reviewed.get(field) is not None), None)
+            value = row.reviewed[field] if row else None
+            values[key] = value
+            facts[key] = dict(value=value, status='user_reviewed_visual' if row else 'unknown', source='visual_assisted',
+                reading_id=row.id if row else None, observed_at=utc(row.observed_at).isoformat() if row else None)
+        return dict(**values, platform=None, fc_points=None, unassigned_count=None, identity_verified=False,
+            provider=None, observation_mode='visual_assisted', observed_copies=db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False))),
+            inventory_complete=False, snapshot_id=None, observed_at=utc(rows[0].observed_at).isoformat() if rows else None,
+            facts=facts, coverage=coverage(db), progress={key:'unavailable' for key in ('squads','dcp','gallery','evolutions','objectives','history')})
     snapshot = db.get(InventorySnapshot, context.snapshot_id) if context and context.verified and context.snapshot_id else None
     run = db.get(SyncRun, snapshot.run_id) if snapshot else None
     # Older snapshots did not capture the balance/name together. Never backfill

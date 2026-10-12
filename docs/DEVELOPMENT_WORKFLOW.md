@@ -45,3 +45,7 @@ Retirar un contenedor no equivale a respaldar su capa escribible: inspecciona di
 ## Operación personal única
 
 `powershell -File scripts/fc27.ps1 Inicio|Estado|Pruebas|Parada` usa el proyecto canónico `emuladordcp26`, IDs existentes y el volumen `emuladordcp26_postgres_data`. Resuelve su código por ruta absoluta, comprueba motor local, duplicados y puerto 8080. Inicio no ejecuta `up`, builds ni recreaciones: otro worktree no produce otra aplicación. Si faltan servicios, exige revisar un despliegue; no inventa un proyecto o puerto alternativo. Parada conserva contenedores y datos. Los errores nativos se verifican explícitamente.
+
+## Diagnóstico focalizado
+
+El mismo verificador aislado acepta `--pytest-path test_assisted.py` y `--browser-spec assisted.spec.ts` (repetibles, archivos dentro de sus carpetas de pruebas). El informe registra la selección. No reemplazan la ejecución integral sin selectores antes de entregar cambios de contratos o admisión. No hay pruebas contra la base personal.

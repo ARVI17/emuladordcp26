@@ -17,12 +17,13 @@ def active_player_clause():
     # Correlation is explicit: joins/aliases and count queries must enforce this
     # before pagination, not remove rows after producing totals.
     from app.services.remote_evidence import observed_copy_clause
-    return and_(Player.game_version == 'FC27', Player.validation_status.in_(ACCEPTED),
-                Player.data_source != 'demo', or_(observed_copy_clause(), exists(select(CardVariant.id).where(
+    from app.services.assisted import visual_copy_clause
+    return and_(Player.game_version == 'FC27', Player.data_source != 'demo',
+                or_(visual_copy_clause(), and_(Player.validation_status.in_(ACCEPTED), or_(observed_copy_clause(), exists(select(CardVariant.id).where(
                     *variant_conditions(), CardVariant.id == Player.catalog_variant_id,
                     CardVariant.variant_id == Player.card_id,
                     CardVariant.name == Player.name, CardVariant.rating == Player.rating,
-                    CardVariant.position == Player.position, CardVariant.card_type == Player.card_type))))
+                    CardVariant.position == Player.position, CardVariant.card_type == Player.card_type))))))
 
 
 def find_variant(db, variant_id):
@@ -38,11 +39,18 @@ def active_gallery_clause():
     evidence = snapshot['variant_evidence']
     remote = and_(snapshot_proof(evidence, GalleryEntry.club_context_id),
         *(snapshot[key].as_integer() == evidence['identity'][key].as_integer() if key == 'rating' else snapshot[key].as_string() == evidence['identity'][key].as_string() for key in IDENTITY_FIELDS))
-    return and_(snapshot['game_version'].as_string() == 'FC27', snapshot['validation_status'].as_string().in_(ACCEPTED),
+    from app.models.assisted import VisualCopy, VisualReading
+    visual = and_(snapshot['validation_status'].as_string() == 'visual_reviewed', evidence['kind'].as_string() == 'visual_copy',
+        exists(select(VisualCopy.id).join(VisualReading, VisualReading.id == VisualCopy.reading_id).where(
+            VisualCopy.id == evidence['visual_copy_id'].as_integer(), VisualCopy.club_context_id == GalleryEntry.club_context_id,
+            VisualReading.club_context_id == GalleryEntry.club_context_id, VisualReading.status == 'reviewed',
+            VisualReading.reviewed['edition'].as_string() == 'FC27',
+            *(snapshot[key].as_integer() == VisualCopy.facts[key].as_integer() if key == 'rating' else snapshot[key].as_string() == VisualCopy.facts[key].as_string() for key in ('name','rating','position','card_type')))))
+    return and_(snapshot['game_version'].as_string() == 'FC27', or_(visual, and_(snapshot['validation_status'].as_string().in_(ACCEPTED),
         or_(remote, exists(select(CardVariant.id).where(*variant_conditions(),
             CardVariant.variant_id == snapshot['card_id'].as_string(), CardVariant.name == snapshot['name'].as_string(),
             CardVariant.rating == snapshot['rating'].as_integer(), CardVariant.position == snapshot['position'].as_string(),
-            CardVariant.card_type == snapshot['card_type'].as_string()))))
+            CardVariant.card_type == snapshot['card_type'].as_string()))))))
 
 
 def require_variant(db, variant_id):

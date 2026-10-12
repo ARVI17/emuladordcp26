@@ -57,8 +57,8 @@ def serialize_player(player: Player, protected_ids: set[int] | None = None) -> d
     result.update(validation_status=player.validation_status, variant_evidence=player.validation_evidence)
     from app.services.remote_evidence import field_known
     evidence = player.validation_evidence or {}
-    result['ownership_source'] = 'observed' if evidence.get('kind') == 'observed_copy' else 'manual'
-    result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') == 'observed_copy' else None
+    result['ownership_source'] = 'user_reviewed_visual' if evidence.get('kind') == 'visual_copy' else 'observed' if evidence.get('kind') == 'observed_copy' else 'manual'
+    result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') in {'observed_copy', 'visual_copy'} else None
     result['metadata_pending'] = [key for key in ('league', 'club', 'nationality', 'card_type', 'rare', 'special', 'chemistry', 'alternate_positions', 'attributes', 'playstyles', 'roles', 'is_loan', 'is_evolution', 'tradable', 'is_holographic') if not field_known(player, key)]
     for key in ('rare', 'special', 'chemistry', 'is_holographic', 'tradable', 'is_loan', 'is_evolution'):
         if not field_known(player, key):
@@ -82,7 +82,9 @@ def effective_protected_ids(db: Session, game_version: str | None = None) -> set
     from app.services.protection import reserved_ids
     reserved = db.scalars(select(Player.id).where(Player.id.in_(reserved_ids(db)), Player.game_version == version, Player.deleted.is_(False))).all()
     from app.services.main_squad import main_ids
-    return set(manual) | set(inherited) | set(reserved) | main_ids(db)
+    protected = set(manual) | set(inherited) | set(reserved) | main_ids(db)
+    from app.services.assisted import ambiguous_protections
+    return protected | ambiguous_protections(db, protected)
 
 
 def formation_slots(formation: str) -> list[dict]:
@@ -187,7 +189,7 @@ def _group(position: str) -> str:
 def recommend_owned_squad(players: list[Player], *, game_version: str, formation: str = "4-3-3", style: str = "balanced", locked_player_ids: list[int] | None = None, excluded_player_ids: list[int] | None = None, bench_size: int = 7, include_loans: bool = True, include_unreviewed: bool = False, use_alternate_positions: bool = True, protected_ids: set[int] | None = None) -> dict:
     if game_version != 'FC27':
         raise ValueError('Solo se admite FC27')
-    players = [p for p in players if p.validation_status in ('documented', 'provider_verified')]
+    players = [p for p in players if p.validation_status in ('documented', 'provider_verified', 'visual_reviewed')]
     from ortools.sat.python import cp_model
 
     slots = formation_slots(formation)

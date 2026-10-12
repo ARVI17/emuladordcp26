@@ -33,7 +33,7 @@ def guard_mutations(db, *_):
             state = inspect(obj)
             changed = {attr.key for attr in state.attrs if attr.history.has_changes()}
             dangerous = changed - {"notes", "updated_at"}
-            if obj.id in structural and (('deleted' in changed and obj.deleted) or ('availability' in changed and obj.availability != 'available') or
+            if obj.id in structural and (('deleted' in changed and obj.deleted) or ('availability' in changed and obj.availability != 'available' and not db.info.get('visual_reconciliation')) or
                     any(key in changed and not getattr(obj, key) for key in ('protected', 'starter', 'favorite', 'is_evolution')) or
                     ('duplicate_untradeable' in changed and not obj.duplicate_untradeable)):
                 raise HTTPException(409, 'Esta copia pertenece a la principal o a sus reservas conservadas; no se puede consumir ni desproteger.')

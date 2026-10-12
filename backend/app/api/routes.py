@@ -234,6 +234,16 @@ def update_player(player_id: int, payload: PlayerUpdate, db: DB):
         changes = payload.model_dump(exclude_unset=True)
         if "game_version" in changes and changes["game_version"] != player.game_version:
             raise HTTPException(422, "No se puede trasladar una carta entre ediciones")
+        if (player.validation_evidence or {}).get('kind') == 'visual_copy':
+            from app.services.remote_evidence import PREFERENCES
+            if any(key not in PREFERENCES and value != getattr(player, key) for key,value in changes.items()):
+                raise HTTPException(409, 'Revisa otra lectura para cambiar hechos visuales. Aquí solo se guardan preferencias locales.')
+            for key,value in changes.items():
+                if key in PREFERENCES:
+                    setattr(player,key,value)
+            record(db, 'update_visual_preferences', 'player', player.id, {'fields':list(changes)})
+            db.commit()
+            return player_data(player, effective_protected_ids(db))
         merged = {key: getattr(player, key) for key in PlayerCreate.model_fields}
         merged.update(changes)
         try:
