@@ -1,5 +1,13 @@
 # Pruebas del planificador FC27
 
+## Principal, filtros y operación única (12-oct-2026)
+
+La verificación aislada con PostgreSQL pasó **224 Pytest** (190,02 s), build, salud, OpenAPI y Alembic `0015`/check. La repetición de frontend pasó **27 Vitest y 26 Playwright** sobre Nginx, incluidos móvil y escritorio para seleccionar principal, comprobar exclusiones, guardar filtros y duplicar sin alterar la principal. Se revisaron ambas capturas sintéticas. La primera suite detectó un recuento que incluía protecciones ocultas y un fixture sin principal revisada; se corrigieron. La nueva prueba de navegador esperaba la navegación antes de terminar la entrada local; ahora espera la confirmación visible de esa entrada. No se sustituyeron validadores por mocks.
+
+Las pruebas nuevas cubren once/banquillo/reservas, rechazo en rutas directas, otra copia de la misma variante, propuesta para jugar con protegidos, cuarentena, ausencia de principal, comprobante de revisión y cambio concurrente bajo el bloqueo PostgreSQL. El fixture general selecciona una principal sintética; los casos de frontera conservan la falta de principal real. No hay conexión EA acreditada.
+
+Operación: 8 pruebas de scripts, arranque canónico repetido desde dos directorios y ciclo Docker real tras éxito, fallo, cancelación y caída. La revisión personal anterior se preservó con un dump restaurado y comprobado antes de retirar sus cuatro contenedores. Las suites conservaron IDs/arranques del principal y todos los volúmenes; los entornos temporales se cerraron. Evidencia local en `state/single-app/` y `state/sprints/`, excluida de Git.
+
 ## Contenido y límites FC27 (sprint 9)
 
 `python scripts/verify_docker.py --scope full` pasó en el proyecto desechable `bdacad27b7`: **212 Pytest/PostgreSQL** (157,03 s), **26 Vitest** y **24 Playwright** móvil/escritorio (aprox. 1 min). Build TypeScript/Vite/PWA, arranque, salud, OpenAPI y Alembic0014/check correctos. Se revisó la captura móvil de Novedades. El principal conservó contenedores/arranques; la limpieza temporal terminó sin borrar volúmenes.

@@ -20,6 +20,7 @@ class SquadRecommendationRequest(BaseModel):
     include_loans: bool = True
     include_unreviewed: bool = False
     use_alternate_positions: bool = True
+    avoid_main: bool = False
 
     @model_validator(mode="after")
     def consistent_ids(self):
@@ -52,6 +53,7 @@ class ProfilesRequest(BaseModel):
     locked_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=11)
     excluded_player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=5000)
     include_loans: bool = True
+    avoid_main: bool = False
 
     @model_validator(mode="after")
     def consistent_selection(self):
@@ -76,10 +78,13 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
     version = current_version(db)
     players = list(db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))))
     protected = effective_protected_ids(db)
-    profiles = [("Principal equilibrada", "balanced"), ("Protección defensiva", "defensive"), ("Ataque por bandas", "wide"), ("Combinaciones por dentro", "possession"), ("Sin gasto adicional", "balanced")]
+    profiles = [("Equilibrada", "balanced"), ("Protección defensiva", "defensive"), ("Ataque por bandas", "wide"), ("Combinaciones por dentro", "possession"), ("Sin gasto adicional", "balanced")]
     groups = []
     pending = []
     excluded = list(payload.excluded_player_ids)
+    if payload.avoid_main:
+        from app.services.main_squad import main_ids
+        excluded = sorted(set(excluded) | main_ids(db))
     for name, style in profiles:
         choices = []
         for formation, slots in verified_formations().items():
@@ -96,7 +101,7 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
             pending.append({"profile": name, "reason": "No se pudo verificar una formación con estas copias fijadas/excluidas; revisa elegibilidad e identidad"})
             continue
         best = max(choices, key=lambda r: (len(r["lineup"]), sum(row["fit_score"] for row in r["lineup"])))
-        signature = (best["formation"], style, tuple((r["slot"], r["player"]["id"]) for r in best["lineup"]))
+        signature = (best["formation"], tuple((r["slot"], r["player"]["id"]) for r in best["lineup"]), tuple(p['id'] for p in best['bench']))
         same = next((row for row in groups if row["signature"] == signature), None)
         if same:
             same["profiles"].append(name)

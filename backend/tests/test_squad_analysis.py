@@ -1,3 +1,4 @@
+from dcp_helpers import reviewed_confirm
 """Domain regressions for squad allocation, submissions and reviewed imports."""
 
 from concurrent.futures import ThreadPoolExecutor
@@ -142,7 +143,7 @@ def test_manual_and_overlapping_squad_protection_are_independent(client):
     inherited = client.get("/players", params={"search": player["name"]}).json()["items"][0]
     assert inherited["protected"] is False and inherited["effective_protected"] is True
     segment_id = create_segment(client, {"squad_size": 1})
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
     assert client.post(f"/players/{player['id']}/protect").json()["protected"] is True
     client.post(f"/squads/{squads[0]}/protect")
     manual = client.get("/players", params={"search": player["name"]}).json()["items"][0]
@@ -153,7 +154,7 @@ def test_consumed_players_do_not_count_toward_saved_squad_metrics(client):
     player = create_card(client, rating=88)
     squad = client.post("/squads", json={"name": "Para consumir", "player_ids": [player["id"]], "slots": ["MC-1"]}).json()
     segment_id = create_segment(client, {"squad_size": 1})
-    result = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]})
+    result = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]})
     assert result.status_code == 200
     saved = next(item for item in client.get("/squads").json() if item["id"] == squad["id"])
     assert saved["players"] == [] and saved["rating"] == 0 and saved["chemistry"] == 0
@@ -201,13 +202,13 @@ def test_invalid_requirements_reject_the_entire_challenge(client, requirements):
 def test_consumption_rejects_duplicates_unreviewed_loans_and_exclusions(client):
     player = create_card(client)
     segment_id = create_segment(client, {"squad_size": 1})
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"], player["id"]]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"], player["id"]]}).status_code == 422
     excluded = create_segment(client, {"squad_size": 1, "excluded_player_ids": [player["id"]]})
-    assert client.post(f"/segments/{excluded}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{excluded}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
     for field in ("is_loan", "data_reviewed"):
         bad_value = field == "is_loan"
         assert client.patch(f"/players/{player['id']}", json={field: bad_value}).status_code == 200
-        assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
+        assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
         assert client.patch(f"/players/{player['id']}", json={field: not bad_value}).status_code == 200
 
 
@@ -220,13 +221,13 @@ def test_score_progress_is_derived_and_restoration_only_reverses_its_batch(clien
     assert optimized["score_contribution"] == 60 and optimized["remaining_score"] == 40
     assert optimized["total_cost"] == 800
     assert optimized["optimization_score"] != optimized["total_cost"]
-    first_result = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"]]})
+    first_result = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"]]})
     assert first_result.status_code == 200, first_result.text
     assert not first_result.json()["completed"] and first_result.json()["current_score"] == 40
     assert client.patch(f"/segments/{segment_id}", json={
         "name": "Intento de cambiar progreso", "requirements": {"kind": "score", "target_score": 40},
     }).status_code == 409
-    second_result = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [second["id"]]})
+    second_result = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [second["id"]]})
     assert second_result.status_code == 200 and second_result.json()["completed"]
     assert second_result.json()["current_score"] == 100
     submission_id = first_result.json()["submission_id"]
@@ -248,9 +249,9 @@ def test_score_budget_and_required_players_apply_across_partial_batches(client):
         "kind": "score", "target_score": 40, "max_items_per_submission": 1,
         "required_player_ids": [first["id"]], "max_total_value": 1000,
     })
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"]]}).status_code == 200
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [second["id"]]}).status_code == 422
-    result = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [third["id"]]})
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"]]}).status_code == 200
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [second["id"]]}).status_code == 422
+    result = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [third["id"]]})
     assert result.status_code == 200 and result.json()["completed"]
 
 
@@ -258,9 +259,9 @@ def test_unknown_gallery_scores_are_not_invented_and_missing_reviews_block_consu
     player = create_card(client, gallery_score=None)
     segment_id = create_segment(client, {"kind": "score", "target_score": 50, "min_item_rating": 80})
     assert client.post(f"/segments/{segment_id}/optimize", json={}).json()["solutions"] == []
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
     client.patch(f"/players/{player['id']}", json={"gallery_score": 50, "data_reviewed": False})
-    assert client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]}).status_code == 422
 
 
 def test_two_overlapping_confirms_cannot_both_consume_the_same_card(client):
@@ -269,7 +270,7 @@ def test_two_overlapping_confirms_cannot_both_consume_the_same_card(client):
     start = Barrier(2)
     def confirm(segment_id):
         start.wait(timeout=5)
-        return client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]})
+        return reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [player["id"]]})
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(confirm, segments))
     assert sum(result.status_code == 200 for result in results) == 1
@@ -286,7 +287,7 @@ def test_restore_prevalidates_all_card_owners_before_changing_any_card(client):
     first = create_card(client, name="Primero restaurable")
     second = create_card(client, name="Segundo con propietario distinto")
     segment_id = create_segment(client, {"squad_size": 2})
-    response = client.post(f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"], second["id"]]})
+    response = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids": [first["id"], second["id"]]})
     assert response.status_code == 200
     owner = response.json()["submission_id"]
     with SessionLocal() as db:
@@ -314,8 +315,8 @@ def test_active_edition_isolates_lists_recommendation_confirmation_and_history(c
     assert client.get('/players?game_version=FC26').status_code == 422
     assert client.get('/club/analysis').json()['game_version'] == 'FC27'
     assert historical['id'] not in [p['id'] for p in client.post('/squads/recommend').json()['players']]
-    assert client.post(f"/segments/{segment_id}/confirm", json={'player_ids': [historical['id']]}).status_code == 422
-    assert client.post(f"/segments/{segment_id}/confirm", json={'player_ids': [active['id']]}).status_code == 200
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={'player_ids': [historical['id']]}).status_code == 422
+    assert reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={'player_ids': [active['id']]}).status_code == 200
     with SessionLocal() as db:
         assert db.get(Player, historical['id']).game_version == 'FC26'
         assert not db.get(Player, historical['id']).deleted

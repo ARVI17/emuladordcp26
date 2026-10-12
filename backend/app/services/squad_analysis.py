@@ -65,15 +65,16 @@ def serialize_player(player: Player, protected_ids: set[int] | None = None) -> d
 
 def effective_protected_ids(db: Session, game_version: str | None = None) -> set[int]:
     version = game_version or current_version(db)
-    manual = db.scalars(select(Player.id).where(Player.game_version == version, Player.deleted.is_(False), or_(Player.protected.is_(True), Player.starter.is_(True), Player.is_evolution.is_(True), Player.favorite.is_(True)))).all()
+    manual = db.scalars(select(Player.id).where(Player.game_version == version, Player.deleted.is_(False), or_(Player.protected.is_(True), Player.starter.is_(True), Player.is_evolution.is_(True), Player.favorite.is_(True))).execution_options(include_quarantine=True)).all()
     inherited = db.scalars(
         select(SquadPlayer.player_id).join(Squad, Squad.id == SquadPlayer.squad_id).join(Player, Player.id == SquadPlayer.player_id)
         .where(Squad.game_version == version, Squad.protected.is_(True), Player.game_version == version, Player.deleted.is_(False))
-        .execution_options(include_historical_squads=True)
+        .execution_options(include_historical_squads=True, include_quarantine=True)
     ).all()
     from app.services.protection import reserved_ids
     reserved = db.scalars(select(Player.id).where(Player.id.in_(reserved_ids(db)), Player.game_version == version, Player.deleted.is_(False))).all()
-    return set(manual) | set(inherited) | set(reserved)
+    from app.services.main_squad import main_ids
+    return set(manual) | set(inherited) | set(reserved) | main_ids(db)
 
 
 def formation_slots(formation: str) -> list[dict]:
@@ -294,7 +295,7 @@ def _formation_coverage(players: list[Player], formation: str) -> int:
 def analyze_club(db: Session) -> dict:
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
-    protected = effective_protected_ids(db, version)
+    protected = effective_protected_ids(db, version) & {p.id for p in players}
     reviewed = [p for p in players if p.data_reviewed]
     alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in verified_formations()]
     recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])), default={"formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]})

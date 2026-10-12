@@ -117,6 +117,9 @@ def publish_read(db, run_id: int, read: RemoteRead):
         db.add(snapshot)
         db.flush()
         conflicts = []
+        from app.services.main_squad import main_ids, state_row
+        structural = main_ids(db)
+        affected_main = set()
         pending_variants = []
         for item, mapping, player, fields in prepared:
             if player is None:
@@ -127,6 +130,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
                                               location=item.location, last_snapshot_id=snapshot.id)
                 db.add(mapping)
             else:
+                if player.id in structural and (player.card_id != item.variant_id or any(getattr(player, key) != fields[key] for key in item.fields)):
+                    affected_main.add(player.id)
                 if player.athlete_id != item.athlete_id or player.consumed_by_submission_id is not None:
                     conflicts.append(player.id)
                     player.availability = "review_required"
@@ -148,6 +153,8 @@ def publish_read(db, run_id: int, read: RemoteRead):
             mapping.available = True
             player.deleted = False
             player.availability = "available" if item.location in {"club", "sbc_storage"} else "unavailable"
+            if player.id in structural and player.availability != 'available':
+                affected_main.add(player.id)
         if read.coverage.get("inventory", {}).get("complete"):
             for copy_id, mapping in mappings.items():
                 if copy_id not in unique:
@@ -155,8 +162,16 @@ def publish_read(db, run_id: int, read: RemoteRead):
                     mapping.available = False
                     player.availability = "absent"
                     # Absence does not invent a sale, submission, or discard.
+                    if player.id in structural:
+                        affected_main.add(player.id)
                     if player.protected or player.starter or player.favorite or player.is_evolution:
                         conflicts.append(player.id)
+        if affected_main:
+            main = state_row(db)
+            main.snapshot = {**main.snapshot, 'needs_review': True, 'changed_copy_ids': sorted(affected_main)}
+            main.revision += 1
+            conflicts.extend(sorted(affected_main))
+            record(db, 'main_external_change', 'squad', main.squad_id, {'copy_ids': sorted(affected_main), 'locks_preserved': True})
         if read.coverage.get("coins", {}).get("complete") and read.coins is not None:
             context.coins = read.coins
         if read.club_name is not None:

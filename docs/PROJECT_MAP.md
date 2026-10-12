@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Principal y DCP: [SQUAD_SAFETY.md](SQUAD_SAFETY.md). `models/squad_safety.py`, `services/main_squad.py` y `api/squad_safety.py` conservan la selección explícita y sus copias protegidas; migración `0015`. `services/dcp_review.py` y `api/dcp_filters.py` implementan filtros, exclusiones y comprobantes de revisión vinculados al estado actual. Las propuestas para jugar permiten reutilizar protegidos. El arranque personal usa `scripts/fc27.ps1`; las pruebas usan el bloqueo y la propiedad de recursos de `scripts/docker_lifecycle.py`.
+
 Entrada de cuenta, diagnóstico y procedencia de build: [ACCOUNT_ACCESS.md](ACCOUNT_ACCESS.md). `/dashboard.account` muestra observaciones separadas del perfil manual; `/api/build` y `/build.json` permiten contrastar la versión servida.
 
 Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `api/variants.py` y `VariantReview.tsx`; migración `0013`. [Contrato y procedencia](FC27_EXCLUSIVE.md). El filtro ORM exige evidencia vigente antes de agregar, paginar o cargar relaciones de cartas. El arranque normal crea perfil vacío y referencias documentales; el inventario sintético solo existe en el arnés de pruebas.

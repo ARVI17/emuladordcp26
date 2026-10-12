@@ -100,8 +100,8 @@ def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
 def squad_data(squad: Squad, protected_ids: set[int] | None = None) -> dict:
     active = [entry for entry in squad.players if entry.player and not entry.player.deleted and entry.player.game_version == squad.game_version]
     entries = [{"slot": entry.slot, "player": player_data(entry.player, protected_ids), "available": entry.player.availability == "available",
-                "position_valid": entry.slot.startswith("BENCH-") or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
-    starters = [entry for entry in active if not entry.slot.startswith("BENCH-") and entry.player.availability == "available"]
+                "position_valid": entry.slot.startswith(("BENCH-", "RESERVE-")) or entry.slot.rsplit("-", 1)[0] in player_positions(entry.player)} for entry in active]
+    starters = [entry for entry in active if not entry.slot.startswith(("BENCH-", "RESERVE-")) and entry.player.availability == "available"]
     expected = formation_slots(squad.formation) if squad.formation in verified_formations() else []
     # Older saved squads numbered all slots globally (DFC-3, MC-7...). Count
     # positions rather than treating a legacy suffix as a missing footballer.
@@ -163,7 +163,7 @@ def dashboard(db: DB):
     version = profile.game_version
     available = (Player.deleted.is_(False), Player.game_version == version)
     count = db.scalar(select(func.count(Player.id)).where(*available)) or 0
-    protected = len(effective_protected_ids(db, version))
+    protected = db.scalar(select(func.count(Player.id)).where(*available, Player.id.in_(effective_protected_ids(db, version)))) or 0
     duplicates = db.scalar(select(func.count(Player.id)).where(*available, Player.duplicate_untradeable.is_(True))) or 0
     pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
     goals = db.scalars(select(Objective).where(Objective.game_version == version, Objective.completed.is_(False)).order_by(Objective.expires_at).limit(5)).all()
@@ -383,6 +383,8 @@ def mark_duplicate_used(player_id: int, db: DB):
     with resource_locks(db, "inventory"):
         db.expire_all()
         player = available_player(db, player_id)
+        if player.id in effective_protected_ids(db):
+            raise HTTPException(409, 'Esta copia está protegida o reservada; no se puede marcar como utilizada.')
         player.duplicate_untradeable = False
         record(db, "duplicate_used", "player", player.id)
         db.commit()
@@ -422,6 +424,7 @@ def create_squad(payload: SquadCreate, db: DB):
         if payload.slots is not None:
             allowed = {slot["slot"]: slot["position"] for slot in formation_slots(payload.formation)}
             allowed.update({f"BENCH-{number}": None for number in range(1, 13)})
+            allowed.update({f"RESERVE-{number}": None for number in range(1, 13)})
             if len(payload.slots) != len(players) or len(set(payload.slots)) != len(payload.slots):
                 raise HTTPException(422, "Cada jugador requiere una plaza única")
             for player_id, slot in zip(payload.player_ids, payload.slots):
@@ -467,11 +470,13 @@ def duplicate_squad(squad_id: int, db: DB):
 
 @router.patch("/squads/{squad_id}/tactics")
 def update_squad_tactics(squad_id: int, payload: TacticNotes, db: DB):
-    squad = get_or_404(db, Squad, squad_id)
-    squad.tactic = payload.model_dump()
-    record(db, "tactic_notes", "squad", squad.id, {"status": "local_hypothesis"})
-    db.commit()
-    return squad_data(squad, effective_protected_ids(db, squad.game_version))
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        squad = get_or_404(db, Squad, squad_id)
+        squad.tactic = payload.model_dump()
+        record(db, "tactic_notes", "squad", squad.id, {"status": "local_hypothesis"})
+        db.commit()
+        return squad_data(squad, effective_protected_ids(db, squad.game_version))
 
 
 @router.post("/squads/{squad_id}/protect")
@@ -497,6 +502,9 @@ def recommend_squad(db: DB, formation: str | None = None, payload: SquadRecommen
         options["formation"] = formation
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
+    if options.pop('avoid_main', False):
+        from app.services.main_squad import main_ids
+        options['excluded_player_ids'] = sorted(set(options['excluded_player_ids']) | main_ids(db))
     try:
         from app.services.contexts import require_module
         return {**recommend_owned_squad(players, game_version=version, protected_ids=effective_protected_ids(db, version), **options), "binding": require_module(db, "squads")}
@@ -559,25 +567,37 @@ def update_segment(segment_id: int, payload: SegmentCreate, db: DB):
 
 
 def optimization_payload(db: Session, segment: Segment, request: OptimizeRequest):
+    if request.allow_protected_ids:
+        raise HTTPException(422, 'Las protecciones no se pueden exceptuar desde un DCP.')
     version = current_version(db)
     requirements = requirements_for_batch(db, segment)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
     protected = effective_protected_ids(db, version)
+    from app.services.dcp_review import eligible, issue_review
+    players = eligible(db, players, request.filters, protected)
     progress = score_progress(db, segment) if requirements["kind"] == "score" else 0
     solutions = solve(players, requirements, set(request.allow_protected_ids), set(request.exclude_ids), request.max_solutions, effective_protected_ids=protected, current_score=progress)
     by_id = {player.id: player for player in players}
-    return [{**asdict(item), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "official_validation": False} for item in solutions]
+    return [{**asdict(item), "review_token": issue_review(db, segment, item.player_ids, request.filters), "players": [player_data(by_id[player_id], protected) for player_id in item.player_ids], "uses_protected": any(player_id in protected for player_id in item.player_ids), "duplicate_count": sum(by_id[player_id].duplicate_untradeable for player_id in item.player_ids), "chemistry_approximate": True, "chemistry_status": "unavailable", "rating_status": "estimated", "official_validation": False} for item in solutions]
 
 
 @router.post("/segments/{segment_id}/optimize")
 def optimize_segment(segment_id: int, payload: OptimizeRequest, db: DB):
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        return optimize_segment_locked(segment_id, payload, db)
+
+
+def optimize_segment_locked(segment_id: int, payload: OptimizeRequest, db: DB):
     segment = get_or_404(db, Segment, segment_id)
     if segment.completed:
         raise HTTPException(409, "El segmento ya está completado")
     solutions = optimization_payload(db, segment, payload)
     from app.services.contexts import require_module
     binding = require_module(db, "dcp")
-    return {"binding": binding, "segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": ["La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
+    from app.services.main_squad import main_status
+    main = main_status(db)
+    return {"binding": binding, "main": main, "segment": segment_data(segment, db), "solutions": solutions, "message": "No se encontró una combinación válida dentro del tiempo de cálculo. Revisa inventario, datos pendientes y protecciones." if not solutions else None, "simulation": True, "warnings": [*([main['reason']] if not main['complete'] else []), "La puntuación de selección es local; el valor de las cartas y los puntos de Galería se muestran por separado.", "Las medias y la química tradicional son aproximaciones registradas."]}
 
 
 def _recompute_completion(db: Session, segment: Segment) -> int:
@@ -599,6 +619,8 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         raise HTTPException(409, "Revisa y aprueba una propuesta en Planes antes de registrar una entrega real")
     with resource_locks(db, "inventory"):
         db.expire_all()
+        from app.services.main_squad import require_main_ready
+        require_main_ready(db)
         segment = get_or_404(db, Segment, segment_id)
         requirements = requirements_for_batch(db, segment)
         if segment.completed:
@@ -616,6 +638,10 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         violations = validate_solution(players, requirements, current_score=progress)
         if violations:
             raise HTTPException(422, {"message": "La solución no es válida", "violations": violations})
+        from app.services.dcp_review import check_review, eligible
+        filters = check_review(db, segment, payload.player_ids, payload.review_token)
+        if len(eligible(db, players, filters, protected)) != len(players):
+            raise HTTPException(409, 'La propuesta dejó de cumplir los filtros revisados.')
         contribution = sum(player.gallery_score for player in players) if requirements["kind"] == "score" else 0
         total_value = None if any(player.price is None for player in players) else sum(player.price for player in players)
         if max(contribution, total_value or 0) > 2_147_483_647:
@@ -744,7 +770,7 @@ async def ai_chat(payload: ChatRequest, db: DB):
     conditions = (Player.game_version == version, Player.deleted.is_(False))
     count = db.scalar(select(func.count(Player.id)).where(*conditions)) or 0
     duplicates_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.duplicate_untradeable.is_(True))) or 0
-    protected_count = len(effective_protected_ids(db, version))
+    protected_count = db.scalar(select(func.count(Player.id)).where(*conditions, Player.id.in_(effective_protected_ids(db, version)))) or 0
     pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
     counts = {'players': count, 'duplicates': duplicates_count, 'protected': protected_count, 'dcp': pending}
     context = f'DATOS FC27: {json.dumps(counts)}'

@@ -175,8 +175,8 @@ class SquadCreate(InputModel):
     game_version: GameVersion = "FC27"
     name: str = Field(min_length=1, max_length=100)
     formation: str = Field(default="4-3-3", min_length=1, max_length=20)
-    player_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
-    slots: list[str] | None = Field(default=None, max_length=23)
+    player_ids: list[PlayerID] = Field(default_factory=list, max_length=35)
+    slots: list[str] | None = Field(default=None, max_length=35)
     tactic: TacticNotes = Field(default_factory=TacticNotes)
     expected_binding: SquadBinding | None = None
 
@@ -198,13 +198,45 @@ class ChallengeCreate(InputModel):
     expires_at: datetime | None = None
     segments: list[SegmentCreate] = Field(default_factory=list, max_length=20)
 
+class DcpFilters(InputModel):
+    min_rating: int = Field(default=1, ge=1, le=99)
+    max_rating: int = Field(default=99, ge=1, le=99)
+    position: str | None = Field(default=None, max_length=8)
+    league: str | None = Field(default=None, max_length=80)
+    club: str | None = Field(default=None, max_length=80)
+    nationality: str | None = Field(default=None, max_length=80)
+    card_type: str | None = Field(default=None, max_length=40)
+    tradable: bool | None = None
+    duplicate: bool | None = None
+    special: bool | None = None
+    max_price: int | None = Field(default=None, ge=0, le=100_000_000)
+    location: Literal['club', 'sbc_storage', 'unassigned', 'transfer_list', 'local'] | None = None
+    availability: Literal['available', 'all'] = 'available'
+    preset: Literal['available', 'duplicates', 'keep_special', 'limit_value'] = 'available'
+
+    @field_validator('position')
+    @classmethod
+    def normalized_filter_position(cls, value):
+        return normalize_position(value) if value else None
+
+    @model_validator(mode='after')
+    def ordered(self):
+        if self.min_rating > self.max_rating:
+            raise ValueError('La media mínima no puede superar la máxima.')
+        if self.preset == 'limit_value' and self.max_price is None:
+            raise ValueError('Indica el precio conocido máximo para este filtro.')
+        return self
+
+
 class OptimizeRequest(InputModel):
     allow_protected_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
     exclude_ids: list[PlayerID] = Field(default_factory=list, max_length=1000)
     max_solutions: int = Field(default=3, ge=1, le=5)
+    filters: DcpFilters = Field(default_factory=DcpFilters)
 
 class ConfirmRequest(InputModel):
     player_ids: list[PlayerID] = Field(min_length=1, max_length=23)
+    review_token: str | None = Field(default=None, max_length=8000)
 
     @field_validator("player_ids")
     @classmethod

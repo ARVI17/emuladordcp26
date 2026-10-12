@@ -44,15 +44,20 @@ def main():
     assert detail['Endpoints']['docker']['Host'].startswith(('npipe://', 'unix://'))
     with HostLock():
         recover(docker, context)
-        for outcome in ('success', 'error'):
+        for outcome in ('success', 'error', 'late_finish'):
             path, manifest, cid = create(docker, context)
             try:
                 if outcome == 'error': raise ValueError('Expected synthetic failure')
             except ValueError:
                 pass
             finally:
-                cleanup(docker, manifest)
-                save_manifest(path, manifest)
+                if outcome == 'late_finish':
+                    manifest['status'] = 'cleaned'
+                    save_manifest(path, manifest)
+                    recover(docker, context)
+                else:
+                    cleanup(docker, manifest)
+                    save_manifest(path, manifest)
             assert not output(docker, 'ps', '-aq', '--filter', 'id='+cid)
             print(outcome, 'PASSED', flush=True)
         for outcome in ('cancel', 'crash'):

@@ -1,3 +1,4 @@
+from dcp_helpers import reviewed_confirm
 def first_feasible_segment(client):
     challenges = client.get("/challenges").json()
     return challenges[0]["segments"][0]["id"]
@@ -23,7 +24,7 @@ def test_simulation_confirmation_and_restore(client):
     simulated = client.post(f"/segments/{segment_id}/optimize", json={"max_solutions":1}).json()
     assert client.get("/dashboard").json()["counts"]["players"] == before
     solution = simulated["solutions"][0]
-    confirmed = client.post(f"/segments/{segment_id}/confirm", json={"player_ids":solution["player_ids"]})
+    confirmed = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids":solution["player_ids"]})
     assert confirmed.status_code == 200
     assert client.get("/dashboard").json()["counts"]["players"] == before - 11
     submission_id = confirmed.json()["submission_id"]
@@ -33,7 +34,7 @@ def test_simulation_confirmation_and_restore(client):
 def test_protected_player_cannot_be_confirmed(client):
     players = client.get("/players?protected=true&limit=11").json()["items"]
     segment_id = first_feasible_segment(client)
-    response = client.post(f"/segments/{segment_id}/confirm", json={"player_ids":[p["id"] for p in players]})
+    response = reviewed_confirm(client, f"/segments/{segment_id}/confirm", json={"player_ids":[p["id"] for p in players]})
     assert response.status_code == 422
 
 def test_duplicate_bonus_in_solution(client):

@@ -87,18 +87,23 @@ def save_manifest(path, manifest):
 
 def recover(docker, context, directory=STATE):
     """Called only under HostLock. A missing/mismatched manifest grants no authority."""
+    ids = output(docker, 'ps', '-aq', '--filter', 'label='+OWNER).split()
+    nets = output(docker, 'network', 'ls', '-q', '--filter', 'label='+OWNER).split()
+    containers = json.loads(output(docker, 'inspect', *ids)) if ids else []
+    networks = json.loads(output(docker, 'network', 'inspect', *nets)) if nets else []
+    remaining = {c['Config']['Labels'][OWNER] for c in containers} | {n['Labels'][OWNER] for n in networks}
     known = set()
     for path in sorted(Path(directory).glob('run-*.json')):
         manifest = json.loads(path.read_text(encoding='utf-8'))
         if manifest['context'] == context:
             known.add(manifest['run'])
-            if manifest['status'] != 'cleaned':
+            # A daemon request can finish after the client was killed. Reinspect
+            # owned remnants even when an earlier cleanup recorded success.
+            if manifest['status'] != 'cleaned' or manifest['run'] in remaining:
                 cleanup(docker, manifest)
                 save_manifest(path, manifest)
-    ids = output(docker, 'ps', '-aq', '--filter', 'label='+OWNER).split()
-    for container in json.loads(output(docker, 'inspect', *ids)) if ids else []:
-        if container['Config']['Labels'][OWNER] not in known:
-            raise RuntimeError('Hay restos sin manifiesto de propiedad; se conservan para revisión.')
+    if remaining - known:
+        raise RuntimeError('Hay restos sin manifiesto de propiedad; se conservan para revisión.')
 
 
 def prepare(config, project, context, directory=STATE):

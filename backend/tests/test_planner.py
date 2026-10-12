@@ -490,8 +490,21 @@ def test_transfer_comparison_requires_correct_variant_and_separates_catalog(clie
 
 def test_verified_two_step_consumption_continues_only_approved_batch(client):
     context,run=fake_run(client)
-    publish(run,remote(('copy-a','copy-b'),coverage={'inventory':{'complete':True},'coins':{'complete':True},'dcp':{'complete':True}}))
-    ids=[p['id'] for p in client.get('/players').json()['items']]
+    from app.services.squad_analysis import formation_slots
+    slots=formation_slots('4-3-3')
+    items=remote(('copy-a','copy-b')).model_dump()['items']
+    for index,slot in enumerate(slots):
+        items.append({'copy_id':f'main-{index}','athlete_id':f'main-athlete-{index}','variant_id':f'main-variant-{index}',
+            'location':'club','fields':{'name':f'Titular sintético {index}','rating':80,'position':slot['position'],
+            'is_loan':False,'is_evolution':False,'tradable':True}})
+    publish(run,remote(items=items,pagination={'documented_end':True,'all_locations':True,'expected_count':len(items)},coverage={'inventory':{'complete':True},'coins':{'complete':True},'dcp':{'complete':True}}))
+    players=client.get('/players').json()['items']
+    ids=[p['id'] for p in players if p['card_id']=='variant-1']
+    squad=client.post('/squads',json={'name':'Principal remota sintética','formation':'4-3-3',
+        'player_ids':[next(p['id'] for p in players if p['card_id']==f'main-variant-{i}') for i in range(11)],'slots':[r['slot'] for r in slots]}).json()
+    main=client.get('/squads/main').json()
+    chosen=client.post(f"/squads/{squad['id']}/main",json={'complete':True,'expected_state_hash':main['state_hash'],'phrase':f"PROTEGER PRINCIPAL {squad['id']}"})
+    assert chosen.status_code==200,chosen.text
     challenge=client.post('/challenges',json={'name':'Synthetic verified batch','segments':[{'name':name,'requirements':{'squad_size':1}} for name in ['A','B']]}).json()
     row=approve(client,plan(client,[{'kind':'dcp','player_ids':[pid],'segment_id':segment['id']} for pid,segment in zip(ids,challenge['segments'])]))
     assert confirm(client,row).status_code==200
@@ -499,7 +512,7 @@ def test_verified_two_step_consumption_continues_only_approved_batch(client):
     result=confirm(client,row,2)
     assert result.status_code==200,result.text
     assert result.json()['status']=='confirmed'
-    assert client.get('/players').json()['total']==0
+    assert client.get('/players').json()['total']==11
 
 
 def test_journal_profit_idempotence_and_edition_market_boundaries(client):
