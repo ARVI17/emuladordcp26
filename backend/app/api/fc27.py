@@ -135,7 +135,7 @@ def gallery_sets(game_version: GameVersion | None = None, db: Session = Depends(
 def store_set(db, payload, version, existing=None):
     values = payload.model_dump(exclude={"game_version", "slug"})
     slug = payload.slug or (existing.slug if existing else slug_for(payload.name))
-    conflict = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == slug))
+    conflict = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == slug).execution_options(include_pending_definitions=True))
     if conflict is not None and (existing is None or conflict.id != existing.id): raise HTTPException(409, "Ya existe un conjunto con este identificador")
     if existing is None:
         existing = GallerySet(game_version=version, slug=slug, **values)
@@ -192,7 +192,7 @@ def evolutions(game_version: GameVersion | None = None, db: Session = Depends(ge
 def store_evolution(db, payload, version, existing=None):
     values = payload.model_dump(exclude={"game_version", "slug"})
     slug = payload.slug or (existing.slug if existing else slug_for(payload.name))
-    conflict = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == slug))
+    conflict = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == slug).execution_options(include_pending_definitions=True))
     if conflict is not None and (existing is None or conflict.id != existing.id): raise HTTPException(409, "Ya existe una evolución con este identificador")
     if existing is None:
         existing = EvolutionDefinition(game_version=version, slug=slug, **values)
@@ -324,10 +324,10 @@ def import_content(payload: ContentImportRequest, db: Session = Depends(get_db))
         if db.get(AppSetting, receipt_key) is not None:
             return {"preview": False, "already_imported": True, **summary}
         for item in manifest.sets:
-            existing = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == (item.slug or slug_for(item.name))))
+            existing = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == (item.slug or slug_for(item.name))).execution_options(include_pending_definitions=True))
             store_set(db, item, version, existing)
         for item in manifest.evolutions:
-            existing = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == (item.slug or slug_for(item.name))))
+            existing = db.scalar(select(EvolutionDefinition).where(EvolutionDefinition.game_version == version, EvolutionDefinition.slug == (item.slug or slug_for(item.name))).execution_options(include_pending_definitions=True))
             store_evolution(db, item, version, existing)
         value = {"preview_hash": digest, "published_at": manifest.published_at.isoformat(), "source_url": manifest.source_url,
                  "imported_at": datetime.now(timezone.utc).isoformat(), "sets": len(manifest.sets), "evolutions": len(manifest.evolutions)}

@@ -26,3 +26,11 @@ Contratos nuevos:
 La migración 0013 conserva todas las cartas y deja las antiguas pendientes hasta contraste. No convierte el seed ni las referencias en inventario. Galería conserva identidades de variante independientes. Mercado, análisis, DCP, evolución y planificación reciben únicamente copias admitidas por el filtro SQL; una marca `data_reviewed` no lo elude.
 
 Respaldo y recuperación se ensayaron en PostgreSQL desechable: 228 cartas antes/después, 228 entradas de Galería y cuatro planes conservados; dump previo restaurado en otra base con head 0012. El principal no se migró. El rollback utiliza ese respaldo y código compatible; no se ofrece un downgrade que borre evidencia.
+
+## Definiciones y datos heredados (0014)
+
+DCP, objetivos, conjuntos, evoluciones y publicaciones de reglas exigen `validation_status` documentado y `validation_evidence` con edición, URL pública, observación y vencimiento. El SQL aplica esa condición a relaciones, alias y totales, y oculta definiciones caducadas. Crear o importar manualmente conserva un borrador; `rules_reviewed=true` no acredita la fuente. Cambiar reglas o segmentos invalida la evidencia. Copiar una publicación acreditada conserva su evidencia y mantiene el progreso privado.
+
+`GET /catalog/pending` comunica cantidades pendientes sin publicar reglas/nombres como contenido activo. Las pantallas explican esa separación. Actualmente no hay publicaciones acreditadas de retos/conjuntos/Evos cargadas ni proveedor autorizado que pueda hacerlo: sus operaciones quedan pendientes hasta una revisión técnica de la definición exacta y vigente. No se promete activación por pegar una URL.
+
+0014 preserva saldos y plantillas heredados con origen no verificado. El perfil manual nuevo empieza en cero; recuperar un saldo antiguo requiere una conciliación explícita. Las protecciones de plantillas FC27 históricas siguen excluyendo sus cartas aunque la plantilla esté oculta. Entregas, auditoría y propuestas antiguas solo se muestran cuando acreditan el nuevo alcance; sus registros y reservas permanecen almacenados.

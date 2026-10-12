@@ -58,6 +58,9 @@ def player_data(player: Player, protected_ids: set[int] | None = None) -> dict:
 
 
 def objective_data(objective: Objective) -> dict:
+    from app.services.definition_validation import is_documented, pending_result
+    if not is_documented(objective):
+        return pending_result(objective)
     return {key: getattr(objective, key) for key in ("id", "game_version", "name", "description", "category", "progress", "target", "completed", "expires_at")}
 
 
@@ -88,6 +91,9 @@ def segment_data(segment: Segment, db: Session | None = None) -> dict:
 
 
 def challenge_data(challenge: Challenge, db: Session | None = None) -> dict:
+    from app.services.definition_validation import is_documented, pending_result
+    if not is_documented(challenge):
+        return pending_result(challenge)
     return {"id": challenge.id, "game_version": challenge.game_version, "name": challenge.name, "description": challenge.description, "reward": challenge.reward, "completed": challenge.completed, "expires_at": challenge.expires_at, "segments": [segment_data(segment, db) for segment in challenge.segments]}
 
 
@@ -610,7 +616,7 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
         if max(contribution, total_value or 0) > 2_147_483_647:
             raise HTTPException(422, "El valor total de esta entrega excede el límite de almacenamiento")
         snapshot = {
-            "ownership_version": 1, "origin": "local_simulation", "requirements": requirements, "game_version": version,
+            "ownership_version": 1, "origin": "local_simulation", "requirements": requirements, "game_version": version, "fc27_checked": True,
             "players": {str(player.id): {"deleted": player.deleted, "duplicate_untradeable": player.duplicate_untradeable, "consumed_by_submission_id": player.consumed_by_submission_id} for player in players},
             "player_ids": list(payload.player_ids),
             "cards": [{"id": player.id, "name": player.name, "rating": player.rating, "price": player.price, "gallery_score": player.gallery_score, "card_id": player.card_id, "base_card_id": player.base_card_id, "data_reviewed": player.data_reviewed, "data_source": player.data_source} for player in players],
@@ -632,13 +638,15 @@ def confirm_segment(segment_id: int, payload: ConfirmRequest, db: DB):
 @router.get("/submissions")
 def list_submissions(db: DB, limit: int = Query(50, ge=1, le=200)):
     version = current_version(db)
-    rows = db.scalars(select(Submission).where(Submission.game_version == version).order_by(Submission.id.desc()).limit(limit)).all()
+    rows = db.scalars(select(Submission).where(Submission.game_version == version, Submission.snapshot['fc27_checked'].as_boolean().is_(True)).order_by(Submission.id.desc())).all()
     items = []
     for row in rows:
         segment = db.get(Segment, row.segment_id)
+        identifiers = set(row.snapshot.get('player_ids', []))
+        if not segment or not segment.challenge or not identifiers or set(db.scalars(select(Player.id).where(Player.id.in_(identifiers)))) != identifiers:
+            continue
         items.append({"id": row.id, "game_version": row.game_version, "segment_id": row.segment_id, "segment_name": segment.name, "challenge_name": segment.challenge.name, "status": row.status, "total_cost": row.total_cost, "score_contribution": row.score_contribution, "player_ids": row.snapshot.get("player_ids", []), "created_at": row.created_at})
-    total = db.scalar(select(func.count(Submission.id)).where(Submission.game_version == version)) or 0
-    return {"items": items, "total": total}
+    return {"items": items[:limit], "total": len(items)}
 
 
 @router.post("/submissions/{submission_id}/restore")
@@ -802,5 +810,5 @@ def update_setting(key: str, value: dict, db: DB):
 
 @router.get("/audit")
 def audit_logs(db: DB, limit: int = Query(50, ge=1, le=200)):
-    logs = db.scalars(select(AuditLog).order_by(AuditLog.id.desc()).limit(limit)).all()
+    logs = db.scalars(select(AuditLog).where(AuditLog.details['game_version'].as_string() == 'FC27').order_by(AuditLog.id.desc()).limit(limit)).all()
     return [{"id": row.id, "action": row.action, "entity_type": row.entity_type, "entity_id": row.entity_id, "details": row.details, "created_at": row.created_at} for row in logs]

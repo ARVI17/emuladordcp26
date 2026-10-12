@@ -2,6 +2,8 @@
 
 Catálogo y cuarentena: `models/catalog.py`, `services/catalog_validation.py`, `api/variants.py` y `VariantReview.tsx`; migración `0013`. [Contrato y procedencia](FC27_EXCLUSIVE.md). El filtro ORM exige evidencia vigente antes de agregar, paginar o cargar relaciones de cartas. El arranque normal crea perfil vacío y referencias documentales; el inventario sintético solo existe en el arnés de pruebas.
 
+Definiciones activas: `services/definition_validation.py`, mixin `DefinitionEvidence`, migración `0014`, resumen `/catalog/pending` y `PendingDefinitions.tsx`. Los cambios de reglas invalidan evidencia; los borradores no llegan a optimización ni a los totales activos. `Profile.origin` y `Squad.origin` conservan los valores legados fuera de las vistas normales.
+
 Referencia del código de la versión 2.0 en `emuladordcp26`. La API declara rutas sin `/api`; Nginx añade ese prefijo externamente y FastAPI usa `root_path="/api"`. Swagger es el inventario completo de contratos. Las reglas de trabajo están en [AGENTS.md](../AGENTS.md).
 
 ## Ampliación del planificador (11 de octubre de 2026)

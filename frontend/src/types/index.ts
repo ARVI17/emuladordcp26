@@ -1,4 +1,6 @@
 export type GameVersion = 'FC27'
+export type PendingDefinition = {id:number;game_version:'FC27';validation_status:'pending_verification';available:false;message:string}
+export type PendingDefinitionsResponse = {game_version:'FC27';counts:Record<string,number>;validation_status:'pending_verification';message:string}
 export type AttributeKey = 'pace'|'shooting'|'passing'|'dribbling'|'defending'|'physical'|'diving'|'handling'|'kicking'|'reflexes'|'speed'|'positioning'
 export type Player = {
   validation_status?:string;variant_evidence?:Record<string,unknown>;

@@ -9,9 +9,15 @@ class ClubScoped:
     club_context_id: Mapped[int] = mapped_column(Integer, default=1, index=True)
 
 
+class DefinitionEvidence:
+    validation_status: Mapped[str] = mapped_column(String(30), default='pending_verification', server_default='pending_verification')
+    validation_evidence: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
+
+
 class Profile(ClubScoped, Base):
     __tablename__ = "profiles"
     id: Mapped[int] = mapped_column(primary_key=True)
+    origin: Mapped[str] = mapped_column(String(30), default='unverified', server_default='unverified')
     name: Mapped[str] = mapped_column(String(80), default="Mi club")
     coins: Mapped[int] = mapped_column(Integer, default=250000)
     platform: Mapped[str] = mapped_column(String(30), default="Consola")
@@ -73,6 +79,7 @@ class Player(ClubScoped, Base):
 
 class Squad(ClubScoped, Base):
     __tablename__ = "squads"
+    origin: Mapped[str] = mapped_column(String(30), default='manual', server_default='unverified')
     id: Mapped[int] = mapped_column(primary_key=True)
     game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
     name: Mapped[str] = mapped_column(String(100))
@@ -93,7 +100,7 @@ class SquadPlayer(ClubScoped, Base):
     squad: Mapped[Squad] = relationship(back_populates="players")
     player: Mapped[Player] = relationship()
 
-class Challenge(ClubScoped, Base):
+class Challenge(DefinitionEvidence, ClubScoped, Base):
     __tablename__ = "challenges"
     id: Mapped[int] = mapped_column(primary_key=True)
     game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
@@ -124,7 +131,7 @@ class Submission(ClubScoped, Base):
     snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
-class Objective(ClubScoped, Base):
+class Objective(DefinitionEvidence, ClubScoped, Base):
     __tablename__ = "objectives"
     id: Mapped[int] = mapped_column(primary_key=True)
     game_version: Mapped[str] = mapped_column(String(8), default="FC27", index=True)
@@ -209,7 +216,7 @@ class GalleryEntry(ClubScoped, Base):
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
-class GallerySet(ClubScoped, Base):
+class GallerySet(DefinitionEvidence, ClubScoped, Base):
     __tablename__ = "gallery_sets"
     __table_args__ = (UniqueConstraint("club_context_id", "game_version", "slug", name="uq_gallery_edition_slug"),)
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -227,7 +234,7 @@ class GallerySet(ClubScoped, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
-class EvolutionDefinition(ClubScoped, Base):
+class EvolutionDefinition(DefinitionEvidence, ClubScoped, Base):
     __tablename__ = "evolution_definitions"
     __table_args__ = (UniqueConstraint("club_context_id", "game_version", "slug", name="uq_evolution_edition_slug"),)
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
-from app.models.entities import now, ClubScoped
+from app.models.entities import now, ClubScoped, DefinitionEvidence
 
 
 class LocalUser(Base):
@@ -188,7 +188,7 @@ class KnowledgeRevision(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
-class PublicDefinition(Base):
+class PublicDefinition(DefinitionEvidence, Base):
     __tablename__ = "public_definitions"
     __table_args__ = (UniqueConstraint("kind", "game_version", "slug", "revision", name="uq_public_definition_revision"),)
     id: Mapped[int] = mapped_column(primary_key=True)

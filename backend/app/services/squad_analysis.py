@@ -67,6 +67,7 @@ def effective_protected_ids(db: Session, game_version: str | None = None) -> set
     inherited = db.scalars(
         select(SquadPlayer.player_id).join(Squad, Squad.id == SquadPlayer.squad_id).join(Player, Player.id == SquadPlayer.player_id)
         .where(Squad.game_version == version, Squad.protected.is_(True), Player.game_version == version, Player.deleted.is_(False))
+        .execution_options(include_historical_squads=True)
     ).all()
     from app.services.protection import reserved_ids
     return set(manual) | set(inherited) | reserved_ids(db)

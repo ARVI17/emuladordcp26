@@ -202,6 +202,9 @@ def evaluate_set(gallery_set, entries, owned=None):
 
 
 def set_data(gallery_set, entries=None, owned=None):
+    from app.services.definition_validation import is_documented, pending_result
+    if not is_documented(gallery_set):
+        return pending_result(gallery_set)
     result = {field: getattr(gallery_set, field) for field in ("id", "game_version", "slug", "name", "description", "category", "rules", "tags", "grade_thresholds", "reward", "source_url", "rules_reviewed")}
     if entries is not None:
         result["evaluation"] = evaluate_set(gallery_set, entries, owned)

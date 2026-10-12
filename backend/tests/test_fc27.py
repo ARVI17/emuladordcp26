@@ -116,7 +116,12 @@ def test_evolution_branches_caps_and_chain_never_mutate_player(client):
 def test_evolution_fails_closed_for_unverified_or_ineligible_inputs(client, overrides, expected):
     original = player(client)
     definition = client.post('/evolutions', json=evo_payload(**overrides)).json()
-    response = client.post('/evolutions/preview', json={"player_id":original['id'],"steps":[{"evolution_id":definition['id'],"path_id":"ataque"}]}).json()
+    result = client.post('/evolutions/preview', json={"player_id":original['id'],"steps":[{"evolution_id":definition['id'],"path_id":"ataque"}]})
+    if 'expires_at' in overrides:
+        assert result.status_code == 404
+        assert definition['id'] not in [row['id'] for row in client.get('/evolutions').json()]
+        return
+    response = result.json()
     assert not response['eligible']
     assert any(expected in message for message in response['steps'][0]['violations'])
     assert response['projected']['rating'] == original['rating']

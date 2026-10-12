@@ -175,6 +175,13 @@ def preview(db, payload: PlanInput):
 
 def documented_plan(db, plan):
     from app.services.catalog_validation import check_fields, find_variant
+    for action in plan.inputs.get('actions', []):
+        if action.get('kind') == 'dcp':
+            segment = db.get(Segment, action.get('segment_id'))
+            if not segment or not segment.challenge:
+                return False
+        if action.get('kind') == 'evolution' and not db.get(EvolutionDefinition, action.get('definition_id')):
+            return False
     ids = {pid for a in plan.inputs.get('actions', []) for pid in a.get('player_ids', [])}
     found = set(db.scalars(select(Player.id).where(Player.id.in_(ids)))) if ids else set()
     return (plan.inputs.get('binding', {}).get('game_version') == 'FC27'

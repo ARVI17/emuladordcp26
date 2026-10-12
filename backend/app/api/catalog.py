@@ -16,6 +16,16 @@ from app.services.locks import resource_locks
 router = APIRouter(tags=["Definiciones públicas y progreso privado"])
 
 
+@router.get('/catalog/pending')
+def pending_definitions(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    from app.services.definition_validation import MODELS, active_definition_clause
+    return {'game_version': 'FC27', 'counts': {kind: db.scalar(select(func.count(model.id)).where(
+        ~active_definition_clause(model)).execution_options(include_pending_definitions=True)) or 0 for kind, model in MODELS.items()},
+        'validation_status': 'pending_verification',
+        'message': 'Definiciones conservadas fuera de las funciones activas. Marcar revisión o adjuntar una URL no verifica su edición, reglas ni vigencia.'}
+
+
 class DefinitionInput(InputModel):
     kind: Literal["dcp", "gallery", "evolution"]
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
@@ -40,7 +50,7 @@ def add_definition(payload: DefinitionInput, db: Session = Depends(get_db)):
     if payload.kind == "dcp" and any(s.requirements.get("required_player_ids") or s.requirements.get("excluded_player_ids") for s in body.segments):
         raise HTTPException(422, "Una definición pública no puede contener identificadores de copias privadas")
     with resource_locks(db, "catalog"):
-        existing = db.scalar(select(PublicDefinition).where(PublicDefinition.kind==payload.kind, PublicDefinition.slug==payload.slug, PublicDefinition.game_version==body.game_version, PublicDefinition.revision==payload.revision))
+        existing = db.scalar(select(PublicDefinition).where(PublicDefinition.kind==payload.kind, PublicDefinition.slug==payload.slug, PublicDefinition.game_version==body.game_version, PublicDefinition.revision==payload.revision).execution_options(include_pending_definitions=True))
         if existing:
             if existing.body != body.model_dump(mode="json"):
                 raise HTTPException(409, "La revisión existe con otras reglas; registra una nueva revisión")
@@ -50,7 +60,8 @@ def add_definition(payload: DefinitionInput, db: Session = Depends(get_db)):
         db.flush()
         record(db, "public_definition", "catalog", row.id)
         db.commit()
-        return {"id": row.id}
+        from app.services.definition_validation import is_documented, pending_result
+        return {'id': row.id} if is_documented(row) else pending_result(row)
 
 
 @router.get("/catalog/definitions")
@@ -95,6 +106,9 @@ def use_definition(definition_id: int, db: Session = Depends(get_db)):
             row = model(**values)
             db.add(row)
             db.flush()
+        db.flush()  # Changes to copied segments invalidate old evidence before the new attestation.
+        row.validation_status = definition.validation_status
+        row.validation_evidence = dict(definition.validation_evidence)
         state = {"kind":definition.kind,"local_id":row.id,"public_definition_id":definition.id,"revision":definition.revision}
         db.add(ClubProgress(kind="definition",definition_key=key,state=state))
         record(db, "use_definition", "catalog", definition.id, state)

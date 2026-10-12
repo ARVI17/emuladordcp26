@@ -88,6 +88,7 @@ jobs:
       - name: Real API and desktop/mobile flows on a disposable database
         shell: bash
         env:
+          PYTHONPATH: .
           DATABASE_URL: sqlite+pysqlite:////tmp/fc27-e2e.db
           SEED_DEMO: 'true'
           ADB_ENABLED: 'false'

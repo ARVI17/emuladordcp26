@@ -181,7 +181,7 @@ def confirm_action(plan_id: int, action_id: int, payload: ActionConfirmation, db
                 violations = validate_solution(players, requirements, current_score=score_progress(db, segment))
                 if violations:
                     raise HTTPException(409, {"message": "El DCP cambió", "violations": violations})
-                snapshot = {"ownership_version": 1, "origin": "manual_game_confirmation", "player_ids": action.player_ids,
+                snapshot = {"ownership_version": 1, "origin": "manual_game_confirmation", "player_ids": action.player_ids, "fc27_checked": True,
                             "players": {str(p.id): {"deleted": p.deleted, "duplicate_untradeable": p.duplicate_untradeable} for p in players}}
                 submission = Submission(segment_id=segment.id, game_version=segment.challenge.game_version,
                     score_contribution=sum(p.gallery_score or 0 for p in players) if requirements["kind"] == "score" else 0,

@@ -104,4 +104,24 @@ def activate_seed():
         for player in rows:
             player.data_source = 'synthetic_test_fixture'
             validate_copy(db, player)
+        from app.models.entities import Squad
+        from app.services.definition_validation import MODELS
+        for model in MODELS.values():
+            for row in db.scalars(select(model)):
+                witness_definition(row)
+        for row in db.scalars(select(Squad)):
+            row.origin = 'manual'
         db.commit()
+
+
+def witness_definition(row):
+    row.validation_status = 'documented'
+    row.validation_evidence = {'game_version': 'FC27', 'source_url': 'https://example.invalid/fc27/synthetic-definition',
+        'observed_at': (now()-timedelta(seconds=1)).isoformat(), 'valid_until': (now()+timedelta(days=1)).isoformat(), 'synthetic': True}
+
+
+def witness_definitions(db, *_):
+    from app.models.entities import DefinitionEvidence
+    for row in list(db.new | db.dirty):
+        if isinstance(row, DefinitionEvidence) and row.game_version in (None, 'FC27'):
+            witness_definition(row)

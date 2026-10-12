@@ -573,7 +573,11 @@ def list_plans(db: DB, limit: int = Query(30, ge=1, le=100)):
     segment_ids = select(Segment.id).join(Challenge).where(Challenge.game_version == current_version(db))
     rows = db.scalars(select(AutomationPlan).where(AutomationPlan.segment_id.in_(segment_ids)).order_by(AutomationPlan.id.desc()).limit(limit)).all()
     from app.services.catalog_validation import check_fields
-    return [plan_data(row) for row in rows if all(check_fields(db, p)[0] is not None for p in row.solution_snapshot.get('players', []))]
+    def available(row):
+        copies = row.solution_snapshot.get('players', [])
+        ids = {p.get('id') for p in copies}
+        return bool(copies) and ids == set(db.scalars(select(Player.id).where(Player.id.in_(ids)))) and all(check_fields(db, p)[0] is not None for p in copies)
+    return [plan_data(row) for row in rows if available(row)]
 
 
 @router.post("/plans", status_code=201)

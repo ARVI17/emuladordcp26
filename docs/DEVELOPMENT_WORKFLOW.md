@@ -21,6 +21,8 @@ No ejecutes restauraciones adicionales en el contenedor `test-database` mientras
 
 Las pruebas generales usan un catálogo sintético explícito en `backend/tests/catalog_fixture.py`. El servidor E2E `tests/e2e_app.py` exige la variable de prueba y una base permitida; solo peticiones preparatorias con `X-Catalog-Fixture: 1` crean evidencia sintética. `app.main` y el arranque normal nunca importan ese arnés. Las pruebas `catalog_boundary` y el recorrido `catalog.spec.ts` lo omiten para comprobar la política real de admisión. Un pase con fixtures no prueba autenticidad de datos ni acceso a EA.
 
+La cabecera de fixtures también limita la evidencia de definiciones mediante contexto de petición; una creación desde la interfaz normal queda pendiente. El PostgreSQL destructivo conserva512MB de límite, shared_buffers32MB y WAL64MB con checkpoints cada30s para que las sucesivas recreaciones del esquema no agoten el tmpfs.
+
 Logs y resultado PASSED/FAILED: `state/sprints/emuladordcp26-check-*/`. Los datos de prueba se descartan deliberadamente. Para revisar una interfaz a mano existe `docker-compose.review.yml` en 8081: también es desechable; detener su PostgreSQL tmpfs pierde datos. No confundas esa revisión con el club real ni con el stack principal.
 
 ## Cierre de cada sprint

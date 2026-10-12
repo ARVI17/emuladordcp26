@@ -1,5 +1,13 @@
 # Pruebas del planificador FC27
 
+## Definiciones acreditadas (sprint 8)
+
+Docker completo: **205 Pytest/PostgreSQL** (151,71 s), **26 Vitest**, **22 Playwright** y build/HTTP/OpenAPI/Alembic0014 correctos. Ocho pruebas de frontera omiten el arnés documental. El E2E repetido también envía un DCP sin evidencia y comprueba que solo aparece el aviso de pendientes. El arnés de navegador acredita definiciones exclusivamente con la cabecera explícita de preparación de fixtures; los formularios y casos de frontera siguen la admisión real.
+
+Un intento previo pasó 203 casos y falló al escoger un perfil sintético sin ordenar en PostgreSQL. Se retiró la activación innecesaria del saldo demo en fixtures. Migración y restauración: 228 cartas, 228 entradas de Galería y cuatro planes conservados; dump0013 recuperado en una base distinta. El WAL y shared_buffers del PostgreSQL desechable se ajustaron dentro de512MB; principal intacto.
+
+CI del sprint7 pasó backend y falló al arrancar Uvicorn porque no encontraba `app`; el workflow ahora declara `PYTHONPATH`. El estado remoto del siguiente commit debe comprobarse antes de afirmar pase de CI. El pase local Docker no sustituye esa comprobación.
+
 ## Estado vigente: catálogo y cuarentena (sprint 7)
 
 Docker aislado: **197 Pytest/PostgreSQL** (122,67 s), **26 Vitest**, **22 Playwright** móvil/escritorio sobre Nginx (50,6 s), build, salud, OpenAPI y Alembic0013/check correctos. Las suites frontend se repitieron tras ajustar dos contratos antiguos de mensajes/variantes. El principal conservó IDs y arranques. El límite de PostgreSQL de pruebas pasó a512MB tras un OOM registrado; no se cambió el principal.

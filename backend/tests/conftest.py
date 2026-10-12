@@ -28,8 +28,11 @@ def client(request):
     seed_database()
     strict = bool(request.node.get_closest_marker('catalog_boundary'))
     if not strict:
-        from catalog_fixture import activate_seed
+        from sqlalchemy import event
+        from sqlalchemy.orm import Session
+        from catalog_fixture import activate_seed, witness_definitions
         activate_seed()
+        event.listen(Session, 'before_flush', witness_definitions)
     from app.api.emulator import require_adb_permission
     # Existing bridge tests exercise mocked commands; production has no permission override.
     app.dependency_overrides[require_adb_permission] = lambda: None
@@ -42,3 +45,5 @@ def client(request):
         test_client.headers["X-App-Entry"] = str(entry.json()["entry_id"])
         yield test_client
     app.dependency_overrides.clear()
+    if not strict:
+        event.remove(Session, 'before_flush', witness_definitions)

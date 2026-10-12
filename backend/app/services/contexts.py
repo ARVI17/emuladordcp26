@@ -135,6 +135,17 @@ def scope_reads(execute_state):
             with_loader_criteria(ClubPlan, ClubPlan.inputs['binding']['game_version'].as_string() == 'FC27', include_aliases=True),
             with_loader_criteria(Segment, Segment.challenge_id.in_(select(Challenge.id).where(Challenge.game_version == "FC27")), include_aliases=True),
             with_loader_criteria(SquadPlayer, SquadPlayer.player_id.in_(select(Player.id).where(Player.game_version == "FC27")), include_aliases=True))
+        from app.models.entities import Profile, Squad
+        execute_state.statement = execute_state.statement.options(with_loader_criteria(
+            Profile, Profile.origin.in_(['manual', 'provider_verified']), include_aliases=True))
+        if not execute_state.execution_options.get('include_historical_squads'):
+            execute_state.statement = execute_state.statement.options(with_loader_criteria(
+                Squad, Squad.origin.in_(['manual', 'provider_verified']), include_aliases=True))
+        if not execute_state.execution_options.get('include_pending_definitions'):
+            from app.services.definition_validation import MODELS, active_definition_clause
+            for model in MODELS.values():
+                execute_state.statement = execute_state.statement.options(with_loader_criteria(
+                    model, active_definition_clause(model), include_aliases=True))
         if not execute_state.execution_options.get('include_quarantine'):
             from app.services.catalog_validation import active_player_clause, active_gallery_clause, variant_conditions
             from app.models.catalog import CardVariant
@@ -199,3 +210,4 @@ def bind_request(db, request: Request):
         require_module(db, module)
 
 from app.services import protection  # noqa: E402,F401
+from app.services import definition_validation  # noqa: E402,F401

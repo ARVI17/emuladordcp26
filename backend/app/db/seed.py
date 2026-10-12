@@ -45,7 +45,7 @@ def seed_database() -> None:
             )
             db.add(player); players.append(player)
         db.flush()
-        squad = Squad(name="Plantilla principal", formation="4-3-3", primary=True, protected=True)
+        squad = Squad(name="Plantilla principal", formation="4-3-3", primary=True, protected=True, origin='demo')
         db.add(squad); db.flush()
         for index, player in enumerate(players[:11]):
             slot = "MC" if POSITIONS[index] == "MCO" else POSITIONS[index]

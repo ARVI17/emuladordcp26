@@ -6,7 +6,7 @@ from app.models.entities import Objective, now
 from app.models.planner import ClubPlan, Reservation
 from app.services.contexts import require_module, utc
 from app.services.editions import current_version
-from app.services.planner import revalidate, coin_commitments
+from app.services.planner import revalidate, coin_commitments, documented_plan
 
 
 def summarize(plan):
@@ -54,7 +54,7 @@ def agenda(db, budget, reserve_coins, priority_ids):
     available = balance-committed
     candidates = list(db.scalars(select(ClubPlan).where(ClubPlan.status.in_(['draft', 'reviewed'])).order_by(ClubPlan.id.desc()).limit(101)))
     truncated = len(candidates) > 100
-    candidates = [p for p in candidates[:100] if p.inputs['binding'].get('game_version', 'FC27') == current_version(db)]
+    candidates = [p for p in candidates[:100] if documented_plan(db, p)]
     if any(identifier not in {p.id for p in candidates} for identifier in priority_ids):
         raise HTTPException(422, 'Prioriza solo borradores visibles de esta edición')
     rank = {identifier: i for i, identifier in enumerate(priority_ids)}
