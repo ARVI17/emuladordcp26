@@ -122,12 +122,31 @@ def squad_profiles(payload: ProfilesRequest, db: Annotated[Session, Depends(get_
 
 
 class JointRequest(BaseModel):
-    segment_ids: list[int] = Field(min_length=1, max_length=6)
-    player_ids: list[int] = Field(min_length=1, max_length=24)
+    model_config = ConfigDict(extra='forbid')
+    segment_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(min_length=1, max_length=6)
+    player_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(min_length=1, max_length=24)
+    max_total_value: int | None = Field(default=None, ge=0, le=100_000_000)
+    priority_ids: list[Annotated[int, Field(strict=True, ge=1)]] = Field(default_factory=list, max_length=6)
+    allow_partial: bool = False
+
+    @model_validator(mode='after')
+    def priorities(self):
+        if any(len(values) != len(set(values)) for values in (self.segment_ids, self.player_ids, self.priority_ids)):
+            raise ValueError('No repitas copias o segmentos')
+        if set(self.priority_ids)-set(self.segment_ids):
+            raise ValueError('Las prioridades deben pertenecer a los segmentos elegidos')
+        return self
 
 
 @router.post("/dcp/joint-preview")
 def joint_preview(payload: JointRequest, db: Annotated[Session, Depends(get_db)]):
+    from app.services.locks import resource_locks
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        return joint_preview_locked(payload, db)
+
+
+def joint_preview_locked(payload, db):
     from fastapi import HTTPException
     from sqlalchemy import select
     from app.models.entities import Player, Segment
@@ -143,7 +162,13 @@ def joint_preview(payload: JointRequest, db: Annotated[Session, Depends(get_db)]
     players = list(db.scalars(select(Player).where(Player.id.in_(payload.player_ids), Player.game_version == current_version(db))))
     if len(players) != len(set(payload.player_ids)):
         raise HTTPException(409, "Hay copias no disponibles en esta edición")
-    return {**joint_dcp(players, [{"id": s.id, "requirements": requirements_for_batch(db, s), "current_score": score_progress(db, s)} for s in segments], effective_protected_ids(db)), "binding": binding}
+    from app.services.main_squad import main_status
+    main = main_status(db)
+    result = joint_dcp(players, [{"id": s.id, "requirements": requirements_for_batch(db, s), "current_score": score_progress(db, s)} for s in segments], effective_protected_ids(db),
+        max_total_value=payload.max_total_value, priority_ids=payload.priority_ids, allow_partial=payload.allow_partial)
+    return {**result, "binding": binding, 'main': main,
+        'warnings': [] if main['complete'] else ['Simulación exploratoria: identifica la principal completa antes de confirmar cualquier consumo.'],
+        'message': 'Se proponen segmentos completos según el orden de prioridad. El límite usa valor registrado, no gasto adicional. Filtrar o simular no entrega cartas.'}
 
 
 class TransferCandidate(BaseModel):

@@ -1,5 +1,12 @@
 # Pruebas del planificador FC27
 
+## Presupuesto conjunto y preparación de imágenes (12-oct-2026)
+
+Las tres pruebas nuevas del conjunto verifican límite global, prioridad explícita, segmentos completos, exclusión de precios desconocidos bajo presupuesto, protección obligatoria y ausencia de consumo. Pasaron dentro del mismo ensayo final `0b98eba56f`: **264 Pytest, 34 Vitest y 28 Playwright**, con Nginx y PostgreSQL aislados. Los cambios del generador de objetivos y del presupuesto estaban presentes en esa imagen; se publican en commits separados por capa.
+
+Las **8 pruebas de guardas Docker** pasaron. `fc27.ps1 Estado` muestra correctamente los acentos bajo Windows PowerShell y conservó la versión principal anterior. El nuevo argumento `--build-environment local` solo etiqueta las imágenes para preparar su publicación local; no relaja el aislamiento ni despliega. Se comprobará la revisión Git limpia antes de fijar imágenes para el ensayo de recuperación y la actualización autorizada.
+
+
 ## Plantillas para objetivos (12-oct-2026)
 
 El generador usa reglas auxiliares revisadas y muestra por separado composición, contexto y acciones de partido. Las pruebas cubren mínimos/máximos/exactos, once/banquillo/convocatoria, metadatos desconocidos, modalidades incompatibles, dificultad, cesiones, titulares reutilizables y propuesta sin principal. Guardar/exportar conservan principal, copias y progreso; los comprobantes caducan o se invalidan al cambiar reglas, inventario, protecciones o progreso. Dos guardados concurrentes crean una sola alternativa; nombres repetidos se rechazan. Los contadores históricos sin evidencia siguen siendo desconocidos.

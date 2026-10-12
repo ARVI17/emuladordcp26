@@ -45,6 +45,8 @@ def validate(config, project):
 def verify():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--scope', choices=['full', 'backend', 'frontend'], default='full')
+    parser.add_argument('--build-environment', choices=['test', 'local'], default='test',
+                        help='Image provenance only; both choices use disposable isolated services and never deploy the main stack')
     parser.add_argument('--port', type=int, default=8082)
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or args.port in {8080, 8081, 55432}:
@@ -55,7 +57,7 @@ def verify():
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip())
     env = dict(os.environ, VERIFY_BACKEND_IMAGE=project+'-backend', REVIEW_PORT=str(args.port),
-               BUILD_REVISION=revision, BUILD_DIRTY=str(dirty).lower(), BUILD_ENVIRONMENT='test',
+               BUILD_REVISION=revision, BUILD_DIRTY=str(dirty).lower(), BUILD_ENVIRONMENT=args.build_environment,
                BUILD_DATE=datetime.now(timezone.utc).isoformat())
     empty_env = report_dir/'empty.env'
     empty_env.write_text('', encoding='utf-8')

@@ -4,12 +4,12 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 function Invoke-Docker([string[]]$Arguments) {
     $result = & docker @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "Docker fallÃ³ (cÃ³digo $LASTEXITCODE)." }
+    if ($LASTEXITCODE -ne 0) { throw "Docker falló (código $LASTEXITCODE)." }
     return $result
 }
 if ($Accion -eq 'Pruebas') {
     & python (Join-Path $projectRoot 'scripts/verify_docker.py') --scope full
-    if ($LASTEXITCODE -ne 0) { throw 'La verificaciÃ³n aislada fallÃ³.' }
+    if ($LASTEXITCODE -ne 0) { throw 'La verificación aislada falló.' }
     exit 0
 }
 $context = (Invoke-Docker @('context','show')).Trim()
@@ -17,16 +17,16 @@ $contextInfo = (Invoke-Docker @('context','inspect',$context) | Out-String | Con
 if ($contextInfo.Endpoints.docker.Host -notmatch '^(npipe|unix)://') { throw 'Selecciona el motor Docker local.' }
 $prefix = @('--context',$context)
 $ids = @(Invoke-Docker ($prefix + @('ps','-aq','--no-trunc','--filter','label=com.docker.compose.project=emuladordcp26')))
-if ($ids.Count -eq 0) { throw 'No existe la instalaciÃ³n principal. Inicio no crea ni migra instalaciones; usa el procedimiento de despliegue revisado.' }
+if ($ids.Count -eq 0) { throw 'No existe la instalación principal. Inicio no crea ni migra instalaciones; usa el procedimiento de despliegue revisado.' }
 $containers = Invoke-Docker ($prefix + @('inspect') + $ids) | Out-String | ConvertFrom-Json
 $services = @{}
 foreach ($container in $containers) {
     $service = $container.Config.Labels.'com.docker.compose.service'
-    if ($services.ContainsKey($service)) { throw "Servicio duplicado: $service. Se conserva para revisiÃ³n." }
+    if ($services.ContainsKey($service)) { throw "Servicio duplicado: $service. Se conserva para revisión." }
     $services[$service] = $container
 }
 foreach ($required in @('database','backend','frontend','nginx')) {
-    if (-not $services.ContainsKey($required)) { throw "Falta $required; no se recrea automÃ¡ticamente." }
+    if (-not $services.ContainsKey($required)) { throw "Falta $required; no se recrea automáticamente." }
 }
 $pgMount = @($services.database.Mounts | Where-Object { $_.Type -eq 'volume' -and $_.Name -eq 'emuladordcp26_postgres_data' -and $_.Destination -eq '/var/lib/postgresql/data' })
 if ($pgMount.Count -ne 1) { throw 'No se acredita el volumen persistente principal.' }
@@ -39,7 +39,7 @@ if ($otherIds.Count) {
         $name = $container.Config.Labels.'com.docker.compose.project'
         if ($name -like 'emuladordcp26*' -and $name -ne 'emuladordcp26' -and $name -notlike 'emuladordcp26-check-*') {
             if ($Accion -eq 'Inicio') { throw "Existe otro proyecto FC27 ($name). Hay que acreditar sus datos antes de retirarlo." }
-            Write-Warning "Proyecto adicional pendiente de revisiÃ³n: $name"
+            Write-Warning "Proyecto adicional pendiente de revisión: $name"
         }
         if ($container.Id -notin $ids -and $container.State.Running) {
             foreach ($ports in $container.HostConfig.PortBindings.PSObject.Properties) {
@@ -71,6 +71,6 @@ foreach ($container in $current) {
 if ($Accion -ne 'Parada') {
     try {
         $build = Invoke-RestMethod 'http://127.0.0.1:8080/api/build' -TimeoutSec 10
-        Write-Output ("VersiÃ³n servida: {0} | {1}" -f $build.revision,$build.environment)
-    } catch { Write-Warning 'La API todavÃ­a no responde; no se acredita la versiÃ³n servida.' }
+        Write-Output ("Versión servida: {0} | {1}" -f $build.revision,$build.environment)
+    } catch { Write-Warning 'La API todavía no responde; no se acredita la versión servida.' }
 }

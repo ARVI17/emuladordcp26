@@ -15,3 +15,9 @@ Cada solución de `/segments/{id}/optimize` incluye `review_token`. Una selecci�
 Las pruebas usan inventario sintético. El fixture general selecciona expresamente su principal sintética; los tests de límite no lo hacen. Ningún mock de identidad, proveedor o catálogo está habilitado en producción.
 
 La recomendación y los perfiles incluyen una comparación de solo lectura con la principal: encaje de cada puesto equivalente, mejora/pérdida local y coste adicional cero al usar cartas propias. Un puesto sin equivalente queda pendiente, sin atribuirle una ganancia. El cálculo usa el mismo perfil de atributos en ambos lados, recurre a la media cuando faltan atributos y no certifica rendimiento o química oficial. La comparación no cambia la principal ni sus candados.
+
+## Presupuesto y prioridades del conjunto
+
+`/dcp/joint-preview` admite hasta seis segmentos y 24 copias, un límite opcional del valor registrado y un orden explícito de prioridades. Por defecto exige todos los segmentos; la opción de selección parcial permite elegir segmentos completos por ese orden. Completar uno de mayor prioridad prevalece sobre todos los de menor prioridad. Ninguna copia puede aparecer en dos segmentos de la misma solución y cada selección pasa de nuevo por el validador independiente.
+
+El límite es el valor de las cartas propias, no un gasto adicional: las compras propuestas siguen siendo cero. Con límite, los precios desconocidos se excluyen; sin límite se indican como desconocidos y no se suman como cero. Se muestran valor por segmento/conjunto, pendientes y, cuando corresponde, aportación, sobrante y puntuación restante. Las protecciones y reservas no pueden exceptuarse mediante presupuesto, prioridad ni parámetros adicionales. Un timeout no demuestra inviabilidad. Esta ruta simula bajo el bloqueo del inventario, no consume ni sustituye la revisión firmada necesaria para confirmar cada DCP.
