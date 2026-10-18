@@ -31,7 +31,11 @@ foreach ($required in @('database','backend','frontend','nginx')) {
 $pgMount = @($services.database.Mounts | Where-Object { $_.Type -eq 'volume' -and $_.Name -eq 'emuladordcp26_postgres_data' -and $_.Destination -eq '/var/lib/postgresql/data' })
 if ($pgMount.Count -ne 1) { throw 'No se acredita el volumen persistente principal.' }
 $binding = @($services.nginx.HostConfig.PortBindings.'80/tcp')
-if ($binding.Count -ne 1 -or $binding[0].HostPort -ne '8080') { throw 'La entrada principal no corresponde a localhost:8080.' }
+if ($binding.Count -ne 1 -or $binding[0].HostIp -notin @('127.0.0.1','::1')) { throw 'La entrada principal debe tener un único puerto local.' }
+$appPort = 0
+if (-not [int]::TryParse($binding[0].HostPort, [ref]$appPort) -or $appPort -lt 1024 -or $appPort -gt 65535) { throw 'Puerto principal no válido.' }
+$appAddress = if ($binding[0].HostIp -eq '::1') { '[::1]' } else { '127.0.0.1' }
+$appBaseUrl = "http://${appAddress}:$appPort"
 $otherIds = @(Invoke-Docker ($prefix + @('ps','-aq','--no-trunc','--filter','label=com.docker.compose.project')))
 if ($otherIds.Count) {
     $other = Invoke-Docker ($prefix + @('inspect') + $otherIds) | Out-String | ConvertFrom-Json
@@ -43,7 +47,7 @@ if ($otherIds.Count) {
         }
         if ($container.Id -notin $ids -and $container.State.Running) {
             foreach ($ports in $container.HostConfig.PortBindings.PSObject.Properties) {
-                if (@($ports.Value | Where-Object { $_.HostPort -eq '8080' }).Count) { throw 'Otro contenedor ocupa el puerto principal.' }
+                if (@($ports.Value | Where-Object { $_.HostPort -eq [string]$appPort }).Count) { throw 'Otro contenedor ocupa el puerto principal.' }
             }
         }
     }
@@ -62,7 +66,7 @@ if ($Accion -eq 'Parada') {
         }
     }
 }
-Write-Output 'FC27 personal: http://localhost:8080 | Proyecto: emuladordcp26'
+Write-Output "FC27 personal: http://localhost:$appPort | Proyecto: emuladordcp26"
 Write-Output 'Persistencia: emuladordcp26_postgres_data (se conserva)'
 $current = Invoke-Docker ($prefix + @('inspect') + $ids) | Out-String | ConvertFrom-Json
 foreach ($container in $current) {
@@ -70,7 +74,7 @@ foreach ($container in $current) {
 }
 if ($Accion -ne 'Parada') {
     try {
-        $build = Invoke-RestMethod 'http://127.0.0.1:8080/api/build' -TimeoutSec 10
+        $build = Invoke-RestMethod "$appBaseUrl/api/build" -TimeoutSec 10
         Write-Output ("Versión servida: {0} | {1}" -f $build.revision,$build.environment)
     } catch { Write-Warning 'La API todavía no responde; no se acredita la versión servida.' }
 }

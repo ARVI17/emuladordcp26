@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts'))
-from docker_lifecycle import HostLock, cleanup, prepare, recover, run_interruptible, save_manifest
+from docker_lifecycle import HostLock, cleanup, prepare, published_ports, recover, run_interruptible, save_manifest
 
 
 def validate(config, project):
@@ -74,6 +74,10 @@ def verify():
     if not detail['Endpoints']['docker']['Host'].startswith(('npipe://', 'unix://')):
         raise RuntimeError('Select a local Docker engine before verification')
     docker = ['docker', '--context', context]
+    main_ids = subprocess.check_output(docker+['ps', '-aq', '--filter', 'label=com.docker.compose.project=emuladordcp26'], text=True).split()
+    main = json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True)) if main_ids else []
+    if args.port in published_ports(main):
+        parser.error('El puerto pertenece a la instalación personal, incluso si está detenida')
     recover(docker, context)
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', 'docker-compose.review.yml', '-f', 'docker-compose.verify.yml']
     config = json.loads(subprocess.check_output(compose+['--profile', 'test', 'config', '--format', 'json'], cwd=ROOT, env=env, text=True))
@@ -82,7 +86,6 @@ def verify():
     effective = report_dir/'compose.json'
     effective.write_text(json.dumps(config, indent=2), encoding='utf-8')
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', str(effective)]
-    main_ids = subprocess.check_output(docker+['ps', '-aq', '--filter', 'label=com.docker.compose.project=emuladordcp26'], text=True).split()
     def main_state():
         if not main_ids: return []
         return [(c['Id'], c['State']['Status'], c['State']['StartedAt']) for c in json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True))]

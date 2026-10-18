@@ -1,5 +1,11 @@
 # Pruebas del planificador FC27
 
+## Puerto personal configurable (18-oct-2026)
+
+Por petición del propietario, la instalación personal pasó de 8080 a **8090** conservando imágenes y revisión servida `4f8eded`, esquema **0017** y volúmenes. Solo se recrearon backend (CORS) y Nginx (publicación del puerto); frontend, PostgreSQL y Ollama conservaron ID/arranque. Antes se creó un dump y se restauraron/compararon sus **41 tablas** en una base temporal separada. La actividad concurrente de sesiones/contextos/capturas se conservó; no se restauró la copia sobre el principal. Evidencia privada y configuración de regreso a 8080: `state/port-8090/`.
+
+Pasaron **9 pruebas de guardas**, resolución de `APP_PORT`/CORS con Compose, `Estado` e `Inicio` idempotente, HTTP de aplicación/health/OpenAPI, preflight CORS y Alembic/check del principal. El verificador rechazó realmente `--port 8090` antes de construir o iniciar pruebas. La ejecución aislada `29018b292d` pasó build, arranque, salud/OpenAPI, migraciones **0018** y **2 pruebas de extensión compilada**; retiró sus recursos y confirmó principal/volúmenes sin cambios. No se repitieron Pytest/Vitest/los 32 recorridos para este ajuste de configuración: los dos CI de `fcd830f` ya los aprobaron y el CI del nuevo commit los vuelve a ejecutar. Cambiar el puerto no despliega las funciones nuevas del lector/Galería en la instalación personal.
+
 ## Lector estructurado, Galería v2 y diario (18-oct-2026)
 
 La ampliación se valida con `scripts/verify_docker.py`: Compose temporal, PostgreSQL separados para API/pruebas destructivas, Nginx, build de SPA y extensión MV3 real en Chromium aislado. `/api/openapi.json` contiene las rutas nuevas de lector, cesta, plantillas DCP y diario. Alembic upgrade/current/check llega a **0018**. Principal y volúmenes permanecen sin cambios; se retiran únicamente contenedores/redes temporales propios.
