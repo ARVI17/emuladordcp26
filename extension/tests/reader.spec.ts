@@ -7,7 +7,7 @@ import {canonical,hash} from '../lib/contracts'
 const positions=['GK','RB','CB','CB','LB','CM','CM','CM','RW','ST','LW']
 function fixture(language='en'){
  const es=['POR','LD','DFC','DFC','LI','MC','MC','MC','ED','DC','EI']
- return `<!doctype html><html lang="${language}"><title>MUESTRA SINTÉTICA, NO EA</title><body><h1>Solo prueba sintética</h1><section data-club-lab-sample="1" data-edition="FC27" data-source="synthetic_dom" data-page="1" data-view="inventory" data-virtualized="true">${positions.map((p,i)=>`<article data-card><span data-field="name">Muestra sintética ${i}</span><span data-field="rating">88</span><span data-field="position">${language==='es'?es[i]:p}</span><span data-field="card_type">Oro</span><span data-field="is_loan">${language==='es'?'No':'false'}</span><span data-field="is_evolution">false</span><span data-field="tradable">false</span><span data-field="gallery_score">1.000</span></article>`).join('')}</section></body></html>`
+ return `<!doctype html><html lang="${language}"><title>MUESTRA SINTÉTICA, NO EA</title><body><h1>Solo prueba sintética</h1><section data-club-lab-sample="1" data-edition="FC27" data-source="synthetic_dom" data-page="1" data-view="inventory" data-virtualized="true">${positions.map((p,i)=>`<article data-card><span data-field="name">Muestra sintética ${i}</span><span data-field="rating">88</span><span data-field="position">${language==='es'?es[i]:p}</span><span data-field="card_type">Oro</span><span data-field="is_loan">${language==='es'?'No':'false'}</span><span data-field="is_evolution">false</span><span data-field="tradable">false</span><span data-field="gallery_score">${language==='es'?'1.000':'1,000'}</span></article>`).join('')}</section></body></html>`
 }
 
 test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal, retries and worker suspension',async()=>{
@@ -32,7 +32,7 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
  await new Promise<void>(resolve=>server.listen(8090,'127.0.0.1',resolve))
  const base='http://127.0.0.1:8090', extension=path.resolve('.output/chrome-mv3')
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]})
- const metrics={pages:0,bytes:0,receipts:0,local_http_llm_requests:0,local_http_ocr_requests:0,elapsed_ms:0,known_fields:0,unknown_fields:0}
+ const metrics={observations:0,bytes:0,receipts:0,local_http_llm_requests:0,local_http_ocr_requests:0,elapsed_ms:0,known_fields:0,unknown_fields:0}
  let publicRequests=0
  context.on('request',request=>{const url=new URL(request.url());if(['http:','https:'].includes(url.protocol)&&!['127.0.0.1','localhost'].includes(url.hostname))publicRequests++})
  const started=Date.now()
@@ -93,20 +93,37 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
   // ES rendering of same rows, loading sentinel, no accidental full-club claim.
   offline=true
   await page.evaluate(()=>document.querySelector('section')!.setAttribute('aria-busy','true'))
-  await page.locator('[data-field=position]').first().evaluate(el=>el.textContent='POR')
+  await page.evaluate(()=>{
+   document.documentElement.lang='es'
+   const positions=['POR','LD','DFC','DFC','LI','MC','MC','MC','ED','DC','EI']
+   document.querySelectorAll('[data-field=position]').forEach((el,i)=>el.textContent=positions[i]??null)
+   document.querySelectorAll('[data-field=is_loan]').forEach(el=>el.textContent='No')
+   document.querySelectorAll('[data-field=gallery_score]').forEach(el=>el.textContent='1.000')
+  })
   await page.locator('[data-field=rating]').first().evaluate(el=>el.textContent='89')
   await page.waitForTimeout(600)
   expect((await send('status')).pending).toBe(0)
   await page.evaluate(()=>document.querySelector('section')!.setAttribute('aria-busy','false'))
   await expect.poll(async()=>(await send('status')).pending).toBe(1)
   offline=false;expect((await send('retry')).ok).toBeTruthy()
+  const statusAfterReview=await context.request.get(base+'/api/reader/status',{headers})
+  expect(statusAfterReview.ok()).toBeTruthy()
+  const latest=await statusAfterReview.json()
+  expect(latest.events).toHaveLength(2)
+  expect(latest.events.find((e:any)=>e.event_id===eventId).status).toBe('reviewed')
+  const second=latest.events.find((e:any)=>e.event_id!==eventId)
+  const spanishResponse=await context.request.get(base+'/api/reader/events/'+second.event_id,{headers})
+  expect(spanishResponse.ok()).toBeTruthy()
+  const spanish=await spanishResponse.json()
+  expect(spanish.payload.records.map((r:any)=>r.position)).toEqual(['POR','LD','DFC','DFC','LI','MC','MC','MC','ED','DC','EI'])
+  expect(spanish.payload.records.every((r:any)=>r.is_loan===false&&r.gallery_score===1000)).toBe(true)
   await send('pause')
   await page.locator('[data-field=rating]').first().evaluate(el=>el.textContent='90')
   await page.waitForTimeout(600);expect((await send('status')).pending).toBe(0)
   expect((await context.request.post(base+'/api/reader/grants/'+saved.state.binding+'/revoke',{headers,data:{}})).ok()).toBeTruthy()
   expect((await send('analyze')).ok).toBe(false)
   metrics.local_http_llm_requests=llmRequests;metrics.local_http_ocr_requests=ocrRequests;expect(llmRequests+ocrRequests).toBe(0)
-  metrics.pages=2;metrics.bytes=receivedBytes;metrics.receipts=receipts;metrics.elapsed_ms=Date.now()-started
+  metrics.observations=2;metrics.bytes=receivedBytes;metrics.receipts=receipts;metrics.elapsed_ms=Date.now()-started
   metrics.unknown_fields=event.records.reduce((n:number,r:any)=>n+Object.entries(r).filter(([k,v])=>!['ordinal','evidence'].includes(k)&&v===null).length,0)
   metrics.known_fields=event.records.reduce((n:number,r:any)=>n+Object.entries(r).filter(([k,v])=>!['ordinal','evidence'].includes(k)&&v!==null).length,0)
   const performance=await context.newCDPSession(panel);await performance.send('Performance.enable')

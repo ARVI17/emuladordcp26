@@ -51,6 +51,14 @@ def test_atomic_receipts_twenty_retries_review_and_real_solver(client,monkeypatc
     assert reviewed.status_code==200,reviewed.text
     assert client.get('/players').json()['total']==11
     assert client.post('/reader/events',headers=headers,json=event).json()==receipt.json()
+    listed=client.get('/reader/status')
+    assert listed.status_code==200,listed.text
+    listed_event=listed.json()['events'][0]
+    assert listed_event['status']=='reviewed'
+    assert listed_event['reading_id']==reviewed.json()['reading_id']
+    assert listed_event['event_id']==event['event_id']
+    from datetime import datetime
+    assert datetime.fromisoformat(listed_event['observed_at'])==datetime.fromisoformat(event['observed_at'])
     for _ in range(2): assert client.post('/reader/events/'+event['event_id']+'/review',json={'confirmation':'REVISAR LOTE DOM'}).status_code==200
     proposal=client.get('/reader/proposal',headers=headers)
     assert proposal.status_code==200,proposal.text

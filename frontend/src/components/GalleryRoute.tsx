@@ -1,12 +1,12 @@
 import {useEffect,useState} from 'react'
 import {useMutation,useQuery} from '@tanstack/react-query'
-import {api,money} from '../api/client'
+import {api} from '../api/client'
 import {ErrorBox} from './ui'
+import {GalleryRouteResult,type GalleryRouteResultData} from './GalleryRouteResult'
 import {GalleryScenarioEditor} from './GalleryScenarioEditor'
 import {GalleryAcquisitions,type Acquisition} from './GalleryAcquisitions'
 type Breakdown={name:string;basis_score:number|null;bonus:number|null;percent_basis_points:number|null;count:number;provisional:boolean}
 type Scenario={id:number;name:string;source:string;grade_thresholds:Record<string,number>;progress:{attained_grade?:string|null;claimed_grade?:string|null};evaluation:{score:number|null;grade:string|null;tags:Breakdown[];warnings:string[]}}
-type Route={status:string;additional_tokens?:number|null;optimal_relative_to_candidates?:boolean;finance?:{gross_purchases:number;maximum_capital:number;estimated_net_spend:number;realized_profit_loss:number|null};steps?:string[]}
 export function GalleryRoute(){
  const [selected,setSelected]=useState<number[]>([]),[mode,setMode]=useState('known_only'),[target,setTarget]=useState(1),[capital,setCapital]=useState(0),[loss,setLoss]=useState(0),[coins,setCoins]=useState(0),[reserve,setReserve]=useState(0)
  const [editor,setEditor]=useState(false)
@@ -14,7 +14,7 @@ export function GalleryRoute(){
  const scenarios=useQuery({queryKey:['gallery-scenarios'],queryFn:()=>api<Scenario[]>('/gallery/local-scenarios')})
 
  const progress=useMutation({mutationFn:({id,attained,claimed}:{id:number;attained:string|null;claimed:string|null})=>api(`/gallery/sets/${id}/declared-progress`,{method:'PUT',body:JSON.stringify({attained_grade:attained,claimed_grade:claimed,note:'Declaración revisada desde Galería local',confirmation:'REGISTRAR GRADO DECLARADO'})}),onSuccess:()=>{route.reset();return scenarios.refetch()}})
- const route=useMutation({mutationFn:()=>api<Route>('/gallery/route-preview',{method:'POST',body:JSON.stringify({set_ids:selected,mode,market,target_tokens:mode==='token_target'?target:null,maximum_capital:capital,maximum_loss:loss,available_coins:coins,reserve_coins:reserve,candidates:mode==='known_only'?[]:candidates,fee_basis_points:fee===''?null:Number(fee),fee_source:feeSource||null,allow_scenarios:true})})})
+ const route=useMutation({mutationFn:()=>api<GalleryRouteResultData>('/gallery/route-preview',{method:'POST',body:JSON.stringify({set_ids:selected,mode,market,target_tokens:mode==='token_target'?target:null,maximum_capital:capital,maximum_loss:loss,available_coins:coins,reserve_coins:reserve,candidates:mode==='known_only'?[]:candidates,fee_basis_points:fee===''?null:Number(fee),fee_source:feeSource||null,allow_scenarios:true})})})
 
  useEffect(()=>route.reset(),[selected,mode,target,capital,loss,coins,reserve,candidates,fee,feeSource,market,route.reset])
  return <section className="panel"><h3>Avanzar Galería · reglas versión 2</h3><p>Calcula sobre historia elegible conocida. Las reglas declaradas se conservan como escenarios y no se presentan como fórmula oficial. El grado obtenido y el premio reclamado son datos distintos.</p>
@@ -26,7 +26,7 @@ export function GalleryRoute(){
  {mode==='token_target'&&<label>Fichas adicionales<input type="number" min={1} value={target} onChange={e=>setTarget(Number(e.target.value))}/></label>}
  {mode!=='known_only'&&<><div className="form-grid">{[['Monedas declaradas disponibles',coins,setCoins],['Reserva mínima',reserve,setReserve],['Capital máximo',capital,setCapital],['Pérdida tolerada',loss,setLoss]].map(([label,value,set])=><label key={String(label)}>{String(label)}<input type="number" min={0} value={value as number} onChange={e=>(set as (n:number)=>void)(Number(e.target.value))}/></label>)}</div><details><summary>Candidatas y cotizaciones revisadas</summary><label>Mercado de las candidatas<select value={market} onChange={e=>{setMarket(e.target.value);setCandidates([]);route.reset()}}>{['Console','PC','Switch','Switch2'].map(m=><option key={m}>{m}</option>)}</select></label><GalleryAcquisitions market={market} value={candidates} onChange={setCandidates}/><label>Comisión asumida, puntos básicos (100 = 1 %)<input type="number" value={fee} onChange={e=>setFee(e.target.value)}/></label><label>Fuente o hipótesis de la comisión<input value={feeSource} onChange={e=>setFeeSource(e.target.value)}/></label></details></>}
  <button disabled={!selected.length||route.isPending||progress.isPending} onClick={()=>route.mutate()}>Calcular ruta local revisable</button>
- {route.data&&<div role="status"><p>{route.data.status==='provisional'?'Resultado provisional':route.data.status==='feasible'?'Ruta factible':'Sin ruta validada'} · fichas adicionales conocidas: {route.data.additional_tokens??'pendientes'} · {route.data.optimal_relative_to_candidates?'Óptimo relativo a las candidatas':'Óptimo no demostrado'}</p>{route.data.finance&&<dl><dt>Compras brutas</dt><dd>{money(route.data.finance.gross_purchases)}</dd><dt>Capital máximo necesario</dt><dd>{money(route.data.finance.maximum_capital)}</dd><dt>Gasto neto estimado</dt><dd>{money(route.data.finance.estimated_net_spend)}</dd><dt>Resultado realizado</dt><dd>Sin operación observada</dd></dl>}<ol>{route.data.steps?.map(s=><li key={s}>{s}</li>)}</ol></div>}
+ {route.data&&<GalleryRouteResult value={route.data}/>}
  <ErrorBox error={scenarios.error||progress.error||route.error}/></section>
 }
 function Progress({scenario,save}:{scenario:Scenario;save:(a:string|null,c:string|null)=>void}){

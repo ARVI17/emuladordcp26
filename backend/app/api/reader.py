@@ -103,7 +103,7 @@ def status(db: Session = Depends(get_db)):
     events = list(db.scalars(select(ReaderEvent).order_by(ReaderEvent.received_at.desc()).limit(30)))
     return dict(grants=[dict(id=r.id, extension_id=r.extension_id, status=r.status,
         expires_at=r.expires_at, generation=r.generation) for r in rows],
-        events=[dict(observed_at=e.observed_at, **e.receipt, **e.review_data) for e in events],
+        events=[{'observed_at':e.observed_at, **e.receipt, **e.review_data} for e in events],
         ea_extractor='pending_real_sample', remote_write=False, global_complete=False)
 
 

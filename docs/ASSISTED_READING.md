@@ -43,6 +43,8 @@ Grado obtenido, premio reclamado y fichas potenciales son distintos. Premios acu
 
 La ruta explora hasta diez candidatas compartidas/ocho conjuntos durante ocho segundos. Su secuencia conservadora compra toda la cesta antes de vender: capital máximo igual a compras brutas, sin prometer capital mínimo entre todas las secuencias. Ejemplo **sintético**: compra 10000, venta 9800, comisión asumida 5 % → ingreso 9310, gasto neto 690, capital 10000. Una adquisición compartida se paga una vez; retenerla no descuenta una venta. Valor residual, ingreso previsto y resultado realizado van separados; ventas pendientes no aumentan monedas. Simular no crea compras propias ni planes ejecutables.
 
+El resultado muestra la cesta elegida, precio fechado, conservación/reventa prevista y selección por conjunto con grado actual/propuesto y premios marginales. Las entradas históricas no acreditan por sí solas disponibilidad actual. En la revisión de lecturas se puede desplegar el lote completo con todos los campos, desconocidos, evidencia y fecha original antes de admitirlo.
+
 DCP añade filtros de primer propietario/holografía/cesión/Evo, `/dcp/templates` y `locked_ids`. Reutilizar por API verifica huella de requisitos y recalcula; aplicar filtros en UI solo modifica filtros. **Sustituir solo esta carta** exige las demás y revalida protecciones. `/objective-journal/{uuid}` guarda tareas declaradas por partido, idempotencia, revisión optimista e historial de correcciones. Corregir reemplaza ese partido sin incrementar progreso EA ni certificar condiciones de composición.
 
 ### Matriz funcional
