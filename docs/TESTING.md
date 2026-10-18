@@ -1,6 +1,6 @@
 # Pruebas del planificador FC27
 
-## Inspector guiado 0.2.0 (18-oct-2026)
+## Inspector guiado 0.2.0–0.2.1 (18-oct-2026)
 
 El pase integral aislado `c010a31009` superó **295 Pytest/PostgreSQL** (443,91 s), **39 Vitest**, **32 Playwright móvil/escritorio** y **4 pruebas de extensión compilada**. Pasaron build, arranque detenido sin Ollama, salud/OpenAPI y Alembic upgrade/current/check hasta **0018**. La limpieza retiró solo recursos temporales propios; el verificador confirmó contenedores principales y volúmenes sin cambios. También pasaron nueve guardas Docker, TypeScript/build local y revisión visual de Mi cuenta móvil/panel de extensión a 390 px. El pase se realizó sobre el árbol de trabajo; el CI comprueba el SHA publicado. Persiste el aviso conocido de Starlette/TestClient.
 
@@ -11,6 +11,8 @@ Métricas sintéticas finales: dos eventos, 24 recibos, 200.227 bytes de cuerpos
 El primer intento `369bba1edf` pasó cinco pruebas de lector y falló una expectativa Vitest que conservaba el texto antiguo del enlace; se actualizó la expectativa y se añadió la apertura del asistente. `5c49d82a4d` pasó los cuatro casos de extensión antes de la regresión final. No se cuenta el intento fallido como pase.
 
 El ZIP privado `state/club-lab-reader-0.2.0.zip` contiene seis archivos, 52.916 bytes, SHA256 `c85625e74c04f1a6a3c04a696a02414b38994f434c45737df48b0f002b01714d`. No incluye mapas del usuario ni datos personales. La instalación real se comprobó en 8090, revisión **4f8eded**, esquema **0017**, sin rutas `/reader`; no se desplegaron nuevas imágenes.
+
+La revisión **0.2.1** corrige únicamente la procedencia del mapa local: `local_region_map` no presume que una exportación propia sea sintética; la ingesta sigue distinguiendo sus dos orígenes originales. Pasó `316d31c1ea`: build, arranque, OpenAPI/salud, Alembic0018/check y cuatro pruebas de extensión, con limpieza y principal/volúmenes sin cambios. No se repitieron localmente Pytest ni los recorridos de SPA para ese cambio de etiqueta; el CI del commit ejecuta todas las capas. ZIP actual: `state/club-lab-reader-0.2.1.zip`, seis archivos, 52.917 bytes, SHA256 `5070d58cdc8d99d7c8433a2e6e90cc1e1aaa48cb0463437a654ede3cdcd7cebf`.
 
 **Pendiente:** no se recibió un mapa real revisado de cabecera/lista/ficha/principal/DCP u objetivo. No se han probado selectores EA, permiso `activeTab` en la sesión personal ni reconocimiento real de esos campos. Tampoco están implementados el nuevo origen de ingesta real, fragmentación de más de 30 filas, actualización automática sin conflictos y recorridos con checkpoints/automatismo de muestra. El reinicio de backend sigue simulado por el proxy del test, no por reinicio de Docker. Los tests no acreditan acceso al club real. [Mecanismo entregado y siguiente evidencia](VIEW_RECOGNITION.md).
 

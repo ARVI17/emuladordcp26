@@ -1,6 +1,6 @@
 # Reconocimiento guiado de vistas FC27
 
-La extensión 0.2.0 añade un inspector de regiones y un borrador declarativo `ViewProfile`. **No incluye un extractor EA contrastado.** Los mapas no admiten cartas ni verifican identidad. No hay navegación automática en EA.
+La extensión 0.2.1 añade un inspector de regiones y un borrador declarativo `ViewProfile`. **No incluye un extractor EA contrastado.** Los mapas no admiten cartas ni verifican identidad. No hay navegación automática en EA.
 
 ## Estado comprobado el 18 de octubre de 2026
 
@@ -22,7 +22,7 @@ Una región seleccionada, como máximo dos contenedores ascendentes, 400 nodos v
 
 Los controles son candidatos con `approved=false`. Su nombre no acredita un efecto seguro. `virtualized`, filtros y página permanecen desconocidos si no hay un perfil que los interprete. Fin de lista y cobertura global no se afirman. Un detector de secretos reduce riesgos, pero no reemplaza la revisión humana de la exportación.
 
-Cada mapa conserva fecha local, referencia de documento y procedencia. La fecha es de lectura del DOM, no de actualización remota de EA. La firma usa estructura, roles y selectores, sin textos personales, saldo ni nombre del club. El perfil queda `proposed`, sin extractores ni transiciones habilitadas. No se ejecuta configuración recibida ni código remoto.
+Cada mapa conserva fecha local, referencia de documento y procedencia: `local_region_map` para regiones del formato local (sin presumir si sus datos son sintéticos o exportados) y `observed_page_map` para la ruta oficial. La ingesta existente conserva por separado `synthetic_dom` y `user_export_dom`. La fecha es de lectura del DOM, no de actualización remota de EA. La firma usa estructura, roles y selectores, sin textos personales, saldo ni nombre del club. El perfil queda `proposed`, sin extractores ni transiciones habilitadas. No se ejecuta configuración recibida ni código remoto.
 
 Pendiente de evidencia real: cabecera/cuenta, lista, detalle, principal y un DCP/objetivo. Tras recibirla se contrastarán unicidad, campos, estados de carga y cambios de vista antes de admitir un nuevo origen al inventario. No se ha añadido `observed_page_dom` a la ingesta sin ese contrato. También siguen pendientes fragmentación de listas mayores de 30, planes con checkpoints, actualización automática no conflictiva y motor autónomo en muestra propia. El lector de muestras previo conserva sus límites explícitos; no simula cobertura completa.
 

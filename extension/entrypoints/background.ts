@@ -118,7 +118,7 @@ export default defineBackground(()=>{
         const view=viewType.parse(message.view)
         const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
         if(!tab?.id||!tab.url||(!eaDiagnostic(tab.url)&&!admitted(tab.url)))throw Error('Reconoce desde la pestaña oficial o la muestra propia, usando el icono de la extensión para autorizarla.')
-        const source=admitted(tab.url)?'synthetic_map':'observed_page_map'
+        const source=admitted(tab.url)?'local_region_map':'observed_page_map'
         const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:inspectRegion})
         if(!result?.documentId||!result.result)throw Error('No se pudo inspeccionar este documento')
         const latest=await chrome.tabs.get(tab.id)

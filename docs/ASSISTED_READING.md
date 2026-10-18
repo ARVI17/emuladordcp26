@@ -1,6 +1,6 @@
 # Lectura visual asistida de FC27
 
-La extensión **0.2.0** incorpora [reconocimiento guiado por regiones](VIEW_RECOGNITION.md), mapa privado revisable y comprobación de compatibilidad con `http://localhost:8090`. Funciona como inspector sin actualizar el backend personal; extraer/admitir cartas sigue siendo una capacidad separada.
+La extensión **0.2.1** incorpora [reconocimiento guiado por regiones](VIEW_RECOGNITION.md), mapa privado revisable y comprobación de compatibilidad con `http://localhost:8090`. Funciona como inspector sin actualizar el backend personal; extraer/admitir cartas sigue siendo una capacidad separada.
 
 ## Lector estructurado, Galería y utilidades (18-oct-2026)
 
@@ -19,7 +19,7 @@ npm.cmd run build
 
 En `chrome://extensions`, habilita modo desarrollador y **Cargar descomprimida** → `extension/.output/chrome-mv3`. Es un cliente del mismo backend; para emparejar y leer muestras necesita esta rama con migración `0018` y `/reader/capabilities`. El inspector de regiones funciona sin emparejamiento. Cargarlo no actualiza la instalación personal. No requiere scripts remotos, Native Messaging ni copiar el perfil.
 
-Dependencias principales comprobadas en sus paquetes instalados: WXT 0.21.4 y Zod 3.25.76 (MIT), Playwright 1.62.1 (Apache-2.0). El build actual se empaqueta en `state/club-lab-reader-0.2.0.zip`, fuera de Git.
+Dependencias principales comprobadas en sus paquetes instalados: WXT 0.21.4 y Zod 3.25.76 (MIT), Playwright 1.62.1 (Apache-2.0). El build actual se empaqueta en `state/club-lab-reader-0.2.1.zip`, fuera de Git.
 
 En **Mi cuenta**, selecciona explícitamente un contexto asistido. Copia el ID de extensión mostrado en su panel a **Lector estructurado**, confirma `EMPAREJAR LECTOR` y copia ID/código de emparejamiento al panel. El código dura tres minutos/cinco intentos; la credencial local dura como máximo doce horas, ligada a sesión/contexto/generación. Nunca es una credencial EA.
 

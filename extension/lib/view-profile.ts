@@ -6,7 +6,7 @@ const selector=z.string().min(1).max(240)
 export const viewProfile=z.object({
   profile_id:z.string().uuid(),revision:z.literal(1),edition:z.literal('FC27'),
   origin:z.string().url(),route:z.string().max(160),language:z.string().max(16),view:viewType,
-  evidence_origin:z.enum(['synthetic_map','observed_page_map']),map_id:z.string().uuid(),
+  evidence_origin:z.enum(['local_region_map','observed_page_map']),map_id:z.string().uuid(),
   structure_hash:z.string().regex(/^[a-f0-9]{64}$/),status:z.literal('proposed'),
   recognition:z.array(selector).max(12),preconditions:z.array(z.string().max(120)).max(12),
   extractors:z.array(z.object({selector,field:z.string().max(60),normalization:z.enum(['text','integer','boolean','position']),

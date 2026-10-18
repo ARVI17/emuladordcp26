@@ -40,7 +40,7 @@ test('compiled inspector: private bounded maps, no forms or clicks; old backend 
   const select=()=>page.evaluate(()=>{const range=document.createRange();range.selectNodeContents(document.querySelector('h2')!);const s=getSelection()!;s.removeAllRanges();s.addRange(range)})
   await select();expect((await send('recognize',{view:'inventory'})).ok).toBe(true)
   let maps=(await send('status')).maps
-  expect(maps).toHaveLength(1);expect(maps[0].profile.evidence_origin).toBe('synthetic_map')
+  expect(maps).toHaveLength(1);expect(maps[0].profile.evidence_origin).toBe('local_region_map')
   expect(viewProfile.safeParse(maps[0].profile).success).toBe(true)
   expect(maps[0].profile.extraction_enabled).toBe(false)
   const encoded=JSON.stringify(maps)
