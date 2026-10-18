@@ -58,6 +58,15 @@ def authenticated(request: Request, db: Session = Depends(raw_db)):
     return db, grant
 
 
+@router.get('/capabilities')
+def capabilities(request: Request):
+    transport(request)
+    return dict(protocol=1, reader_versions=['semantic-sample-1'], max_batch_records=30,
+                source_kinds=['synthetic_dom', 'user_export_dom'],
+                observed_page_extraction=False, remote_navigation=False,
+                provider_verified=False, required_schema_revision='0018')
+
+
 @router.post('/pairings', status_code=201)
 def create_pairing(payload: PairingInput, request: Request, db: Session = Depends(get_db)):
     require_assisted(db)

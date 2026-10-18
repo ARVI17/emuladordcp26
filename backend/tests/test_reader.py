@@ -13,6 +13,20 @@ pytestmark = pytest.mark.catalog_boundary
 EXTENSION = 'a'*32
 
 
+def test_capabilities_are_public_bounded_and_not_provider_verification(client, monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, 'cors_origins', settings.cors_origins+',http://testserver')
+    response = client.get('/reader/capabilities', headers={'X-Reader-Extension': EXTENSION})
+    assert response.status_code == 200
+    assert response.json()['protocol'] == 1
+    assert response.json()['source_kinds'] == ['synthetic_dom', 'user_export_dom']
+    assert not response.json()['observed_page_extraction']
+    assert not response.json()['remote_navigation']
+    assert not response.json()['provider_verified']
+    assert client.get('/reader/capabilities', headers={'Host': 'evil.example'}).status_code == 403
+    assert client.get('/reader/capabilities', headers={'Origin': 'https://evil.example'}).status_code == 403
+
+
 def paired(client, monkeypatch):
     from app.core.config import settings
     monkeypatch.setattr(settings,'cors_origins',settings.cors_origins+',http://testserver')

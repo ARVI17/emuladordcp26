@@ -1,5 +1,19 @@
 # Pruebas del planificador FC27
 
+## Inspector guiado 0.2.0 (18-oct-2026)
+
+El pase integral aislado `c010a31009` superó **295 Pytest/PostgreSQL** (443,91 s), **39 Vitest**, **32 Playwright móvil/escritorio** y **4 pruebas de extensión compilada**. Pasaron build, arranque detenido sin Ollama, salud/OpenAPI y Alembic upgrade/current/check hasta **0018**. La limpieza retiró solo recursos temporales propios; el verificador confirmó contenedores principales y volúmenes sin cambios. También pasaron nueve guardas Docker, TypeScript/build local y revisión visual de Mi cuenta móvil/panel de extensión a 390 px. El pase se realizó sobre el árbol de trabajo; el CI comprueba el SHA publicado. Persiste el aviso conocido de Starlette/TestClient.
+
+El inspector prueba mapa acotado, exclusión de formularios/textos sensibles/ocultos, ausencia de clics, firma independiente del nombre, rechazo ante acceso, eliminación privada, distinción de URL de muestra/EA, backend antiguo, confirmación de cambio de origen y conservación de una preferencia anterior incluso al desconectar. Esa preferencia deliberada de 8080 aparece en la captura sintética del panel; el valor inicial real es 8090. El recorrido completo del lector utiliza ahora `http://localhost:8090` y mantiene los 20 reenvíos, acuse perdido, terminación del worker, revisión y propuesta sin modificar principal.
+
+Métricas sintéticas finales: dos eventos, 24 recibos, 200.227 bytes de cuerpos HTTP incluidos reenvíos, 6.566 ms de secuencia; primer recibo 104 ms, posteriores 34–91 ms. Primera lectura: 99 campos presentes y 88 nulos. Heap JS del panel: 5.164.972 bytes, no RAM total del navegador. Cero solicitudes públicas y cero HTTP a LLM/OCR en ese recorrido estructurado. La suite de aplicación sí conserva sus pruebas OCR separadas. Una muestra puntual durante Pytest: proceso de pruebas 326,4 MiB, API 137,9 MiB; no representa pico ni presupuesto de producción.
+
+El primer intento `369bba1edf` pasó cinco pruebas de lector y falló una expectativa Vitest que conservaba el texto antiguo del enlace; se actualizó la expectativa y se añadió la apertura del asistente. `5c49d82a4d` pasó los cuatro casos de extensión antes de la regresión final. No se cuenta el intento fallido como pase.
+
+El ZIP privado `state/club-lab-reader-0.2.0.zip` contiene seis archivos, 52.916 bytes, SHA256 `c85625e74c04f1a6a3c04a696a02414b38994f434c45737df48b0f002b01714d`. No incluye mapas del usuario ni datos personales. La instalación real se comprobó en 8090, revisión **4f8eded**, esquema **0017**, sin rutas `/reader`; no se desplegaron nuevas imágenes.
+
+**Pendiente:** no se recibió un mapa real revisado de cabecera/lista/ficha/principal/DCP u objetivo. No se han probado selectores EA, permiso `activeTab` en la sesión personal ni reconocimiento real de esos campos. Tampoco están implementados el nuevo origen de ingesta real, fragmentación de más de 30 filas, actualización automática sin conflictos y recorridos con checkpoints/automatismo de muestra. El reinicio de backend sigue simulado por el proxy del test, no por reinicio de Docker. Los tests no acreditan acceso al club real. [Mecanismo entregado y siguiente evidencia](VIEW_RECOGNITION.md).
+
 ## Puerto personal configurable (18-oct-2026)
 
 Por petición del propietario, la instalación personal pasó de 8080 a **8090** conservando imágenes y revisión servida `4f8eded`, esquema **0017** y volúmenes. Solo se recrearon backend (CORS) y Nginx (publicación del puerto); frontend, PostgreSQL y Ollama conservaron ID/arranque. Antes se creó un dump y se restauraron/compararon sus **41 tablas** en una base temporal separada. La actividad concurrente de sesiones/contextos/capturas se conservó; no se restauró la copia sobre el principal. Evidencia privada y configuración de regreso a 8080: `state/port-8090/`.

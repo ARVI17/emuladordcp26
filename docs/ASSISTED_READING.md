@@ -1,5 +1,7 @@
 # Lectura visual asistida de FC27
 
+La extensión **0.2.0** incorpora [reconocimiento guiado por regiones](VIEW_RECOGNITION.md), mapa privado revisable y comprobación de compatibilidad con `http://localhost:8090`. Funciona como inspector sin actualizar el backend personal; extraer/admitir cartas sigue siendo una capacidad separada.
+
 ## Lector estructurado, Galería y utilidades (18-oct-2026)
 
 Base comprobada: `4f8eded842682a98ba8f9678da5c01feb00547c2`; rama de ampliación `agent/fc27-dom-gallery`. La inspección local encontró la pestaña «FC27» en ChatGPT, no en EA, y ninguna muestra de lista/ficha/DCP o exportación legítima en los archivos disponibles. No se inspeccionó el perfil privado de Chrome. **El extractor EA real sigue pendiente de estructura observada y permiso aplicable.** El recorrido compilado usa HTML sintético propio; no certifica el hito con el club real.
@@ -15,17 +17,17 @@ npm.cmd run check
 npm.cmd run build
 ```
 
-En `chrome://extensions`, habilita modo desarrollador y **Cargar descomprimida** → `extension/.output/chrome-mv3`. Es un cliente del mismo backend; necesita esta rama con migración `0018`. Cargarlo no actualiza la instalación personal. No requiere scripts remotos, Native Messaging ni copiar el perfil.
+En `chrome://extensions`, habilita modo desarrollador y **Cargar descomprimida** → `extension/.output/chrome-mv3`. Es un cliente del mismo backend; para emparejar y leer muestras necesita esta rama con migración `0018` y `/reader/capabilities`. El inspector de regiones funciona sin emparejamiento. Cargarlo no actualiza la instalación personal. No requiere scripts remotos, Native Messaging ni copiar el perfil.
 
-Dependencias principales comprobadas en sus paquetes instalados: WXT 0.21.4 y Zod 3.25.76 (MIT), Playwright 1.62.1 (Apache-2.0). El build local también se empaquetó en `state/club-lab-reader-0.1.0.zip`, fuera de Git.
+Dependencias principales comprobadas en sus paquetes instalados: WXT 0.21.4 y Zod 3.25.76 (MIT), Playwright 1.62.1 (Apache-2.0). El build actual se empaqueta en `state/club-lab-reader-0.2.0.zip`, fuera de Git.
 
 En **Mi cuenta**, selecciona explícitamente un contexto asistido. Copia el ID de extensión mostrado en su panel a **Lector estructurado**, confirma `EMPAREJAR LECTOR` y copia ID/código de emparejamiento al panel. El código dura tres minutos/cinco intentos; la credencial local dura como máximo doce horas, ligada a sesión/contexto/generación. Nunca es una credencial EA.
 
-**Activar lector en esta pestaña** reconoce solamente el contrato semántico propio `sample-v1`, servido por loopback en `/reader-sample.html`: raíz `data-club-lab-sample="1"`, edición/fuente/vista y campos hoja `data-field`. No son selectores de EA. Admite `synthetic_dom` o `user_export_dom`; una exportación legítima necesita adaptación explícita a este contrato. Lista/ficha/plantilla/resultado están representados. DCP y objetivos conservan el flujo de transcripción revisada existente.
+**Leer muestra cargada** reconoce solamente el contrato semántico propio `sample-v1`, servido por loopback en `/reader-sample.html`: raíz `data-club-lab-sample="1"`, edición/fuente/vista y campos hoja `data-field`. No son selectores de EA. Admite `synthetic_dom` o `user_export_dom`; una exportación legítima necesita adaptación explícita a este contrato. Lista/ficha/plantilla/resultado están representados. DCP y objetivos conservan el flujo de transcripción revisada existente.
 
 Tú navegas y cargas páginas; el lector observa cambios visibles sin emitir acciones. **Reintentar envío**, **Analizar lo leído**, **Pausar** y **Desconectar** son explícitos. Los lotes se revisan en Club Lab con `REVISAR LOTE DOM`, sin escribir cada carta otra vez. Los hechos de EA no se actualizan automáticamente hasta contrastar un extractor. Las propuestas usan las copias revisadas, mantienen principal/reservas y muestran cobertura parcial.
 
-El **Diagnóstico mínimo** de la ruta oficial muestra únicamente hasta 240 caracteres seleccionados por el usuario, etiqueta del elemento y ocho etiquetas hijas. Excluye inputs y pantallas/patrones sensibles; no se envía automáticamente al backend. No contiene HTML completo, cookies, tokens, URLs de imágenes o IDs EA. Es una ayuda inicial, insuficiente por sí sola para certificar identidades, lista o reglas.
+El panel reemplaza el diagnóstico de texto seleccionado por **Reconocer estructura de esta región**: hasta ocho mapas privados con esqueleto, texto visible acotado, selectores candidatos, límites y borradores `proposed`. Se previsualizan/exportan/eliminan explícitamente. No habilita extracción EA, no pulsa controles ni certifica identidades, lista o reglas. Alcance y exclusiones exactos en [VIEW_RECOGNITION.md](VIEW_RECOGNITION.md).
 
 ### Transporte y persistencia
 

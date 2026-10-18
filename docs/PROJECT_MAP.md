@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Reconocimiento guiado (18-oct-2026): [VIEW_RECOGNITION.md](VIEW_RECOGNITION.md), `extension/lib/inspect-region.ts`, `view-profile.ts` y `compatibility.ts`. Inspector privado independiente del backend, borradores declarativos y comprobación de builds/contrato; `/reader/capabilities` es una consulta pública limitada por Host/Origin. No cambia esquema, admisión ni origen de inventario. Mi cuenta guía hacia el permiso temporal del panel; `lib/official-tab.ts` reutiliza la pestaña abierta por la SPA.
+
 Ampliación del 18-oct-2026, head **0018**: `extension/` (MV3/WXT), `models/reader.py`, `schemas/reader.py`, `api/reader.py` y `StructuredReader`: emparejamiento, recibos idempotentes y revisión por lote dentro del contexto asistido. No hay extractor EA real contrastado. [Instalación, contratos y matriz](ASSISTED_READING.md).
 
 Galería v2: `schemas/fc27.py`, `services/gallery_v2.py` (CP-SAT/comprobador), `services/gallery_route.py`, `schemas/gallery_planning.py`, `api/gallery_planning.py`, `GalleryScenarioEditor` y `GalleryRoute`. Las reglas v1 no se convierten. `api/club_utilities.py` reutiliza `ClubProgress` para `/dcp/templates` y `/objective-journal`; no modifica progreso EA. Rutas nuevas de Galería: `/local-scenarios`, `/route-preview`, `/sets/{id}/declared-progress`.

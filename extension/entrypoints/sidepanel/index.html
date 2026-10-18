@@ -1,13 +1,30 @@
 <!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Club Lab · lector</title></head><body>
-<h1>Club Lab · lector</h1><p>Solo observaciones y propuestas locales. El extractor de EA necesita una muestra real revisada.</p>
-<p>ID de extensión: <code id="extension-id"></code></p>
-<label>Backend local <input id="base" value="http://localhost:8080"></label>
+<h1>Club Lab · reconocimiento</h1>
+<p>Modo guiado: tú navegas en EA. El inspector reconoce la región seleccionada, sin pulsar controles ni modificar cartas. No verifica tu identidad con el proveedor.</p>
+<button id="official">Abrir acceso oficial a FC27</button><button id="select-tab">Seleccionar pestaña de FC27</button>
+<p>Introduce contraseña y MFA solo en EA, con su dominio visible. Pulsa el icono de esta extensión en la pestaña para conceder permiso temporal. El lector se detiene en acceso o verificación.</p>
+<h2>A. Reconocer estructura</h2>
+<p>Selecciona texto de una cabecera, una carta o un requisito visible. Se inspecciona una región cercana y acotada. Repite manualmente para lista, detalle, principal y un DCP u objetivo.</p>
+<label>Vista que estás mostrando<select id="view"><option value="header">Cabecera</option><option value="inventory">Lista de cartas</option><option value="detail">Detalle de carta</option><option value="squad">Principal</option><option value="dcp">Requisito de DCP</option><option value="objective">Objetivo</option><option value="gallery">Galería</option><option value="account">Cuenta</option><option value="unknown">Desconocida</option></select></label>
+<button id="recognize">Reconocer estructura de esta región</button>
+<h2>B. Revisar mapa y cobertura</h2><p id="coverage"></p>
+<p>El mapa conserva texto visible y selectores candidatos. No contiene HTML completo, imágenes ni formularios. Revisa posibles datos personales: el filtro no es infalible. No se envía al backend ni a terceros.</p>
+<details><summary>Vista previa del mapa privado</summary><pre id="diagnostic"></pre></details>
+<label><input id="review-export" type="checkbox">Revisé el mapa antes de exportarlo y compartirlo</label>
+<button id="export-maps">Exportar mapa revisado</button><button id="delete-maps">Eliminar mapas privados</button>
+<h2>C. Preparar lectura</h2>
+<p>Perfiles reales pendientes: el mapa permite contrastar selectores y campos, pero todavía no activa lectura ni navegación automática en EA. Siguiente paso: revisar el mapa exportado y comprobar cada vista. No se interpreta un selector candidato como permiso de pulsación.</p>
+<h2>Compatibilidad con Club Lab</h2><p>ID de extensión: <code id="extension-id"></code></p>
+<label>Backend local <input id="base" value="http://localhost:8090"></label><p id="destination"></p>
+<button id="check">Comprobar versiones y capacidades</button><p id="compatibility"></p>
+<label><input id="confirm-destination" type="checkbox">Confirmo el cambio al destino escrito al emparejar</label>
 <p>En Mi cuenta de Club Lab, aprueba este ID y copia el emparejamiento temporal.</p>
 <label>Emparejamiento <input id="pairing"></label><label>Código de seis dígitos <input id="code" maxlength="6" autocomplete="off"></label>
-<button id="pair">Emparejar</button><hr>
-<button id="activate">Activar lector en esta pestaña</button><button id="analyze">Analizar lo leído</button><button id="pause">Pausar</button><button id="retry">Reintentar envío</button>
+<button id="pair">Emparejar</button>
+<h2>D. Leer secciones habilitadas</h2><p>Solo muestra local o exportación del formato Club Lab. En EA sigue pendiente el perfil contrastado.</p>
+<button id="activate">Leer muestra cargada</button><button id="analyze">Analizar lo leído</button>
+<h2>E. Control de lectura</h2><button id="pause">Pausar</button><button id="retry">Reintentar envío</button>
+<p>Reintentar envía los lotes conservados con su fecha original. Para continuar la lectura de muestra, vuelve a activarla; se comprueba el documento. No reanuda navegación en EA.</p>
 <label><input id="discard" type="checkbox">Descartar explícitamente lotes pendientes al desconectar</label><button id="disconnect">Desconectar</button>
 <p role="status" id="status"></p><pre id="proposal"></pre>
-<h2>Diagnóstico mínimo de FC27</h2><p>Selecciona hasta 240 caracteres de una carta o requisito en EA. Repite con una lista, una ficha y un DCP. Revisa el resultado antes de copiarlo; no se envía al backend.</p>
-<button id="diagnose">Leer solo la selección</button><pre id="diagnostic"></pre>
 <script type="module" src="./main.ts"></script></body></html>

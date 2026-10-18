@@ -1,6 +1,9 @@
 import {reading,endpoint,admitted,eaDiagnostic,hash,forbidden} from '../lib/contracts'
-type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown}
-const initial=():State=>({base:'http://localhost:8080',pending:[],sequence:0,stream:crypto.randomUUID()})
+import {compatibility} from '../lib/compatibility'
+import {inspectRegion} from '../lib/inspect-region'
+import {viewProfile,viewType} from '../lib/view-profile'
+type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown;compatibility?:unknown}
+const initial=():State=>({base:'http://localhost:8090',pending:[],sequence:0,stream:crypto.randomUUID()})
 export default defineBackground(()=>{
   // Private to extension contexts. No credentials ever go to the content script.
   const ready=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})])
@@ -27,7 +30,7 @@ export default defineBackground(()=>{
     if(active)await chrome.tabs.sendMessage(active.tabId,{kind:'pause'}).catch(()=>{})
     await chrome.storage.session.remove('active')
   }
-  chrome.action.onClicked.addListener(tab=>{if(tab.id)void chrome.sidePanel.open({tabId:tab.id})})
+  chrome.action.onClicked.addListener(tab=>{if(tab.id){void chrome.storage.session.set({selectedTab:tab.id,...(tab.url&&eaDiagnostic(tab.url)?{officialTab:tab.id}:{})});void chrome.sidePanel.open({tabId:tab.id})}})
   chrome.tabs.onUpdated.addListener((id,change)=>{if(change.status==='loading')void chrome.storage.session.get('active').then(({active})=>{if(active?.tabId===id)return chrome.storage.session.remove('active')})})
   chrome.permissions.onRemoved.addListener(()=>{void pause()})
   chrome.runtime.onMessage.addListener((message,sender,reply)=>{
@@ -55,10 +58,17 @@ export default defineBackground(()=>{
         return {ok:true}
       }
       if(sender.id!==chrome.runtime.id || sender.url!==chrome.runtime.getURL('sidepanel.html'))throw Error('Panel no autorizado')
-      if(message.kind==='status')return {ok:true,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,receipt:s.lastReceipt,proposal:s.proposal,paired:!!s.credential,base:s.base}
+      if(message.kind==='status')return {ok:true,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,receipt:s.lastReceipt,proposal:s.proposal,paired:!!s.credential,base:s.base,compatibility:s.compatibility,maps:(await chrome.storage.local.get('viewMaps')).viewMaps||[]}
+      if(message.kind==='check'){
+        const base=endpoint(String(message.base))
+        s.compatibility=await compatibility(base);await save(s);return {ok:true}
+      }
       if(message.kind==='pair'){
         if(s.pending.length)throw Error('Hay lotes pendientes; envíalos o desconecta antes de cambiar el contexto')
         const base=endpoint(String(message.base)), claim={pairing_id:String(message.pairing_id),code:String(message.code)}
+        if(base!==s.base&&message.confirm_destination!==true)throw Error(`Confirma el cambio de destino de ${s.base} a ${base}; son orígenes distintos.`)
+        const compatible=await compatibility(base)
+        if(!compatible.compatible)throw Error(compatible.reason)
         if(!/^[0-9]{6}$/.test(claim.code)||! /^[a-f0-9-]{36}$/.test(claim.pairing_id))throw Error('Código o emparejamiento inválido')
         const result=await request({...s,base,credential:undefined},'claim',claim)
         await pause();await save({...initial(),base,credential:result.credential,binding:result.context_binding,message:'Emparejado. Revisa el contexto antes de activar una muestra.'})
@@ -70,12 +80,14 @@ export default defineBackground(()=>{
         // Do not erase observations silently. The explicit second action discards them.
         if(s.pending.length && message.discard!==true)throw Error(`Hay ${s.pending.length} lotes pendientes. Marca descartar cola si quieres desconectar.`)
         if(s.credential)await request(s,'disconnect',{})
-        await save(initial());return {ok:true}
+        await save({...initial(),base:s.base});return {ok:true}
       }
       if(message.kind==='retry'){await flush(s);return {ok:true}}
       if(message.kind==='analyze'){s.proposal=await request(s,'proposal');await save(s);return {ok:true}}
       if(message.kind==='activate'){
         if(!s.credential)throw Error('Empareja antes de activar')
+        const compatible=await compatibility(s.base)
+        if(!compatible.compatible)throw Error(compatible.reason)
         const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
         if(!tab?.id||!tab.url||!admitted(tab.url))throw Error('No hay extractor FC27 real contrastado. Abre una muestra admitida o usa Diagnóstico mínimo.')
         await pause()
@@ -84,6 +96,51 @@ export default defineBackground(()=>{
         const active={tabId:tab.id,documentId:doc.documentId,documentRef:crypto.randomUUID(),nonce:crypto.randomUUID()}
         await chrome.storage.session.set({active})
         return await chrome.tabs.sendMessage(tab.id,{kind:'start',...active})
+      }
+      if(message.kind==='official'){
+        const {officialTab}=await chrome.storage.session.get('officialTab')
+        const existing=typeof officialTab==='number'?await chrome.tabs.get(officialTab).catch(()=>null):null
+        // Only reuse our own tab ID; no history/tabs/all-URLs permission is needed.
+        // An unknown URL (lost activeTab grant) must not be navigated or inspected.
+        if(existing){await chrome.tabs.update(existing.id!,{active:true});return {ok:true}}
+        const tab=await chrome.tabs.create({url:'https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/'})
+        await chrome.storage.session.set({officialTab:tab.id});return {ok:true}
+      }
+      if(message.kind==='select-tab'){
+        const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
+        if(!tab?.id||!tab.url||!eaDiagnostic(tab.url))throw Error('Abre EA y pulsa el icono de la extensión en esa pestaña para conceder activeTab. No se solicita tu sesión.')
+        await pause();await chrome.storage.session.set({selectedTab:tab.id,officialTab:tab.id})
+        s.message='Pestaña oficial seleccionada. Identidad del proveedor sin verificar; navegación guiada.';await save(s);return {ok:true}
+      }
+      if(message.kind==='delete-maps'){await chrome.storage.local.remove('viewMaps');return {ok:true}}
+      if(message.kind==='recognize'){
+        await pause()
+        const view=viewType.parse(message.view)
+        const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
+        if(!tab?.id||!tab.url||(!eaDiagnostic(tab.url)&&!admitted(tab.url)))throw Error('Reconoce desde la pestaña oficial o la muestra propia, usando el icono de la extensión para autorizarla.')
+        const source=admitted(tab.url)?'synthetic_map':'observed_page_map'
+        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:inspectRegion})
+        if(!result?.documentId||!result.result)throw Error('No se pudo inspeccionar este documento')
+        const latest=await chrome.tabs.get(tab.id)
+        if(latest.url!==tab.url)throw Error('La pestaña cambió; repite el reconocimiento')
+        if(result.result.blocked)throw Error(result.result.blocked)
+        const map=result.result
+        if(!map.nodes?.length||JSON.stringify(map).length>64000)throw Error('Región vacía o demasiado grande; selecciona una región menor')
+        const url=new URL(tab.url),mapId=crypto.randomUUID()
+        const structure=map.nodes.map(({parent,tag,selector,role,medium})=>({parent,tag,selector,role,medium}))
+        const profile=viewProfile.parse({profile_id:crypto.randomUUID(),revision:1,edition:'FC27',view,
+          origin:url.origin,route:url.pathname,language:map.language,evidence_origin:source,map_id:mapId,
+          structure_hash:await hash(structure),status:'proposed',recognition:[map.root_selector],
+          preconditions:['Revisión humana del contexto, selectores y campos','Sin acceso, pago o verificación','Documento estable'],extractors:[],
+          loading_selectors:['[aria-busy="true"]','[role="progressbar"]'],
+          uncertainties:['Vista declarada por el usuario, todavía no reconocida por un perfil contrastado','Cobertura de una región; no acredita todo el club'],
+          transitions:[],extraction_enabled:false,navigation_enabled:false})
+        const {viewMaps=[]}=await chrome.storage.local.get('viewMaps')
+        if(viewMaps.length>=8)throw Error('Hay ocho mapas privados. Exporta y elimina los revisados antes de acumular más.')
+        const entry={map_id:mapId,observed_at:new Date().toISOString(),document_ref:crypto.randomUUID(),profile,map}
+        await chrome.storage.local.set({viewMaps:[...viewMaps,entry]})
+        s.message='Mapa privado guardado. Revisa su contenido: aún no es un perfil de extracción ni admite cartas.';await save(s)
+        return {ok:true}
       }
       if(message.kind==='diagnose'){
         const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})

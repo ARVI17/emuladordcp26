@@ -30,7 +30,7 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
   upstream.on('error',()=>{res.statusCode=502;res.end()});upstream.end(body)
  })
  await new Promise<void>(resolve=>server.listen(8090,'127.0.0.1',resolve))
- const base='http://127.0.0.1:8090', extension=path.resolve('.output/chrome-mv3')
+ const base='http://localhost:8090', extension=path.resolve('.output/chrome-mv3')
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]})
  const metrics={observations:0,bytes:0,receipts:0,local_http_llm_requests:0,local_http_ocr_requests:0,elapsed_ms:0,known_fields:0,unknown_fields:0}
  let publicRequests=0
@@ -53,6 +53,7 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
   const p=await context.request.post(base+'/api/reader/pairings',{headers,data:{extension_id:id,confirmation:'EMPAREJAR LECTOR'}});expect(p.ok()).toBeTruthy()
   const pair=await p.json()
   await panel.locator('#base').fill(base);await panel.locator('#pairing').fill(pair.pairing_id);await panel.locator('#code').fill(pair.code)
+  await panel.locator('#confirm-destination').check()
   await panel.locator('#pair').click();await expect(panel.locator('#status')).toContainText('Emparejado')
   const page=await context.newPage();await page.goto(base+'/reader-sample.html');await page.bringToFront()
   const send=(kind:string,extra={})=>panel.evaluate(m=>chrome.runtime.sendMessage(m),{kind,...extra})

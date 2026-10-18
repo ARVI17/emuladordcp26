@@ -21,7 +21,7 @@ export type Reading = z.infer<typeof reading>
 export const forbidden = /password|contrase[nñ]a|bearer\s|access[_ -]?token|\S+@\S+|sign\s?in|log\s?in|iniciar sesi[oó]n|verification code|c[oó]digo de (seguridad|verificaci[oó]n)/i
 export function endpoint(value:string) {
   const u = new URL(value)
-  if(u.protocol!=='http:' || !['127.0.0.1','localhost'].includes(u.hostname) || u.username || u.password || u.search || u.hash || !['','/'].includes(u.pathname)) throw Error('Usa una dirección local HTTP sin ruta, por ejemplo http://localhost:8080')
+  if(u.protocol!=='http:' || !['127.0.0.1','localhost'].includes(u.hostname) || u.username || u.password || u.search || u.hash || !['','/'].includes(u.pathname)) throw Error('Usa una dirección local HTTP sin ruta, por ejemplo http://localhost:8090')
   return u.origin
 }
 export function admitted(url:string) {
@@ -30,7 +30,7 @@ export function admitted(url:string) {
 }
 export function eaDiagnostic(url:string) {
   const u=new URL(url)
-  return u.protocol==='https:' && u.hostname==='www.ea.com' && /^\/(?:[a-z]{2}-[a-z]{2}\/)?ea-sports-fc\/ultimate-team\/web-app\/$/.test(u.pathname) && !/login|payment|checkout|auth/i.test(u.hash+u.search)
+  return u.protocol==='https:' && u.hostname==='www.ea.com' && /^\/(?:[a-z]{2}-[a-z]{2}\/)?ea-sports-fc\/ultimate-team\/web-app\/$/.test(u.pathname) && !u.search && !u.username && !u.password && !/login|payment|checkout|auth|recover|verify/i.test(u.hash)
 }
 export function canonical(value:unknown):string {
   if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']'
