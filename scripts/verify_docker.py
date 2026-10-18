@@ -44,7 +44,7 @@ def validate(config, project):
 
 def verify():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--scope', choices=['full', 'backend', 'frontend'], default='full')
+    parser.add_argument('--scope', choices=['full', 'backend', 'frontend', 'extension'], default='full')
     parser.add_argument('--pytest-path', action='append', default=[], help='Focused test file under backend/tests; omit for the full suite')
     parser.add_argument('--browser-spec', action='append', default=[], help='Focused spec under frontend/e2e; omit for all browser tests')
     parser.add_argument('--build-environment', choices=['test', 'local'], default='test',
@@ -97,7 +97,7 @@ def verify():
         print(name, 'PASSED' if code == 0 else 'FAILED', flush=True)
         if code: raise RuntimeError(f'{name} failed; see {report_dir/name}.log')
     try:
-        step('build', 'build', 'backend', 'frontend', 'frontend-test', 'frontend-e2e')
+        step('build', 'build', 'backend', 'frontend', 'frontend-test', 'frontend-e2e', *(['extension-test'] if args.scope in {'full','extension'} else []))
         step('startup', 'up', '-d', '--wait', '--wait-timeout', '120', 'database', 'test-database', 'backend', 'frontend', 'nginx')
         for path in ('/health', '/api/openapi.json'):
             with urllib.request.urlopen(f'http://127.0.0.1:{args.port}{path}', timeout=10) as response:
@@ -115,6 +115,8 @@ def verify():
         if args.scope in {'full', 'frontend'}:
             step('vitest', 'run', '--rm', '--no-deps', 'frontend-test')
             step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e', *(['npm','run','test:e2e','--',*args.browser_spec] if args.browser_spec else []))
+        if args.scope in {'full', 'extension'}:
+            step('extension', 'run', '--rm', '--no-deps', 'extension-test')
         result['status'] = 'PASSED'
     finally:
         # Finish owned cleanup even if the user presses Ctrl+C a second time.

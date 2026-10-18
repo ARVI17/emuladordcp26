@@ -199,6 +199,10 @@ class ChallengeCreate(InputModel):
     segments: list[SegmentCreate] = Field(default_factory=list, max_length=20)
 
 class DcpFilters(InputModel):
+    first_owner: bool | None = None
+    is_holographic: bool | None = None
+    is_loan: bool | None = None
+    is_evolution: bool | None = None
     min_rating: int = Field(default=1, ge=1, le=99)
     max_rating: int = Field(default=99, ge=1, le=99)
     position: str | None = Field(default=None, max_length=8)
@@ -230,10 +234,17 @@ class DcpFilters(InputModel):
 
 
 class OptimizeRequest(InputModel):
+    locked_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
     allow_protected_ids: list[PlayerID] = Field(default_factory=list, max_length=23)
     exclude_ids: list[PlayerID] = Field(default_factory=list, max_length=1000)
     max_solutions: int = Field(default=3, ge=1, le=5)
     filters: DcpFilters = Field(default_factory=DcpFilters)
+
+    @model_validator(mode='after')
+    def locked_not_excluded(self):
+        if len(set(self.locked_ids)) != len(self.locked_ids) or set(self.locked_ids) & set(self.exclude_ids):
+            raise ValueError('Revisa las copias fijadas: no se repiten ni pueden estar excluidas')
+        return self
 
 class ConfirmRequest(InputModel):
     player_ids: list[PlayerID] = Field(min_length=1, max_length=23)

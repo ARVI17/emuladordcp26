@@ -22,6 +22,10 @@ def item_key(player):
         "local", folded(get("name")), get("rating"), folded(get("card_type")),
         folded(get("league")), folded(get("club")), folded(get("nationality")), bool(get("is_holographic")),
     ]
+    evidence = get('validation_evidence', {}) or {}
+    level = get('holographic_level', evidence.get('additional_facts',{}).get('holographic_level'))
+    if level is not None:
+        identity.extend(['holographic_level', level])
     return hashlib.sha256(json.dumps(identity, ensure_ascii=False).encode()).hexdigest()
 
 
@@ -29,7 +33,7 @@ def snapshot_player(player):
     if (player.validation_evidence or {}).get('kind') == 'visual_copy':
         from app.services.squad_analysis import serialize_player
         values = serialize_player(player)
-        return {key:values.get(key) for key in PlayerCreate.model_fields} | {
+        return {key:values.get(key) for key in PlayerCreate.model_fields} | player.validation_evidence.get('additional_facts',{}) | {
             'validation_status':player.validation_status,'variant_evidence':player.validation_evidence,
             'unknown_fields':player.unknown_fields,'ownership_source':'user_reviewed_visual'}
     return {key: getattr(player, key, None) for key in PlayerCreate.model_fields} | {'validation_status': player.validation_status, 'variant_evidence': player.validation_evidence}
@@ -78,6 +82,9 @@ def record_player(db, player, *, score_changed=False):
     old_entry = db.scalar(select(GalleryEntry).where(GalleryEntry.game_version == base.game_version, GalleryEntry.player_id == base.id))
     if old_entry and base.card_id and old_entry.snapshot.get('card_id') != base.card_id:
         old_entry = None  # Different documented variants keep independent history.
+    level = (base.validation_evidence or {}).get('additional_facts',{}).get('holographic_level')
+    if old_entry and old_entry.snapshot.get('holographic_level') != level and (level is not None or old_entry.snapshot.get('holographic_level') is not None):
+        old_entry = None  # Never rewrite a previous holographic level's history.
     if entry is None:
         entry = old_entry
     aliases = set(entry.snapshot.get("identity_keys", [])) if entry else set()
@@ -144,6 +151,9 @@ def tag_match(snapshot, tag):
 
 def evaluate_set(gallery_set, entries, owned=None):
     rules = GalleryRules.model_validate(gallery_set.rules)
+    if rules.schema_version == 2:
+        from app.services.gallery_v2 import evaluate_v2
+        return evaluate_v2(gallery_set, entries, owned)
     tags = [GalleryTag.model_validate(tag) for tag in gallery_set.tags]
     eligible = []
     for entry in entries:

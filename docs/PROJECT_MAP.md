@@ -1,5 +1,9 @@
 # Mapa técnico · Club Lab FC27
 
+Ampliación del 18-oct-2026, head **0018**: `extension/` (MV3/WXT), `models/reader.py`, `schemas/reader.py`, `api/reader.py` y `StructuredReader`: emparejamiento, recibos idempotentes y revisión por lote dentro del contexto asistido. No hay extractor EA real contrastado. [Instalación, contratos y matriz](ASSISTED_READING.md).
+
+Galería v2: `schemas/fc27.py`, `services/gallery_v2.py` (CP-SAT/comprobador), `services/gallery_route.py`, `schemas/gallery_planning.py`, `api/gallery_planning.py`, `GalleryScenarioEditor` y `GalleryRoute`. Las reglas v1 no se convierten. `api/club_utilities.py` reutiliza `ClubProgress` para `/dcp/templates` y `/objective-journal`; no modifica progreso EA. Rutas nuevas de Galería: `/local-scenarios`, `/route-preview`, `/sets/{id}/declared-progress`.
+
 Lectura asistida: [ASSISTED_READING.md](ASSISTED_READING.md), `models/assisted.py`, `schemas/assisted.py`, `services/assisted.py`, `services/guided.py`, `api/assisted.py` y `api/guided.py`. Migración `0017`; captura web voluntaria, candidatas OCR revisadas y contextos separados, admisión independiente de catálogo/proveedor, principal protegida, DCP no consumptivo y guía de plantilla para objetivos. `AssistedWorkspace` mantiene el indicador al navegar; `VisualReview`, `AssistedDcp` y `GuidedPlans` usan la API existente.
 
 Objetivos: [OBJECTIVE_SQUADS.md](OBJECTIVE_SQUADS.md), `schemas/objective_planning.py`, `services/objective_squads.py`, `services/objective_planning.py` y `api/objective_planning.py`. Migración `0016`; transcripciones manuales separadas de evidencia documental, CP-SAT más validador independiente, progreso desconocido/declarado y alternativas nuevas con comprobante firmado. `ObjectiveSquadsPage` y `ObjectiveRuleEditor` conectan Centro FC y Plantillas.

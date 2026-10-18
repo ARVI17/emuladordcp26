@@ -1,5 +1,21 @@
 # Pruebas del planificador FC27
 
+## Lector estructurado, Galería v2 y diario (18-oct-2026)
+
+La ampliación se valida con `scripts/verify_docker.py`: Compose temporal, PostgreSQL separados para API/pruebas destructivas, Nginx, build de SPA y extensión MV3 real en Chromium aislado. `/api/openapi.json` contiene las rutas nuevas de lector, cesta, plantillas DCP y diario. Alembic upgrade/current/check llega a **0018**. Principal y volúmenes permanecen sin cambios; se retiran únicamente contenedores/redes temporales propios.
+
+El pase `7425f9a44a` superó **15 Pytest nuevos**, **38 Vitest**, **2 recorridos nuevos de móvil/escritorio** y **2 pruebas de extensión compilada**, además de build/salud/migraciones. El pase anterior de backend integral `ff32349a97` había superado **293 Pytest** (375,19 s); su navegador detectó la regresión UUID del diario en HTTP interno, corregida usando `getRandomValues`. El siguiente ensayo `b22bd85c7a` pasó los **30 recorridos preexistentes** y falló solo los dos nuevos por localizadores de selectores; se corrigieron sin quitar aserciones. Un fixture de cotizaciones incompleto también se corrigió antes del pase de 15. Los intentos fallidos no cuentan como pases integrales.
+
+Casos nuevos: revisión por lote sin catálogo ficticio, recibo estable tras 20 reenvíos y después de revisar, colisión de evento, secuencias/edad/contexto/Host/Origin/CSRF, caducidad/revocación, ambigüedad de copias, FC26 y contenido sensible; propuestas calculadas con las cartas admitidas. Chromium simula pérdida del acuse y caída del transporte, termina el worker por CDP sin DevTools abiertos y recupera la cola al reanudar. No se reinicia Docker dentro de ese caso: la caída se simula en el proxy de pruebas.
+
+Galería prueba subtotal porcentual 20, piso/tramos, primer propietario desconocido, multiplicidad, nivel holográfico sintético, base Evo, v1 conservada y premios marginales 35. Modelo y comprobador coinciden. La cesta compartida distingue compras/capital/neto/realizado, no recompra historia conocida, rechaza mercado/precio viejo y no crea propiedad. DCP conserva fijas y protegidas al sustituir, rechaza versiones de requisitos cambiadas y exceso de fijadas. El diario repite/corrige sin doble partido ni progreso EA, respetando modalidad/dificultad y edición.
+
+Métricas del recorrido sintético compilado `7425f9a44a`: dos lecturas, 7.594 ms para la secuencia medida, 200.227 bytes de cuerpos de solicitudes del proxy (incluye reenvíos; no cabeceras), 24 recibos HTTP para dos eventos únicos; primer envío 144 ms, reenvíos entre 38 y 94 ms. Primera página: 99 campos presentes y 88 nulos, excluyendo ordinal/evidencia; no es una tasa de exactitud real. Heap JavaScript del panel: 6.109.756 bytes, no RAM total de Chrome. Cero solicitudes HTTP del recorrido a LLM/OCR y cero solicitudes públicas del navegador. Una muestra puntual del backend fue 301,1 MiB y PostgreSQL 103,7 MiB; no representa un pico ni un presupuesto de producción.
+
+También pasaron ocho pruebas de guardas Docker, `docker compose config --quiet`, TypeScript/build de extensión y `npm audit --audit-level=high` (cero vulnerabilidades). Las capturas sintéticas se revisaron a ancho móvil; no hubo desbordamiento horizontal. Artefactos y métricas completos permanecen en `state/sprints/` y `frontend/test-results/`, ignorados por Git.
+
+No se probaron lista/ficha/DCP reales de EA, cuenta autenticada, selector/permisos reales de EA, Safari/Android ni compras/ventas/entregas. Revocar la credencial local no equivale a una prueba de revocación del permiso de sitio mediante la UI de Chrome. El diagnóstico es mínimo, el extractor EA está pendiente y no hay recopilación autorizada nueva de FUT.GG. [Instalación, contratos y matriz](ASSISTED_READING.md).
+
 ## Lectura visual y aplicación manual guiada (12-oct-2026)
 
 La captura es deliberada (`getDisplayMedia` sin audio o imagen adjunta), con OCR local, revisión y propiedad visual separada del catálogo/proveedor. El recorrido de navegador crea una imagen de texto sintético y la procesa con Tesseract real: cartas → revisión → principal protegida → objetivo revisado → solver → guía aprobada → resultado declarado → lectura posterior → conciliación idempotente. Se ejecutó en Chromium móvil y escritorio; las capturas sintéticas fueron revisadas y no hubo desbordamiento horizontal.

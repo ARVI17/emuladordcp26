@@ -184,6 +184,10 @@ def simulate_dcp(identifier: int, payload: OptimizeRequest, db: DB):
             raise HTTPException(409, 'Revisa el texto y todos los requisitos del DCP antes de simularlo.')
         from app.schemas.assisted import VisualDcp
         draft = VisualDcp.model_validate(draft)
+        draft.requirements = {**draft.requirements, 'required_player_ids': sorted(set(draft.requirements.get('required_player_ids',[])) | set(payload.locked_ids))}
+        from app.schemas.requirements import normalize_requirements
+        try: draft.requirements = normalize_requirements(draft.requirements)
+        except ValueError: raise HTTPException(422, 'Las cartas fijadas no caben o contradicen los requisitos revisados') from None
         if draft.expires_at and utc(draft.expires_at) <= now():
             raise HTTPException(409, 'El DCP observado está vencido.')
         protected = effective_protected_ids(db)

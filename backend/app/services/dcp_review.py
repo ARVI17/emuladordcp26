@@ -19,9 +19,13 @@ def locations(db):
 def matches(player, filters, location='local'):
     if not filters.min_rating <= player.rating <= filters.max_rating:
         return False
-    for field in ('position', 'league', 'club', 'nationality', 'card_type', 'tradable', 'special', 'rare'):
+    for field in ('position', 'league', 'club', 'nationality', 'card_type', 'tradable', 'special', 'rare','is_loan','is_evolution','is_holographic'):
         expected = getattr(filters, field)
         if expected is not None and (not field_known(player, field) or getattr(player, field) != expected):
+            return False
+    if filters.first_owner is not None:
+        fact = (player.validation_evidence or {}).get('additional_facts',{}).get('first_owner')
+        if fact is not filters.first_owner:
             return False
     if filters.duplicate is not None and player.duplicate_untradeable != filters.duplicate:
         return False

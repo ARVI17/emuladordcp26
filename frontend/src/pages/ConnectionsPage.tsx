@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import {StructuredReader} from '../components/StructuredReader'
 import {observedDate} from '../lib/i18n'
 import type {EntryState} from '../lib/entry'
 import {useQuery,useMutation} from '@tanstack/react-query'
@@ -14,6 +15,7 @@ export function ConnectionsPage({entry,busy,error,onEnter,onSelect}:{entry?:Entr
  const account=dashboard.data?.account
  const contexts=useQuery({queryKey:['club-contexts'],enabled:!!entry,queryFn:()=>api<{id:number;name:string;verified:boolean;mode?:'live'|'local'|'assisted';platform:string|null;game_version:string}[]>('/club-contexts')})
  return <><SectionTitle title="Mi cuenta / Mi club" subtitle="Accede a FC27 y comprueba qué datos puede leer esta aplicación."/>
+  {entry?.mode==='assisted'&&<StructuredReader/>}
   {entry&&<section className="panel"><h3>Trabajar con pantallas compartidas</h3><p>Un contexto separa las observaciones de cada club. El nombre es una etiqueta local; no autentica la cuenta EA.</p><label>Nombre para un nuevo contexto de lectura<input maxLength={100} value={visualName} onChange={e=>setVisualName(e.target.value)}/></label><button disabled={busy||createVisual.isPending||!visualName.trim()} onClick={()=>createVisual.mutate()}>Iniciar lectura asistida en otro contexto</button><ErrorBox error={createVisual.error}/></section>}
   <section className="panel account-entry"><span className="eyebrow">EA SPORTS FC 27</span><h3>Abre tu club en EA</h3>
    <p>Inicia sesión en la Web App oficial con tu cuenta EA.</p>

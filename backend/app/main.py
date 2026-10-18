@@ -84,3 +84,9 @@ from app.api.assisted import router as assisted_router
 from app.api.guided import router as guided_router
 app.include_router(assisted_router)
 app.include_router(guided_router)
+from app.api.reader import router as reader_router
+app.include_router(reader_router)
+from app.api.gallery_planning import router as gallery_planning_router
+app.include_router(gallery_planning_router)
+from app.api.club_utilities import router as club_utilities_router
+app.include_router(club_utilities_router)

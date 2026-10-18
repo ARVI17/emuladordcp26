@@ -1,0 +1,13 @@
+<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Club Lab · lector</title></head><body>
+<h1>Club Lab · lector</h1><p>Solo observaciones y propuestas locales. El extractor de EA necesita una muestra real revisada.</p>
+<p>ID de extensión: <code id="extension-id"></code></p>
+<label>Backend local <input id="base" value="http://localhost:8080"></label>
+<p>En Mi cuenta de Club Lab, aprueba este ID y copia el emparejamiento temporal.</p>
+<label>Emparejamiento <input id="pairing"></label><label>Código de seis dígitos <input id="code" maxlength="6" autocomplete="off"></label>
+<button id="pair">Emparejar</button><hr>
+<button id="activate">Activar lector en esta pestaña</button><button id="analyze">Analizar lo leído</button><button id="pause">Pausar</button><button id="retry">Reintentar envío</button>
+<label><input id="discard" type="checkbox">Descartar explícitamente lotes pendientes al desconectar</label><button id="disconnect">Desconectar</button>
+<p role="status" id="status"></p><pre id="proposal"></pre>
+<h2>Diagnóstico mínimo de FC27</h2><p>Selecciona hasta 240 caracteres de una carta o requisito en EA. Repite con una lista, una ficha y un DCP. Revisa el resultado antes de copiarlo; no se envía al backend.</p>
+<button id="diagnose">Leer solo la selección</button><pre id="diagnostic"></pre>
+<script type="module" src="./main.ts"></script></body></html>

@@ -11,9 +11,10 @@ python scripts/verify_docker.py --scope full
 # Cambios exclusivamente backend o frontend:
 python scripts/verify_docker.py --scope backend
 python scripts/verify_docker.py --scope frontend
+python scripts/verify_docker.py --scope extension
 ```
 
-Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emuladordcp26-check-*`, imágenes propias y puerto loopback 8082 (`--port` permite otro distinto de los habituales). Construye imágenes, inicia PostgreSQL/API/frontend/Nginx, espera salud, comprueba HTTP y migraciones. Pytest usa **otra base PostgreSQL** distinta de la API de navegador. Ambas viven en tmpfs; no contienen datos únicos. Full ejecuta Pytest, Vitest y Playwright móvil/escritorio; el build del frontend forma parte de todos los scopes.
+Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emuladordcp26-check-*`, imágenes propias y puerto loopback 8082 (`--port` permite otro distinto de los habituales). Construye imágenes, inicia PostgreSQL/API/frontend/Nginx, espera salud, comprueba HTTP y migraciones. Pytest usa **otra base PostgreSQL** distinta de la API de navegador. Ambas viven en tmpfs; no contienen datos únicos. Full ejecuta Pytest, Vitest, Playwright móvil/escritorio y la extensión MV3 compilada; el build del frontend forma parte de todos los scopes.
 
 Para preparar imágenes de una revisión Git limpia destinada a la instalación personal, `--build-environment local` cambia únicamente el metadato de procedencia. Conserva todas las guardas, bases temporales y limpieza; no despliega el principal. Así pueden fijarse los IDs de las mismas imágenes comprobadas para una actualización posterior autorizada, sin reconstruirlas después del pase. El resultado compara `/build.json` y `/api/build` con SHA y estado del árbol.
 

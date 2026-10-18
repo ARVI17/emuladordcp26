@@ -1,5 +1,11 @@
 # Seguridad local
 
+## Lector DOM local (0018)
+
+La extensión no recibe cookies/credenciales EA ni admite URLs/comandos de red arbitrarios. Una sesión local con CSRF aprueba un código de tres minutos/cinco intentos; el servidor conserva hashes de código/credencial. El token solo admite candidatas/propuestas y revocación propia; está ligado a contexto/generación/sesión y se guarda en storage privado de extensión, nunca en el content script. Host/Origin se validan además de autenticación. No se solicita permiso persistente sobre EA: activación de pestaña y transporte loopback.
+
+La cola limitada persiste antes del envío, conserva fechas y exige descarte explícito al desconectar con pendientes. El servidor confirma recibo y efectos juntos. Reutilizar un evento con contenido distinto se rechaza; la revisión no cambia el recibo original. Las candidatas solo pasan a copias observadas tras revisión local y conservan ambigüedades. Muestras sintéticas mantienen su procedencia. El diagnóstico no transmite HTML completo ni texto automáticamente. [Contratos y límites](ASSISTED_READING.md).
+
 ## Sesión y contexto del planificador
 
 Cookie aleatoria HttpOnly/SameSite Strict, CSRF derivado de secreto del servidor, comprobación de origen y entrada vigente. Las respuestas privadas llevan `Cache-Control: no-store`. Cambiar contexto limpia la caché cliente e invalida trabajos anteriores; el servidor valida propiedad y cobertura. Esto protege los flujos locales y no constituye autenticación para publicar el servicio en Internet.
