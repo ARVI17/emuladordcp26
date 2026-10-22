@@ -1,0 +1,17 @@
+import {money} from '../api/client'
+import {observedDate} from '../lib/i18n'
+type Selected={name:string;rating:number;position:string;card_type:string;card_id?:string|null;gallery_score:number|null;hypothetical_acquisition?:boolean;owned:boolean}
+export type GalleryRouteResultData={status:string;additional_tokens?:number|null;optimal_relative_to_candidates?:boolean;
+ finance?:{gross_purchases:number;maximum_capital:number;estimated_net_spend:number;realized_profit_loss:number|null;retained_residual_value:number;residual_value_complete:boolean;projected_sale_proceeds:number};
+ sets?:{set_id:number;name:string;current_grade:string|null;evaluation:{grade:string|null;score:number|null;selected_entries:Selected[];warnings:string[]};rewards:{additional_tokens:number|null;pending_tokens:number|null}}[];
+ acquisitions?:{variant_id:string;buy:number;resale:number|null;keep:boolean;quote_observed_at:string}[];steps?:string[]}
+export function GalleryRouteResult({value}:{value:GalleryRouteResultData}){
+ const cards=value.sets?.flatMap(s=>s.evaluation.selected_entries)||[]
+ return <section aria-label="Resultado de la ruta de Galería"><p role="status">{value.status==='provisional'?'Resultado provisional':value.status==='feasible'?'Ruta factible':'Sin ruta validada'} · fichas adicionales conocidas: {value.additional_tokens??'pendientes'} · {value.optimal_relative_to_candidates?'Óptimo relativo a las candidatas':'Óptimo no demostrado'}</p>
+ {value.finance&&<dl><dt>Compras brutas</dt><dd>{money(value.finance.gross_purchases)}</dd><dt>Capital máximo necesario</dt><dd>{money(value.finance.maximum_capital)}</dd><dt>Gasto neto estimado</dt><dd>{money(value.finance.estimated_net_spend)}</dd><dt>Resultado realizado</dt><dd>Sin operación observada</dd><dt>Ingresos previstos de reventas</dt><dd>{money(value.finance.projected_sale_proceeds)} · no disponibles todavía</dd><dt>Valor residual de cartas conservadas</dt><dd>{value.finance.residual_value_complete?money(value.finance.retained_residual_value):'Desconocido o incompleto'} · no se descuenta del gasto</dd></dl>}
+ {value.acquisitions&&<><h4>Cesta elegida</h4>{!value.acquisitions.length?<p>Sin compras en esta ruta.</p>:<ul>{value.acquisitions.map(a=><li key={a.variant_id}><strong>{cards.find(c=>c.card_id===a.variant_id)?.name||a.variant_id}</strong> · compra {money(a.buy)} · {a.keep?'Conservar':'Reventa estimada: '+money(a.resale)} · precio observado {observedDate(a.quote_observed_at)}</li>)}</ul>}</>}
+ {value.sets?.map(s=><article className="panel" key={s.set_id}><h4>{s.name}</h4><p>Grado obtenido declarado: {s.current_grade??'ninguno'} · grado propuesto: {s.evaluation.grade??'pendiente'} · puntos {s.evaluation.score??'pendientes'}.</p><p>Fichas adicionales: {s.rewards.additional_tokens??'pendientes'} · premios anteriores pendientes de reclamar: {s.rewards.pending_tokens??'desconocidos'}.</p>
+ <details><summary>Selección propuesta para este conjunto ({s.evaluation.selected_entries.length})</summary><ul>{s.evaluation.selected_entries.map((c,i)=><li key={i}>{c.name} · {c.rating} · {c.position} · {c.card_type||'Tipo desconocido'} · puntos {c.gallery_score??'desconocidos'} · {c.hypothetical_acquisition?'Adquisición hipotética':c.owned?'Historia elegible, copia actual conocida':'Historia elegible; no acredita disponibilidad actual'}</li>)}</ul></details>
+ <ul>{s.evaluation.warnings.map(w=><li key={w}>{w}</li>)}</ul></article>)}
+ <ol>{value.steps?.map(s=><li key={s}>{s}</li>)}</ol></section>
+}

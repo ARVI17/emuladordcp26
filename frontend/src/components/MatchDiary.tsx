@@ -1,4 +1,5 @@
 import {observedDate} from '../lib/i18n'
+import {ObjectiveJournal} from './ObjectiveJournal'
 import {useState} from 'react'
 import {useMutation,useQuery,useQueryClient} from '@tanstack/react-query'
 import {api} from '../api/client'
@@ -13,7 +14,7 @@ export function MatchDiary(){
  const groups=query.data?.groups||[]
  const groupKey=(g:MatchHistory['groups'][number])=>JSON.stringify([g.tactic,g.change_tested])
  const selected=[groupA,groupB].map(id=>groups.find(g=>groupKey(g)===id))
- return <details className="panel"><summary>Diario de partidos y práctica</summary><p>{query.data?.message}</p>
+ return <details className="panel"><summary>Diario de partidos y práctica</summary><p>{query.data?.message}</p><ObjectiveJournal/>
   <fieldset disabled={save.isPending} className="form-grid"><label>Táctica utilizada<input maxLength={120} value={tactic} onChange={e=>setTactic(e.target.value)}/></label><label>Cambio probado<input maxLength={300} value={change} onChange={e=>setChange(e.target.value)}/></label><label>Práctica relacionada<select value={practice} onChange={e=>setPractice(e.target.value)}><option value="">Sin vínculo</option>{sessions.data?.filter(s=>s.status==='completed').map(s=><option key={s.id} value={s.id}>#{s.id} · {s.agenda.title}</option>)}</select></label>
   {([{label:'Minutos jugados',value:minutes,set:setMinutes,min:1,max:240},{label:'Ocasiones creadas',value:chances,set:setChances,min:0,max:100},{label:'Pérdidas peligrosas',value:losses,set:setLosses,min:0,max:100},{label:'Goles concedidos',value:conceded,set:setConceded,min:0,max:100}]).map(f=><label key={f.label}>{f.label}<input type="number" min={f.min} max={f.max} value={f.value} onChange={e=>f.set(Number(e.target.value))}/></label>)}
   <button disabled={!tactic.trim()||!change.trim()} onClick={()=>save.mutate()}>Guardar partido observado</button></fieldset><ErrorBox error={save.error||query.error||sessions.error}/>

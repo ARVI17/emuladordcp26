@@ -1,6 +1,10 @@
 # Limitaciones conocidas
 
-Estado del 12 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
+Actualizado el 18 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
+
+La extensión MV3 está probada con el contrato de muestra/exportación propia en Chromium, sin selectores EA inventados. No se obtuvo una muestra real permitida. Actualización automática de hechos EA, extracción DOM de DCP/objetivos/Evos/sobres y comprobación real del resultado permanecen pendientes. [Matriz, instalación y contratos](ASSISTED_READING.md).
+
+Galería v2 usa reglas versionadas, sin acreditar una fórmula oficial. La cesta busca hasta diez candidatas/ocho conjuntos durante ocho segundos y compra todo antes de reventas hipotéticas: capital conservador, no mínimo global entre secuencias. Sin datos no inventa puntos/premios/precios/grados. No existe saldo de fichas observado ni nuevo recolector autorizado de FUT.GG. Biblioteca DCP/fijar/reemplazar y diario corregible están implementados; importador de soluciones, atajos especializados y perfiles adicionales de sacrificio siguen pendientes.
 
 ## Club real y contexto
 
