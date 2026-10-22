@@ -1,7 +1,10 @@
 import {reading,endpoint,admitted,eaDiagnostic,hash,forbidden} from '../lib/contracts'
 import {compatibility} from '../lib/compatibility'
 import {inspectRegion} from '../lib/inspect-region'
+import {sensitiveText} from '../lib/privacy'
 import {viewProfile,viewType} from '../lib/view-profile'
+import {draftForMap,bindDefinition,extractProfile,saveDefinition,recordSample,recordContrast,activateProfile,EXTRACTOR_REVISION} from '../lib/profile-extraction'
+import type {ExtractorProfile,Proof} from '../lib/profile-extraction'
 type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown;compatibility?:unknown}
 const initial=():State=>({base:'http://localhost:8090',pending:[],sequence:0,stream:crypto.randomUUID()})
 export default defineBackground(()=>{
@@ -58,7 +61,65 @@ export default defineBackground(()=>{
         return {ok:true}
       }
       if(sender.id!==chrome.runtime.id || sender.url!==chrome.runtime.getURL('sidepanel.html'))throw Error('Panel no autorizado')
-      if(message.kind==='status')return {ok:true,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,receipt:s.lastReceipt,proposal:s.proposal,paired:!!s.credential,base:s.base,compatibility:s.compatibility,maps:(await chrome.storage.local.get('viewMaps')).viewMaps||[]}
+      if(message.kind==='status')return {ok:true,version:chrome.runtime.getManifest().version,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,receipt:s.lastReceipt,proposal:s.proposal,paired:!!s.credential,base:s.base,compatibility:s.compatibility,maps:(await chrome.storage.local.get('viewMaps')).viewMaps||[],profiles:(await chrome.storage.local.get('extractorProfiles')).extractorProfiles||[]}
+      if(message.kind==='profile-draft'){
+        const {viewMaps=[]}=await chrome.storage.local.get('viewMaps')
+        const entry=viewMaps.find((m:any)=>m.map_id===message.map_id)
+        if(!entry)throw Error('Selecciona un mapa privado existente.')
+        return {ok:true,definition:draftForMap(entry.profile)}
+      }
+      if(message.kind==='profile-save'){
+        const {viewMaps=[],extractorProfiles=[]}=await chrome.storage.local.get(['viewMaps','extractorProfiles'])
+        const entry=viewMaps.find((m:any)=>m.map_id===message.definition?.map_id)
+        if(!entry)throw Error('Importa una definición vinculada a un mapa privado existente; el archivo no acredita evidencia.')
+        const definition=bindDefinition(message.definition,entry.profile,entry.map)
+        const previous:ExtractorProfile|undefined=extractorProfiles.find((p:ExtractorProfile)=>p.id===message.profile_id)
+        if(message.profile_id&&!previous)throw Error('Perfil no disponible.')
+        if(!previous&&extractorProfiles.length>=8)throw Error('Límite de ocho perfiles privados.')
+        const profile=await saveDefinition(definition,previous)
+        await chrome.storage.session.remove('profileTrial')
+        await chrome.storage.local.set({extractorProfiles:[...extractorProfiles.filter((p:ExtractorProfile)=>p.id!==profile.id),profile]})
+        return {ok:true,profile}
+      }
+      if(['profile-test','profile-preview','profile-read','profile-contrast','profile-enable','profile-disable'].includes(message.kind)){
+        const {extractorProfiles=[]}=await chrome.storage.local.get('extractorProfiles')
+        const profile:ExtractorProfile|undefined=extractorProfiles.find((p:ExtractorProfile)=>p.id===message.profile_id)
+        if(!profile)throw Error('Selecciona un perfil guardado.')
+        const persist=async(next:ExtractorProfile)=>chrome.storage.local.set({extractorProfiles:extractorProfiles.map((p:ExtractorProfile)=>p.id===next.id?next:p)})
+        if(message.kind==='profile-disable'){
+          await chrome.storage.session.remove('profileTrial');await persist({...profile,status:'disabled'});return {ok:true}
+        }
+        if(message.kind==='profile-enable'){await persist(await activateProfile(profile));return {ok:true}}
+        if(message.kind==='profile-read'&&profile.status!=='active')throw Error('El perfil no está activo; usa la prueba previa.')
+        const {profileTrial}=await chrome.storage.session.get('profileTrial')
+        await chrome.storage.session.remove('profileTrial')
+        try{
+          if(message.kind==='profile-read')await activateProfile(profile)
+          const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
+          if(!tab?.id||!tab.url)throw Error('Selecciona la pestaña y la región que vas a comprobar.')
+          const sample=message.kind==='profile-test'
+          if(sample?!admitted(tab.url):!eaDiagnostic(tab.url))throw Error(sample?'La prueba requiere una muestra local propia.':'La vista real debe estar abierta y autorizada mediante el icono de la extensión.')
+          const url=new URL(tab.url)
+          if(!sample&&(url.origin!==profile.definition.origin||url.pathname+url.hash!==profile.definition.route))throw Error('Ruta distinta de la revisada en el mapa del perfil.')
+          const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:inspectRegion,args:[sensitiveText.source]})
+          if(!result?.documentId||!result.result)throw Error('Documento no disponible.')
+          if((await chrome.tabs.get(tab.id)).url!==tab.url)throw Error('La vista cambió durante la lectura.')
+          if(result.result.blocked)throw Error(result.result.blocked)
+          const preview=await extractProfile(profile.definition,result.result)
+          const proof:Proof={extractor_revision:EXTRACTOR_REVISION,definition_hash:await hash(profile.definition),observed_at:new Date().toISOString(),document_ref:crypto.randomUUID(),structure_hash:profile.definition.structure_hash,records:preview.records.length}
+          const displayed={...preview,provenance:sample?'local_region_preview':'observed_page_preview',extractor_revision:EXTRACTOR_REVISION,profile_id:profile.id,revision:profile.revision,observed_at:proof.observed_at}
+          if(sample){await persist(await recordSample(profile,proof));return {ok:true,preview:displayed}}
+          if(message.kind==='profile-contrast'){
+            if(message.reviewed!==true||!profileTrial||profileTrial.profile_id!==profile.id||profileTrial.revision!==profile.revision||profileTrial.document_id!==result.documentId||profileTrial.tab_id!==tab.id||Date.now()-Date.parse(profileTrial.proof.observed_at)>300000||profileTrial.preview_hash!==await hash(preview))throw Error('Repite la vista previa y compara los campos con la vista real antes de confirmar; la lectura cambió o caducó.')
+            await persist(await recordContrast(profile,proof));return {ok:true,preview:displayed}
+          }
+          await chrome.storage.session.set({profileTrial:{profile_id:profile.id,revision:profile.revision,document_id:result.documentId,tab_id:tab.id,proof,preview_hash:await hash(preview)}})
+          return {ok:true,preview:displayed}
+        }catch(error){
+          if(profile.contrast)await persist({...profile,status:'disabled',contrast:undefined})
+          throw error
+        }
+      }
       if(message.kind==='check'){
         const base=endpoint(String(message.base))
         s.compatibility=await compatibility(base);await save(s);return {ok:true}
@@ -119,7 +180,7 @@ export default defineBackground(()=>{
         const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
         if(!tab?.id||!tab.url||(!eaDiagnostic(tab.url)&&!admitted(tab.url)))throw Error('Reconoce desde la pestaña oficial o la muestra propia, usando el icono de la extensión para autorizarla.')
         const source=admitted(tab.url)?'local_region_map':'observed_page_map'
-        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:inspectRegion})
+        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:inspectRegion,args:[sensitiveText.source]})
         if(!result?.documentId||!result.result)throw Error('No se pudo inspeccionar este documento')
         const latest=await chrome.tabs.get(tab.id)
         if(latest.url!==tab.url)throw Error('La pestaña cambió; repite el reconocimiento')
@@ -129,7 +190,7 @@ export default defineBackground(()=>{
         const url=new URL(tab.url),mapId=crypto.randomUUID()
         const structure=map.nodes.map(({parent,tag,selector,role,medium})=>({parent,tag,selector,role,medium}))
         const profile=viewProfile.parse({profile_id:crypto.randomUUID(),revision:1,edition:'FC27',view,
-          origin:url.origin,route:url.pathname,language:map.language,evidence_origin:source,map_id:mapId,
+          origin:url.origin,route:url.pathname+url.hash,language:map.language,evidence_origin:source,map_id:mapId,
           structure_hash:await hash(structure),status:'proposed',recognition:[map.root_selector],
           preconditions:['Revisión humana del contexto, selectores y campos','Sin acceso, pago o verificación','Documento estable'],extractors:[],
           loading_selectors:['[aria-busy="true"]','[role="progressbar"]'],
@@ -145,11 +206,11 @@ export default defineBackground(()=>{
       if(message.kind==='diagnose'){
         const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
         if(!tab?.id||!tab.url||!eaDiagnostic(tab.url))throw Error('Abre la Web App oficial y selecciona solo el texto de una carta o requisito visible.')
-        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:()=>{
+        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},args:[sensitiveText.source],func:(privacyPattern:string)=>{
           const selection=window.getSelection(),el=selection?.anchorNode?.parentElement
           if(!el||!selection?.rangeCount||selection.toString().length>240||el.closest('input,textarea,[contenteditable]')||document.querySelector('input[type=password]'))return {blocked:true}
           const text=selection.toString().trim()
-          if(!text||/password|contrase[nñ]a|token|cookie|@|login|sign in|verification|bearer/i.test(text))return {blocked:true}
+          if(!text||new RegExp(privacyPattern,'i').test(text))return {blocked:true}
           // No HTML, IDs, URLs, input values or activity history are collected.
           return {text,element:el.tagName,ancestors:[el.parentElement?.tagName,el.parentElement?.parentElement?.tagName],children:Array.from(el.children).slice(0,8).map(c=>c.tagName),coverage:'selected_text_only',copy_id:null,variant_id:null}
         }})

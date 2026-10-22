@@ -67,5 +67,6 @@ test('compiled inspector: private bounded maps, no forms or clicks; old backend 
 test('production URL policy never enables EA as a sample or an auth surface',()=>{
  const official='https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/'
  expect(eaDiagnostic(official)).toBe(true);expect(admitted(official)).toBe(false)
- for(const url of [official+'?token=secret',official+'#login',official.replace('www.ea.com','www.ea.com.evil.test'),'https://accounts.ea.com/login'])expect(eaDiagnostic(url)).toBe(false)
+ expect(eaDiagnostic(official+'#/club')).toBe(true)
+ for(const url of [official+'?token=secret',official+'#login',official+'#token=abc',official+'#access_token_abc',official+'#%74oken=abc',official+'#a@b.com',official.replace('www.ea.com','www.ea.com.evil.test'),'https://accounts.ea.com/login'])expect(eaDiagnostic(url)).toBe(false)
 })

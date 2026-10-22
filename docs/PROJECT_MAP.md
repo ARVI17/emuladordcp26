@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Perfiles de vista previa (21-oct-2026): `extension/lib/profile-extraction.ts` valida definiciones vinculadas a mapas, campos por vista, localizadores únicos por registro y pruebas por revisión; el panel permite editar/importar, probar, contrastar y activar lectura manual sin ingesta. Reutiliza `inspect-region.ts`; `privacy.ts` distingue tokens del juego y credenciales y el inspector informa omisiones. No cambia API, esquema ni admisión de páginas reales. Estado personal comprobado: frontend/API `ad73edf`, esquema `0018`, en 8090. [Alcance y pendientes](VIEW_RECOGNITION.md).
+
 Reconocimiento guiado (18-oct-2026): [VIEW_RECOGNITION.md](VIEW_RECOGNITION.md), `extension/lib/inspect-region.ts`, `view-profile.ts` y `compatibility.ts`. Inspector privado independiente del backend, borradores declarativos y comprobación de builds/contrato; `/reader/capabilities` es una consulta pública limitada por Host/Origin. No cambia esquema, admisión ni origen de inventario. Mi cuenta guía hacia el permiso temporal del panel; `lib/official-tab.ts` reutiliza la pestaña abierta por la SPA.
 
 Ampliación del 18-oct-2026, head **0018**: `extension/` (MV3/WXT), `models/reader.py`, `schemas/reader.py`, `api/reader.py` y `StructuredReader`: emparejamiento, recibos idempotentes y revisión por lote dentro del contexto asistido. No hay extractor EA real contrastado. [Instalación, contratos y matriz](ASSISTED_READING.md).

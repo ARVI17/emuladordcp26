@@ -1,4 +1,5 @@
 import {z} from 'zod'
+import {sensitiveText} from './privacy'
 const short = z.string().min(1).max(100)
 export const card = z.object({
   ordinal:z.number().int().min(0).max(29),name:short,rating:z.number().int().min(40).max(99),
@@ -30,7 +31,8 @@ export function admitted(url:string) {
 }
 export function eaDiagnostic(url:string) {
   const u=new URL(url)
-  return u.protocol==='https:' && u.hostname==='www.ea.com' && /^\/(?:[a-z]{2}-[a-z]{2}\/)?ea-sports-fc\/ultimate-team\/web-app\/$/.test(u.pathname) && !u.search && !u.username && !u.password && !/login|payment|checkout|auth|recover|verify/i.test(u.hash)
+  return u.protocol==='https:' && u.hostname==='www.ea.com' && /^\/(?:[a-z]{2}-[a-z]{2}\/)?ea-sports-fc\/ultimate-team\/web-app\/$/.test(u.pathname) && !u.search && !u.username && !u.password
+    && u.hash.length<=80 && /^[#\/a-z0-9_-]*$/i.test(u.hash) && !sensitiveText.test(u.hash) && !/login|payment|checkout|auth|recover|verify|access[_-]?token|refresh[_-]?token|session[_-]?token/i.test(u.hash)
 }
 export function canonical(value:unknown):string {
   if(Array.isArray(value)) return '['+value.map(canonical).join(',')+']'

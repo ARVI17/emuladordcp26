@@ -13,8 +13,24 @@
 <label><input id="review-export" type="checkbox">Revisé el mapa antes de exportarlo y compartirlo</label>
 <button id="export-maps">Exportar mapa revisado</button><button id="delete-maps">Eliminar mapas privados</button>
 <h2>C. Preparar lectura</h2>
-<p>Perfiles reales pendientes: el mapa permite contrastar selectores y campos, pero todavía no activa lectura ni navegación automática en EA. Siguiente paso: revisar el mapa exportado y comprobar cada vista. No se interpreta un selector candidato como permiso de pulsación.</p>
-<h2>Compatibilidad con Club Lab</h2><p>ID de extensión: <code id="extension-id"></code></p>
+<p>Define los campos a partir de un mapa revisado. La prueba y la lectura manual usan el mismo lector acotado. Los resultados de perfiles permanecen en esta vista previa: la ingesta de páginas reales en Club Lab sigue pendiente.</p>
+<label>Mapa privado<select id="profile-map"></select></label><button id="profile-draft">Crear definición desde este mapa</button>
+<label>Perfil guardado<select id="profile-choice"><option value="">Nuevo perfil</option></select></label>
+<p id="profile-state"></p>
+<details><summary>Editar o importar definición declarativa</summary>
+<p>Usa los selectores exactos del mapa para el ámbito de cada registro y sus campos. Cada campo incluye field, selector, source (text o label), normalization y required. La importación solo admite la definición; no admite código, pruebas ni estados.</p>
+<label>Archivo JSON revisado<input id="profile-file" type="file" accept="application/json,.json"></label>
+<label>Definición JSON<textarea id="profile-definition" rows="12" spellcheck="false"></textarea></label>
+<button id="profile-save">Guardar definición revisada</button>
+</details>
+<button id="profile-test">Probar en muestra propia</button><button id="profile-preview">Vista previa en página real</button>
+<pre id="profile-preview-result"></pre>
+<label><input id="profile-reviewed" type="checkbox">Comparé los campos de esta vista previa con la región visible en EA</label>
+<button id="profile-contrast">Registrar contraste de esta revisión</button>
+<button id="profile-enable">Activar perfil para vista previa manual</button><button id="profile-disable">Desactivar perfil</button>
+<button id="profile-read">Leer región con perfil activo</button>
+<p>Contraste manual no significa certificación de EA. Cambiar campos invalida la evidencia; cambios de vista, idioma o estructura detienen la lectura. No hay navegación automática ni ingesta real habilitada.</p>
+<h2>Compatibilidad con Club Lab</h2><p>ID de extensión: <code id="extension-id"></code></p><p>Versión cargada: <code id="extension-version"></code></p>
 <label>Backend local <input id="base" value="http://localhost:8090"></label><p id="destination"></p>
 <button id="check">Comprobar versiones y capacidades</button><p id="compatibility"></p>
 <label><input id="confirm-destination" type="checkbox">Confirmo el cambio al destino escrito al emparejar</label>
