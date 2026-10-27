@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/hero-neon.svg" alt="Portada FC Club Lab: azul eléctrico, violeta y turquesa" width="100%" />
+
 # ⚽ FC Club Lab · Asistente local de plantillas y DCP
 
 ### Inventario de cartas · Optimización · Visión por computador · IA local
