@@ -9,16 +9,18 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.db.session import get_db, raw_db
-from app.models.reader import ReaderGrant, ReaderEvent
+from app.models.reader import ReaderGrant, ReaderEvent, ReaderObservation
 from app.models.planner import ClubContext, LocalSession
 from app.models.assisted import CaptureSession, VisualReading
 from app.models.entities import now
 from app.schemas.reader import PairingInput, PairingClaim, ObservationBatch, EventReview
+from app.schemas.observations import ObservationFragment, ObservationReview
 from app.schemas.assisted import ReviewedCard, ReadingReview
 from app.services.contexts import digest, utc
 from app.services.assisted import require_assisted, save_reading, safe_text
 from app.services.audit import record
 from app.services.locks import resource_locks
+from app.services.observations import summary as observation_summary
 
 router = APIRouter(prefix='/reader', tags=['Lector DOM local'])
 
@@ -61,10 +63,15 @@ def authenticated(request: Request, db: Session = Depends(raw_db)):
 @router.get('/capabilities')
 def capabilities(request: Request):
     transport(request)
-    return dict(protocol=1, reader_versions=['semantic-sample-1'], max_batch_records=30,
-                source_kinds=['synthetic_dom', 'user_export_dom'],
-                observed_page_extraction=False, remote_navigation=False,
-                provider_verified=False, required_schema_revision='0018')
+    return dict(protocol=1, schema_versions=[1,2], reader_versions=['semantic-sample-1','bounded-region-2'], max_batch_records=30,
+                source_kinds=['synthetic_dom', 'user_export_dom', 'observed_page_dom'],
+                observed_page_extraction='requires_private_profile_and_review', remote_navigation=False,
+                provider_verified=False, required_schema_revision='0019',
+                limits=dict(fragment_bytes=128000, fragments=10, records_per_observation=300, review_minutes=30),
+                capabilities=dict(discovery='guided', extract_loaded_view='conditional_profile',
+                    refresh_observation='manual', traverse_read_only=False, provider_sync=False, remote_write=False),
+                conditions='Perfil privado contrastado, permiso de pestaña y confirmación del contexto. No equivale a autorización EA.',
+                evidence_url='https://help.ea.com/es/articles/ea-sports-fc/fc-rules/', checked_on='2026-10-27')
 
 
 @router.post('/pairings', status_code=201)
@@ -113,6 +120,8 @@ def status(db: Session = Depends(get_db)):
     return dict(grants=[dict(id=r.id, extension_id=r.extension_id, status=r.status,
         expires_at=r.expires_at, generation=r.generation) for r in rows],
         events=[{'observed_at':e.observed_at, **e.receipt, **e.review_data} for e in events],
+        observations=[observation_summary(r) for r in db.scalars(
+            select(ReaderObservation).order_by(ReaderObservation.received_at.desc()).limit(50))],
         ea_extractor='pending_real_sample', remote_write=False, global_complete=False)
 
 
@@ -144,7 +153,7 @@ def canonical_hash(raw):
 
 
 @router.post('/events')
-async def ingest(request: Request, auth=Depends(authenticated)):
+async def ingest(request: Request, document: ObservationBatch | ObservationFragment, auth=Depends(authenticated)):
     db, grant = auth
     content = bytearray()
     async for chunk in request.stream():
@@ -152,7 +161,7 @@ async def ingest(request: Request, auth=Depends(authenticated)):
         if len(content) > 128_000: raise HTTPException(413, 'Lote demasiado grande')
     try:
         raw = json.loads(content)
-        payload = ObservationBatch.model_validate(raw)
+        payload = (ObservationFragment if raw.get('schema_version') == 2 else ObservationBatch).model_validate(raw)
     except (ValueError, TypeError):
         raise HTTPException(422, 'Lote DOM inválido') from None
     if str(payload.context_binding) != grant.id or canonical_hash(raw) != payload.payload_hash:
@@ -177,15 +186,20 @@ async def ingest(request: Request, auth=Depends(authenticated)):
         recent = db.scalar(select(func.count()).select_from(ReaderEvent).where(
             ReaderEvent.grant_id == grant.id, ReaderEvent.received_at > now()-timedelta(minutes=1)))
         if recent >= 30: raise HTTPException(429, 'Espera antes de enviar más lotes', headers={'Retry-After':'60'})
-        stale = payload.sequence < last or now()-payload.observed_at > timedelta(minutes=30)
+        is_v2 = isinstance(payload, ObservationFragment)
+        stale = (not is_v2 and payload.sequence < last) or now()-payload.observed_at > timedelta(minutes=30)
+        count = (1 if payload.payload.domain == 'account' else len(payload.payload.records)) if is_v2 else len(payload.records)
         receipt = dict(event_id=str(payload.event_id), status='historical' if stale else 'review_required',
-            count=len(payload.records), source_kind=payload.source_kind, reading_id=None,
+            count=count, source_kind=payload.source_kind, reading_id=None,
             global_complete=False, provider_verified=False)
+        if is_v2:
+            from app.services.observations import accept_fragment
+            receipt.update(accept_fragment(db, grant, payload, raw))
         row = ReaderEvent(event_id=str(payload.event_id), grant_id=grant.id, stream_id=str(payload.stream_id),
             sequence=payload.sequence, payload_hash=payload.payload_hash, payload=raw,
             receipt=receipt, observed_at=payload.observed_at)
         db.add(row)
-        record(db, 'ingest_dom_candidates', 'reader', 0, {'event_id':row.event_id,'count':len(payload.records)})
+        record(db, 'ingest_dom_candidates', 'reader', 0, {'event_id':row.event_id,'count':count})
         db.commit()  # receipt + candidate effects are one atomic transaction
         return receipt
 
@@ -196,6 +210,8 @@ def review_event(event_id: str, payload: EventReview, db: Session = Depends(get_
     with resource_locks(db, 'inventory', 'reader-review:'+str(db.info['context'].id)):
         row = db.scalar(select(ReaderEvent).where(ReaderEvent.event_id == event_id))
         if not row: raise HTTPException(404, 'Lote no disponible')
+        if row.payload.get('schema_version') == 2:
+            raise HTTPException(409, 'Revisa la observación completa desde sus fragmentos')
         if row.review_data: return {**row.receipt, **row.review_data}
         grant = db.get(ReaderGrant,row.grant_id)
         if grant.status != 'active' or grant.generation != db.info['context'].generation:
@@ -237,6 +253,33 @@ def event_detail(event_id: str, db: Session = Depends(get_db)):
     row = db.scalar(select(ReaderEvent).where(ReaderEvent.event_id == event_id))
     if not row: raise HTTPException(404, 'Lote no disponible')
     return dict(payload=row.payload, receipt={**row.receipt, **row.review_data})
+
+
+@router.get('/observations/{identifier}')
+def observation_detail(identifier: str, db: Session = Depends(get_db)):
+    from app.services.observations import summary
+    row = db.scalar(select(ReaderObservation).where(ReaderObservation.id == identifier))
+    if not row: raise HTTPException(404, 'Observación no disponible')
+    pending_rules = list(db.scalars(select(VisualReading.id).where(
+        VisualReading.id.in_(row.review_data.get('reading_ids', [])),
+        VisualReading.scope.in_(['dcp','objective']), VisualReading.status == 'pending')))
+    return dict(**summary(row), fragments=row.fragments, pending_rule_reading_ids=pending_rules)
+
+
+@router.post('/observations/{identifier}/review')
+def observation_review(identifier: str, payload: ObservationReview, db: Session = Depends(get_db)):
+    require_assisted(db)
+    from app.services.observations import review_observation
+    with resource_locks(db, 'inventory', 'reader-review:'+str(db.info['context'].id)):
+        row = db.scalar(select(ReaderObservation).where(ReaderObservation.id == identifier))
+        if not row: raise HTTPException(404, 'Observación no disponible')
+        grant = db.get(ReaderGrant, row.grant_id)
+        if grant.status != 'active' or grant.generation != db.info['context'].generation or utc(grant.expires_at) <= now():
+            raise HTTPException(409, 'El contexto del lector caducó')
+        result = review_observation(db, row)
+        record(db, 'review_domain_observation', 'reader', 0, {'observation_id':row.id, 'domain':row.domain})
+        db.commit()
+        return result
 
 
 @router.get('/proposal')

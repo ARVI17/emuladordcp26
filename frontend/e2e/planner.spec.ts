@@ -54,6 +54,7 @@ test('aplica comisión configurable y muestra alerta basada en cotización fecha
 })
 
 test('planifica práctica por plataforma y vincula un partido de la misma edición',async({page},testInfo)=>{
+ await page.setExtraHTTPHeaders({'X-Catalog-Fixture':'1'})
  await openLocal(page)
  await go(page,'Planes')
  await page.getByText('Rutina de práctica FC27',{exact:true}).click()

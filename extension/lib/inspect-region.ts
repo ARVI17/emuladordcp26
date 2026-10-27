@@ -24,7 +24,7 @@ export function inspectRegion(privacyPattern:string) {
     const t=(v||'').trim().replace(/\s+/g,' ')
     if(!t)return null
     if(sensitive.test(t)){omitted.sensitive_fields++;return null}
-    if(t.length>100){omitted.long_fields++;return null}
+    if(t.length>5000){omitted.long_fields++;return null}
     return t
   }
   const classes=(el:Element)=>Array.from(el.classList).filter(c=>/^[a-z][a-z_-]{1,40}$/i.test(c)&&!sensitive.test(c)).slice(0,3)
@@ -32,8 +32,8 @@ export function inspectRegion(privacyPattern:string) {
   const allowedRoles=new Set(['list','listitem','grid','gridcell','row','table','columnheader','heading','button','link','navigation','status','progressbar','tab','tabpanel','img'])
   const nodes:{parent:number|null;tag:string;selector:string;matches:number;role:string|null;label:string|null;text:string|null;medium:string;busy:boolean;declared_rows:number|null}[]=[]
   const pending:{el:Element;parent:number|null;depth:number}[]=[{el:element,parent:null,depth:0}]
-  let visited=0,cut=false
-  while(pending.length&&visited<400&&nodes.length<120){
+  let visited=0,cut=false,bytes=0
+  while(pending.length&&visited<4000&&nodes.length<1200){
     const item=pending.shift()!;visited++
     const el=item.el
     if(el.matches(skip)){omitted.excluded_subtrees++;continue}
@@ -52,9 +52,11 @@ export function inspectRegion(privacyPattern:string) {
       text:el.children.length===0&&!['IMG','CANVAS'].includes(el.tagName)?clean(el.textContent):null,
       medium:el.tagName==='CANVAS'?'canvas':el.tagName==='IMG'?'image':el.shadowRoot?'open_shadow_unread':el.localName.includes('-')?'custom_element_shadow_unknown':'dom',
       busy:el.getAttribute('aria-busy')==='true',declared_rows:count&&/^\d{1,6}$/.test(count)?Number(count):null})
+    bytes+=new TextEncoder().encode(JSON.stringify(nodes[nodes.length-1])).length
+    if(bytes>480000){nodes.pop();cut=true;break}
     if(item.depth<7){
-      for(const child of Array.from(el.children).slice(0,120))pending.push({el:child,parent:id,depth:item.depth+1})
-      if(el.children.length>120)cut=true
+      for(const child of Array.from(el.children).slice(0,300))pending.push({el:child,parent:id,depth:item.depth+1})
+      if(el.children.length>300)cut=true
     }else if(el.children.length)cut=true
   }
   const nav=nodes.filter(n=>['button','a'].includes(n.tag)||['button','link','tab'].includes(n.role||''))

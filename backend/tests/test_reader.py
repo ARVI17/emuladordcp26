@@ -19,8 +19,8 @@ def test_capabilities_are_public_bounded_and_not_provider_verification(client, m
     response = client.get('/reader/capabilities', headers={'X-Reader-Extension': EXTENSION})
     assert response.status_code == 200
     assert response.json()['protocol'] == 1
-    assert response.json()['source_kinds'] == ['synthetic_dom', 'user_export_dom']
-    assert not response.json()['observed_page_extraction']
+    assert response.json()['source_kinds'] == ['synthetic_dom', 'user_export_dom', 'observed_page_dom']
+    assert response.json()['observed_page_extraction'] == 'requires_private_profile_and_review'
     assert not response.json()['remote_navigation']
     assert not response.json()['provider_verified']
     assert client.get('/reader/capabilities', headers={'Host': 'evil.example'}).status_code == 403

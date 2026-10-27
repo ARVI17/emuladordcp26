@@ -33,3 +33,16 @@ class ReaderEvent(ClubScoped, Base):
     review_data: Mapped[dict] = mapped_column(JSON, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class ReaderObservation(ClubScoped, Base):
+    __tablename__ = 'reader_observations'
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    grant_id: Mapped[str] = mapped_column(ForeignKey('reader_grants.id'))
+    domain: Mapped[str] = mapped_column(String(20))
+    metadata_json: Mapped[dict] = mapped_column(JSON)
+    fragments: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(24), default='partial')
+    review_data: Mapped[dict] = mapped_column(JSON, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

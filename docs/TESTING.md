@@ -1,5 +1,17 @@
 # Pruebas del planificador FC27
 
+## Ingesta por dominios 0.4.0 (27-oct-2026)
+
+El pase focalizado Docker `f245febc8d` superó **22 Pytest/PostgreSQL**, **39 Vitest**, **16 recorridos Playwright móvil/escritorio** y **12 pruebas de extensión compilada**. Incluyó build, arranque sin Ollama, health/OpenAPI, Alembic upgrade/current/check en **0019** y limpieza con principal/volúmenes sin cambios. La regresión completa del commit limpio se registra con `python scripts/verify_docker.py --scope full --build-environment local`; cada informe conserva SHA, procedencia de imágenes y resultados en `state/sprints/`. El CI comprueba el SHA publicado.
+
+Se prueban 65 cartas en tres fragmentos, orden invertido, fragmento ausente, acuse perdido, 20 reenvíos y suspensión real del worker; la caída HTTP se simula con el proxy de prueba. Cambiar de 65 a diez filas conserva el perfil y las 65 copias, sin multiplicarlas ni inferir bajas. La revisión cuenta/squad/DCP admite saldo cero, conserva campos anteriores con su fecha, bloquea conflictos y genera una propuesta usando once cartas adicionales mientras las once de la principal permanecen excluidas e intactas. Requisitos/progreso siguen pendientes hasta su revisión específica. Todas estas evidencias son **sintéticas**, no una comprobación del club personal.
+
+Se revisó el panel compilado a 390 px. Pasaron nueve guardas Docker, build/TypeScript y auditoría npm de producción (cero vulnerabilidades reportadas tras Zod 4.6.7). `scripts/package_reader.py` fue ejecutado contra la imagen probada: produce carpeta instalable, ZIP y manifiesto SHA256, sin mapas ni credenciales.
+
+Los intentos anteriores no se cuentan como pases: `7ba3872974` obtuvo 297 Pytest correctos y cuatro fallos por referencias de práctica ya caducadas; se fijó la fecha únicamente en fixtures, manteniendo la caducidad de producción. `5349ccbc25` obtuvo 14/16 recorridos de UI: el test nuevo usaba el Host interno de Docker, correctamente rechazado; ahora usa el transporte local permitido. `e91cdc9da1` obtuvo 21/22 Pytest: la aserción nueva consultaba una carta demo en lugar del ID del contexto creado. El pase focalizado posterior corrige esos casos sin relajar las guardas.
+
+No se probó EA autenticado, perfil privado real ni hardware. La actualización automática tras confianza inicial, recorridos entre páginas y Birmingham específico siguen pendientes; la recuperación actual reanuda transporte manual. La instalación personal continúa en `ad73edf/0018` hasta un despliegue expresamente autorizado. [Método, instalación y límites](VIEW_RECOGNITION.md).
+
 ## Perfiles de vista previa 0.3.0 (21-oct-2026)
 
 El pase Docker aislado `d85dce7455` superó **295 Pytest/PostgreSQL** (320,14 s), **39 Vitest**, **32 recorridos Playwright móvil/escritorio** y **10 pruebas de extensión**, además de build, arranque sin Ollama, salud/OpenAPI, Alembic upgrade/current/check en `0018` y limpieza por identidad. El informe confirma instalación personal y volúmenes sin cambios. También pasaron nueve guardas del verificador y TypeScript/build local. Persiste el aviso previo de Starlette/TestClient.

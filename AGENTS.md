@@ -4,6 +4,8 @@ Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa a
 
 ## Estado y alcance
 
+- Extensión 0.4.0 y migración `0019`: observaciones por dominio, asignación visual, fragmentos/manifiesto y revisión en backend. El checkpoint reanuda transporte manual, no navegación EA. No hay perfil real distribuido; pruebas del club personal pendientes. [Estado vigente](docs/VIEW_RECOGNITION.md); las entradas 0.3.0/0018 siguientes son antecedentes.
+
 - Aplicación personal local no oficial: React/FastAPI/PostgreSQL/OR-Tools, Ollama opcional. Solo FC27 en UI y rutas públicas; FC26 histórico permanece aislado, sin borrar ni reconvertir.
 - Principal Compose `emuladordcp26`, entrada personal `http://localhost:8090` (predeterminado de Compose: 8080), volumen `emuladordcp26_postgres_data`. `scripts/fc27.ps1 Estado` acredita el puerto efectivo. Conservar imágenes, volúmenes y proyectos ajenos. La revisión antigua de 8081 fue respaldada y retirada; no volver a dejar otra aplicación permanente.
 - Cero adaptadores de producción en `ADAPTERS`. [Cuenta y bloqueos](docs/ACCOUNT_ACCESS.md), [contrato del lector](docs/PROVIDER_CONTRACT.md). No pedir credenciales/cookies/tokens EA, inventar protocolos ni abrir una carga pública de snapshots verificados. Abrir EA no conecta esta aplicación.

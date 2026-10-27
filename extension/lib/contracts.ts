@@ -9,7 +9,7 @@ export const card = z.object({
   rare:z.boolean().nullable(),special:z.boolean().nullable(),is_holographic:z.boolean().nullable(),
   first_owner:z.boolean().nullable(),holographic_level:z.number().int().min(0).max(100).nullable(),
   gallery_score:z.number().int().min(0).max(2000000000).nullable(),
-  evidence:z.record(z.string().max(120)),location:z.enum(['club','squad','unknown']),
+  evidence:z.record(z.string().max(80),z.string().max(120)),location:z.enum(['club','squad','unknown']),
 }).strict()
 export const reading = z.object({
   view:z.enum(['inventory','detail','squad','result']),edition:z.literal('FC27'),

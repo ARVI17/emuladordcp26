@@ -6,11 +6,11 @@ import type {ViewProfile} from './view-profile'
 
 // Exact selectors produced by the bounded inspector, not arbitrary CSS/JS.
 const locator=z.string().max(180).regex(/^[a-z][a-z0-9-]*(?:\.[a-z][a-z_-]{1,40}){0,3}$/i)
-const fields={
+export const fields={
   header:['club_name','balance'],account:['club_name','balance'],
   inventory:['name','rating','position','card_type','league','club','nationality','is_loan','is_evolution','tradable','rare','special','first_owner','gallery_score'],
   detail:['name','rating','position','card_type','league','club','nationality','is_loan','is_evolution','tradable','rare','special','first_owner','gallery_score'],
-  squad:['name','rating','position','slot'],
+  squad:['name','rating','position','slot','card_type','is_loan','is_evolution','tradable'],
   dcp:['title','requirement_text'],objective:['title','requirement_text','progress_current','progress_target'],
   gallery:['title','progress_current','progress_target'],unknown:[],
 } satisfies Record<ViewProfile['view'],string[]>
@@ -39,7 +39,7 @@ export type ProfileDefinition=z.infer<typeof profileDefinition>
 export type Region=NonNullable<ReturnType<typeof inspectRegion>>
 export type ProfileStatus='draft'|'sample_tested'|'observed_contrasted'|'active'|'disabled'
 // Bump when extraction semantics change: old proofs must not activate new code.
-export const EXTRACTOR_REVISION='bounded-region-1'
+export const EXTRACTOR_REVISION='bounded-region-2'
 export type Proof={extractor_revision:string;definition_hash:string;observed_at:string;document_ref:string;structure_hash:string;records:number}
 export type ExtractorProfile={id:string;revision:number;definition:ProfileDefinition;status:ProfileStatus;sample?:Proof;contrast?:Proof}
 
@@ -61,7 +61,24 @@ export function bindDefinition(input:unknown,profile:ViewProfile,region:Region):
 }
 export async function structureHash(map:Region){
   if(!map.nodes)throw Error('No hay una región legible.')
-  return hash(map.nodes.map(({parent,tag,selector,role,medium})=>({parent,tag,selector,role,medium})))
+  const nodes=map.nodes
+  const shape=(index:number):string=>{
+    const {tag,selector,role,medium}=nodes[index]!
+    const children=nodes.flatMap((n,i)=>n.parent===index?[shape(i)]:[])
+    // Cardinality of repeated rows and private text are not structural identity.
+    // Field uniqueness is checked separately inside EACH record on every read.
+    return JSON.stringify({tag,selector,role,medium,children:[...new Set(children)].sort()})
+  }
+  return hash(shape(0))
+}
+
+export const normalizationFor=(field:string)=>integers.has(field)?'integer' as const:booleans.has(field)?'boolean' as const:field==='position'?'position' as const:'text' as const
+export const isRequired=(view:ViewProfile['view'],field:string)=>(requiredFields[view]||[]).includes(field)||(['header','account','gallery'].includes(view)&&['club_name','title'].includes(field))
+export function localInteger(raw:string,language:string){
+  if(/^\d+$/.test(raw))return Number(raw)
+  const separator=language.startsWith('es')?'\\.':','
+  if(!new RegExp(`^[1-9]\\d{0,2}(?:${separator}\\d{3})+$`).test(raw))return null
+  return Number(raw.replace(/[.,]/g,''))
 }
 
 // Both a trial and an active one-shot preview call this exact reader. It reads
@@ -83,20 +100,26 @@ export async function extractProfile(definition:ProfileDefinition,map:Region){
     return false
   }
   const rows=p.record_selector?nodes.flatMap((n,i)=>n.selector===p.record_selector?[i]:[]):[0]
-  if(!rows.length||rows.length>30)throw Error('La vista debe contener entre 1 y 30 registros; no se recortan filas.')
+  if(!rows.length||rows.length>300)throw Error('La vista debe contener entre 1 y 300 registros; no se recortan filas.')
   if(rows.some((r,i)=>rows.some((other,j)=>i!==j&&descendant(r,other))))throw Error('Ámbitos de registros solapados; revisa el localizador.')
   const unknown=new Set<string>()
   const records=rows.map((row,ordinal)=>{
     const values:Record<string,string|number|boolean|null>={}
+    const raw_values:Record<string,string|null>={}
     for(const f of p.fields){
       const matches=nodes.filter((n,i)=>n.selector===f.selector&&descendant(i,row))
       if(matches.length>1)throw Error(`Localizador no único dentro del registro: ${f.field}.`)
       const raw=matches[0]?.[f.source]
+      raw_values[f.field]=raw||null
       let value:string|number|boolean|null=raw&&!sensitiveText.test(raw)?raw:null
       if(value!==null){
-        if(f.normalization==='integer')value=/^\d+$/.test(raw!)?Number(raw):null
+        if(f.normalization==='integer')value=localInteger(raw!,p.language)
         if(f.normalization==='boolean')value=/^(true|sí|si|yes)$/i.test(raw!)?true:/^(false|no)$/i.test(raw!)?false:null
-        if(f.normalization==='position')value=positions.has(raw!)?raw!:null
+        if(f.normalization==='position'){
+          const aliases:Record<string,string>={GK:'POR',RB:'LD',CB:'DFC',LB:'LI',RWB:'CAD',LWB:'CAI',CDM:'MCD',CM:'MC',CAM:'MCO',RM:'MD',LM:'MI',RW:'ED',LW:'EI',CF:'SD',ST:'DC'}
+          const position=aliases[raw!]||raw!
+          value=positions.has(position)?position:null
+        }
         if(typeof value==='number'&&(!Number.isSafeInteger(value)||value>2_000_000_000||(f.field==='rating'&&(value<40||value>99))))value=null
       }
       if(value===null){
@@ -105,7 +128,7 @@ export async function extractProfile(definition:ProfileDefinition,map:Region){
       }
       values[f.field]=value
     }
-    return {ordinal,values}
+    return {ordinal,values,raw_values}
   })
   return {view:p.view,records,unknown_fields:[...unknown],coverage:map.coverage,provider_verified:false as const,ingestion_enabled:false as const}
 }

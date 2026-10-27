@@ -1,10 +1,13 @@
 import {endpoint,canonical} from '../../lib/contracts'
+import {fields,normalizationFor,isRequired} from '../../lib/profile-extraction'
 import './style.css'
 const el=(id:string)=>document.getElementById(id)!
 const input=(id:string)=>(el(id) as HTMLInputElement).value
 let hydrated=false
 let profiles:any[]=[]
-const statusLabels:Record<string,string>={draft:'Borrador',sample_tested:'Probado con muestra',observed_contrasted:'Contrastado manualmente en vista real',active:'Activo para vista previa manual',disabled:'Desactivado'}
+let maps:any[]=[]
+const statusLabels:Record<string,string>={draft:'Borrador',sample_tested:'Definición probada',observed_contrasted:'Contrastado manualmente en vista real',active:'Activo para lectura manual',disabled:'Desactivado'}
+const viewLabels:Record<string,string>={header:'Cabecera',account:'Cuenta',inventory:'Inventario',detail:'Ficha',squad:'Plantilla',dcp:'DCP',objective:'Objetivo',gallery:'Galería',unknown:'Desconocida'}
 function choices(id:string,values:{id:string;label:string}[],empty:string){
  const select=el(id) as HTMLSelectElement,current=select.value
  select.replaceChildren(new Option(empty,''),...values.map(v=>new Option(v.label,v.id)))
@@ -12,7 +15,7 @@ function choices(id:string,values:{id:string;label:string}[],empty:string){
 }
 function profileState(){
  const p=profiles.find(p=>p.id===input('profile-choice'))
- el('profile-state').textContent=p?`${statusLabels[p.status]} · revisión ${p.revision}. Pruebas vinculadas a esta definición; sin ingesta real.`:'Selecciona un mapa para definir los campos.'
+ el('profile-state').textContent=p?`${statusLabels[p.status]} · revisión ${p.revision}. El envío requiere contexto confirmado y revisión en Club Lab.`:'Selecciona un mapa para definir los campos.'
 }
 async function refresh(){
  const r=await chrome.runtime.sendMessage({kind:'status'})
@@ -25,10 +28,12 @@ async function refresh(){
  const partial=r.maps.filter((m:any)=>m.map.coverage.partial||m.map.coverage.truncated).length
  el('coverage').textContent=`${r.maps.length}/8 regiones privadas; ${partial} con omisiones. ${r.maps.filter((m:any)=>m.profile.evidence_origin==='observed_page_map').length} observadas en página oficial. Un mapa no acredita un extractor. Consulta coverage.omitted en la vista previa para ver textos largos, medios y subárboles excluidos.`
  profiles=r.profiles||[]
- choices('profile-map',r.maps.map((m:any)=>({id:m.map_id,label:`${m.profile.view} · ${m.observed_at}`})),'Selecciona una región')
- choices('profile-choice',profiles.map(p=>({id:p.id,label:`${p.definition.view} · r${p.revision} · ${statusLabels[p.status]}`})),'Nuevo perfil')
+ maps=r.maps||[]
+ choices('profile-map',r.maps.map((m:any)=>({id:m.map_id,label:`${viewLabels[m.profile.view]||'Desconocida'} · ${m.observed_at}`})),'Selecciona una región')
+ choices('profile-choice',profiles.map(p=>({id:p.id,label:`${viewLabels[p.definition.view]} · r${p.revision} · ${statusLabels[p.status]}`})),'Nuevo perfil')
  profileState()
  el('status').textContent=`${r.paired?'Emparejado':'Sin emparejar'} · ${r.pending||0} pendientes. ${r.message||''}`
+ el('checkpoint').textContent=r.checkpoint?`Recorrido: ${r.checkpoint.reason} · observado ${r.checkpoint.observed_at||'sin lectura'}`:'Sin recorrido iniciado. Límite: 300 registros por región, 30 por fragmento, 100 fragmentos / 2 MB en cola.'
  if(r.proposal){
    const value=r.proposal
    el('proposal').textContent=[
@@ -61,9 +66,44 @@ for(const kind of ['pair','activate','analyze','pause','retry','disconnect','che
 }
 chrome.storage.onChanged.addListener(()=>void refresh())
 const clearPreview=()=>{el('profile-preview-result').textContent='';(el('profile-reviewed') as HTMLInputElement).checked=false}
+const fieldLabels:Record<string,string>={name:'Nombre',rating:'Media',position:'Posición',slot:'Puesto (incluye banquillo/reservas)',card_type:'Variante',club_name:'Nombre del club',balance:'Monedas',title:'Título',requirement_text:'Requisito completo',is_loan:'Cesión',is_evolution:'Evolución',tradable:'Transferible',first_owner:'Primer propietario',league:'Liga',club:'Club de carta',nationality:'Nacionalidad',rare:'Rara',special:'Especial',gallery_score:'Puntuación de Galería',progress_current:'Progreso observado',progress_target:'Meta'}
+function renderMapping(definition:any){
+ const entry=maps.find(m=>m.map_id===definition?.map_id)
+ const root=el('visual-mapping');root.replaceChildren()
+ if(!entry)return
+ const selectors=[...new Set<string>(entry.map.nodes.map((n:any)=>n.selector))]
+ const label=document.createElement('label');label.textContent='Contenedor de cada registro'
+ const scope=document.createElement('select');scope.id='mapping-record';scope.append(new Option('Toda la región (cabecera/ficha)',''),...selectors.map(s=>new Option(s,s)));scope.value=definition.record_selector||'';label.append(scope);root.append(label)
+ const choices=new Map<string,string>()
+ for(const n of entry.map.nodes)for(const source of ['text','label'])if(n[source]){
+  const key=n.selector+'|'+source
+  if(!choices.has(key))choices.set(key,`${n[source].slice(0,80)} · ${n.selector} · ${source==='text'?'texto':'etiqueta'}`)
+ }
+ for(const field of fields[definition.view as keyof typeof fields]||[]){
+  const label=document.createElement('label');label.textContent=(fieldLabels[field]||field)+(isRequired(definition.view,field)?' *':'')
+  const select=document.createElement('select');select.dataset.field=field
+  select.append(new Option('No observado',''),...Array.from(choices,([key,text])=>new Option(text,key)))
+  const existing=definition.fields.find((f:any)=>f.field===field)
+  if(existing)select.value=existing.selector+'|'+existing.source
+  label.append(select);root.append(label)
+ }
+}
+el('mapping-apply').addEventListener('click',()=>{
+ try{
+  const definition=JSON.parse(input('profile-definition'))
+  definition.record_selector=input('mapping-record')||null
+  definition.fields=Array.from(el('visual-mapping').querySelectorAll<HTMLSelectElement>('select[data-field]')).filter(s=>s.value).map(s=>{
+   const [selector,source]=s.value.split('|'),field=s.dataset.field!
+   return {field,selector,source,normalization:normalizationFor(field),required:isRequired(definition.view,field)}
+  })
+  ;(el('profile-definition') as HTMLTextAreaElement).value=JSON.stringify(definition,null,2)
+  clearPreview();el('profile-save').click()
+ }catch{el('status').textContent='Crea primero una definición desde el mapa seleccionado.'}
+})
 el('profile-choice').addEventListener('change',()=>{
  const p=profiles.find(p=>p.id===input('profile-choice'))
  ;(el('profile-definition') as HTMLTextAreaElement).value=p?JSON.stringify(p.definition,null,2):''
+ renderMapping(p?.definition)
  clearPreview();profileState()
 })
 el('profile-definition').addEventListener('input',clearPreview)
@@ -75,10 +115,11 @@ el('profile-file').addEventListener('change',async()=>{
  ;(el('profile-choice') as HTMLSelectElement).value=''
  clearPreview();profileState()
 })
-for(const kind of ['profile-draft','profile-save','profile-test','profile-preview','profile-contrast','profile-enable','profile-disable','profile-read']){
+for(const kind of ['profile-draft','profile-save','profile-test-map','profile-test','profile-preview','profile-contrast','profile-enable','profile-disable','profile-read','profile-send']){
  el(kind).addEventListener('click',async()=>{
   try{
    const payload:Record<string,unknown>={kind,profile_id:input('profile-choice'),map_id:input('profile-map'),reviewed:(el('profile-reviewed') as HTMLInputElement).checked}
+   if(kind==='profile-send')payload.context_confirmed=(el('context-confirmed') as HTMLInputElement).checked
    if(kind==='profile-save'){
     try{payload.definition=JSON.parse(input('profile-definition'))}catch{throw Error('JSON inválido; revisa la definición.')}
    }
@@ -90,7 +131,8 @@ for(const kind of ['profile-draft','profile-save','profile-test','profile-previe
    }
    const result=await chrome.runtime.sendMessage(payload)
    if(!result.ok)throw Error(result.error)
-   if(result.definition){(el('profile-definition') as HTMLTextAreaElement).value=JSON.stringify(result.definition,null,2);(el('profile-choice') as HTMLSelectElement).value=''}
+   if(result.definition){(el('profile-definition') as HTMLTextAreaElement).value=JSON.stringify(result.definition,null,2);(el('profile-choice') as HTMLSelectElement).value='';renderMapping(result.definition)}
+   if(kind==='profile-send')(el('context-confirmed') as HTMLInputElement).checked=false
    clearPreview()
    if(result.preview)el('profile-preview-result').textContent=JSON.stringify(result.preview,null,2)
    await refresh()

@@ -103,6 +103,11 @@ def test_fifty_references_are_documentary_never_ownership(client):
 
 def test_practice_expiry_hides_instructions_and_blocks_new_session(client, monkeypatch):
     from app.services import practice
+    class ReviewedDate(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 10, 20, tzinfo=timezone.utc)
+    monkeypatch.setattr(practice, 'datetime', ReviewedDate)
     prior = client.post('/practice/sessions', json={'focus':'passing','minutes':10,'platform':'Xbox'}).json()
     class Expired(datetime):
         @classmethod

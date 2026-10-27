@@ -183,6 +183,8 @@ def simulate_dcp(identifier: int, payload: OptimizeRequest, db: DB):
         if not draft or not draft.get('reviewed'):
             raise HTTPException(409, 'Revisa el texto y todos los requisitos del DCP antes de simularlo.')
         from app.schemas.assisted import VisualDcp
+        from app.services.main_squad import main_status
+        main = main_status(db)
         draft = VisualDcp.model_validate(draft)
         draft.requirements = {**draft.requirements, 'required_player_ids': sorted(set(draft.requirements.get('required_player_ids',[])) | set(payload.locked_ids))}
         from app.schemas.requirements import normalize_requirements
@@ -214,5 +216,6 @@ def simulate_dcp(identifier: int, payload: OptimizeRequest, db: DB):
             valid.append({**asdict(solution),'players':[serialize_player(p,protected) for p in selected],
                 'checklist':[dict(player_id=p.id,name=p.name,search=f'{p.name} · {p.rating} · {p.position}',action='Revisar esta copia antes de cualquier preparación manual; no entregar desde el asistente.') for p in selected]})
         return dict(reading_id=row.id, name=draft.name, source='user_reviewed_visual', provider_verified=False,
+            main_protection_complete=main['complete'], main_warning=main['reason'],
             simulation=True, solutions=valid, exclusions=excluded, progress_observed=None,
             message='Propuesta local sin consumo. La lectura no demuestra progreso anterior ni autoriza una entrega. Una lista vacía no certifica imposibilidad del club completo.')

@@ -1,7 +1,7 @@
 <!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Club Lab · lector</title></head><body>
 <h1>Club Lab · reconocimiento</h1>
 <p>Modo guiado: tú navegas en EA. El inspector reconoce la región seleccionada, sin pulsar controles ni modificar cartas. No verifica tu identidad con el proveedor.</p>
-<button id="official">Abrir acceso oficial a FC27</button><button id="select-tab">Seleccionar pestaña de FC27</button>
+<button id="official">Abrir FC27 oficial</button><button id="select-tab">Seleccionar pestaña de FC27</button>
 <p>Introduce contraseña y MFA solo en EA, con su dominio visible. Pulsa el icono de esta extensión en la pestaña para conceder permiso temporal. El lector se detiene en acceso o verificación.</p>
 <h2>A. Reconocer estructura</h2>
 <p>Selecciona texto de una cabecera, una carta o un requisito visible. Se inspecciona una región cercana y acotada. Repite manualmente para lista, detalle, principal y un DCP u objetivo.</p>
@@ -13,23 +13,26 @@
 <label><input id="review-export" type="checkbox">Revisé el mapa antes de exportarlo y compartirlo</label>
 <button id="export-maps">Exportar mapa revisado</button><button id="delete-maps">Eliminar mapas privados</button>
 <h2>C. Preparar lectura</h2>
-<p>Define los campos a partir de un mapa revisado. La prueba y la lectura manual usan el mismo lector acotado. Los resultados de perfiles permanecen en esta vista previa: la ingesta de páginas reales en Club Lab sigue pendiente.</p>
+<p>Asigna los campos a textos reconocidos. Prueba el mapa, contrasta una lectura nueva en la pestaña y activa el perfil. Enviar conserva observaciones pendientes de revisión en Club Lab; no verifica identidad EA.</p>
 <label>Mapa privado<select id="profile-map"></select></label><button id="profile-draft">Crear definición desde este mapa</button>
 <label>Perfil guardado<select id="profile-choice"><option value="">Nuevo perfil</option></select></label>
 <p id="profile-state"></p>
+<div id="visual-mapping"></div><button id="mapping-apply">Guardar asignación visual</button>
 <details><summary>Editar o importar definición declarativa</summary>
 <p>Usa los selectores exactos del mapa para el ámbito de cada registro y sus campos. Cada campo incluye field, selector, source (text o label), normalization y required. La importación solo admite la definición; no admite código, pruebas ni estados.</p>
 <label>Archivo JSON revisado<input id="profile-file" type="file" accept="application/json,.json"></label>
 <label>Definición JSON<textarea id="profile-definition" rows="12" spellcheck="false"></textarea></label>
 <button id="profile-save">Guardar definición revisada</button>
 </details>
-<button id="profile-test">Probar en muestra propia</button><button id="profile-preview">Vista previa en página real</button>
+<button id="profile-test-map">Probar definición en mapa guardado</button><button id="profile-test">Probar en muestra propia</button><button id="profile-preview">Vista previa en página real</button>
 <pre id="profile-preview-result"></pre>
 <label><input id="profile-reviewed" type="checkbox">Comparé los campos de esta vista previa con la región visible en EA</label>
 <button id="profile-contrast">Registrar contraste de esta revisión</button>
-<button id="profile-enable">Activar perfil para vista previa manual</button><button id="profile-disable">Desactivar perfil</button>
+<button id="profile-enable">Activar perfil contrastado</button><button id="profile-disable">Desactivar perfil</button>
 <button id="profile-read">Leer región con perfil activo</button>
-<p>Contraste manual no significa certificación de EA. Cambiar campos invalida la evidencia; cambios de vista, idioma o estructura detienen la lectura. No hay navegación automática ni ingesta real habilitada.</p>
+<label><input id="context-confirmed" type="checkbox">La pestaña sigue mostrando el club del contexto emparejado. Si cambié de cuenta, crearé otro contexto.</label>
+<button id="profile-send">Leer y enviar observación a Club Lab</button>
+<p>Contraste manual no significa aprobación de EA. Su normativa advierte sobre extensiones y automatización. No hay navegación ni operaciones automáticas en EA. Los perfiles locales se envían como muestras sintéticas, nunca como observaciones reales.</p>
 <h2>Compatibilidad con Club Lab</h2><p>ID de extensión: <code id="extension-id"></code></p><p>Versión cargada: <code id="extension-version"></code></p>
 <label>Backend local <input id="base" value="http://localhost:8090"></label><p id="destination"></p>
 <button id="check">Comprobar versiones y capacidades</button><p id="compatibility"></p>
@@ -37,9 +40,10 @@
 <p>En Mi cuenta de Club Lab, aprueba este ID y copia el emparejamiento temporal.</p>
 <label>Emparejamiento <input id="pairing"></label><label>Código de seis dígitos <input id="code" maxlength="6" autocomplete="off"></label>
 <button id="pair">Emparejar</button>
-<h2>D. Leer secciones habilitadas</h2><p>Solo muestra local o exportación del formato Club Lab. En EA sigue pendiente el perfil contrastado.</p>
+<h2>D. Muestras y propuestas</h2><p>El lector anterior de muestras sigue disponible. Analizar utiliza únicamente observaciones admitidas en el contexto local.</p>
 <button id="activate">Leer muestra cargada</button><button id="analyze">Analizar lo leído</button>
 <h2>E. Control de lectura</h2><button id="pause">Pausar</button><button id="retry">Reintentar envío</button>
+<p id="checkpoint"></p>
 <p>Reintentar envía los lotes conservados con su fecha original. Para continuar la lectura de muestra, vuelve a activarla; se comprueba el documento. No reanuda navegación en EA.</p>
 <label><input id="discard" type="checkbox">Descartar explícitamente lotes pendientes al desconectar</label><button id="disconnect">Desconectar</button>
 <p role="status" id="status"></p><pre id="proposal"></pre>

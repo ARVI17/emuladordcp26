@@ -1,5 +1,9 @@
 # Mapa técnico · Club Lab FC27
 
+Observaciones por dominio (27-oct-2026): extensión 0.4.0, `schemas/observations.py`, `services/observations.py`, tabla `reader_observations`/migración **0019** y `DomainObservations.tsx`. Asignación visual, v2 compatible con recibos v1, manifiestos de hasta diez fragmentos, revisión por observación y correspondencia conservadora de copias. Cabecera/principal/DCP reutilizan lectura asistida; Galería conserva evidencia separada. No hay perfil EA distribuido ni prueba del club personal. [Recorrido y pendientes](VIEW_RECOGNITION.md).
+
+Las siguientes ampliaciones describen hitos anteriores; comprueba la versión servida con `scripts/fc27.ps1 Estado`.
+
 Perfiles de vista previa (21-oct-2026): `extension/lib/profile-extraction.ts` valida definiciones vinculadas a mapas, campos por vista, localizadores únicos por registro y pruebas por revisión; el panel permite editar/importar, probar, contrastar y activar lectura manual sin ingesta. Reutiliza `inspect-region.ts`; `privacy.ts` distingue tokens del juego y credenciales y el inspector informa omisiones. No cambia API, esquema ni admisión de páginas reales. Estado personal comprobado: frontend/API `ad73edf`, esquema `0018`, en 8090. [Alcance y pendientes](VIEW_RECOGNITION.md).
 
 Reconocimiento guiado (18-oct-2026): [VIEW_RECOGNITION.md](VIEW_RECOGNITION.md), `extension/lib/inspect-region.ts`, `view-profile.ts` y `compatibility.ts`. Inspector privado independiente del backend, borradores declarativos y comprobación de builds/contrato; `/reader/capabilities` es una consulta pública limitada por Host/Origin. No cambia esquema, admisión ni origen de inventario. Mi cuenta guía hacia el permiso temporal del panel; `lib/official-tab.ts` reutiliza la pestaña abierta por la SPA.

@@ -8,7 +8,7 @@ import {DcpFilters,defaultDcpFilters} from './DcpFilters'
 import {DcpTemplates} from './DcpTemplates'
 import {SectionTitle,ErrorBox} from './ui'
 
-type Result={name:string;solutions:Solution[];exclusions:{id:number;name:string;reason:string}[];message:string}
+type Result={name:string;solutions:Solution[];exclusions:{id:number;name:string;reason:string}[];message:string;main_protection_complete:boolean;main_warning:string|null}
 export function AssistedDcp(){
  const [selected,setSelected]=useState<number>(),[filters,setFilters]=useState(defaultDcpFilters)
  const [locked,setLocked]=useState<number[]>([]),[result,setResult]=useState<Result>()
@@ -23,7 +23,7 @@ export function AssistedDcp(){
  <DcpTemplates readingId={selected} filters={filters} onApply={value=>{setFilters({...defaultDcpFilters,...value});reset()}}/>
  <button disabled={!selected||simulate.isPending} onClick={()=>simulate.mutate({})}>Simular DCP con mis cartas aptas</button>
  <ErrorBox error={readings.error||simulate.error}/>
- {result&&<><p>{result.message}</p>{!result.solutions.length&&<p>No hay una combinación validada con estos filtros y cartas fijas. No se ha quitado ningún bloqueo.</p>}
+ {result&&<><p>{result.message}</p>{!result.main_protection_complete&&<p role="alert">Principal incompleta: {result.main_warning} La simulación no acredita que sea seguro sacrificar estas cartas.</p>}{!result.solutions.length&&<p>No hay una combinación validada con estos filtros y cartas fijas. No se ha quitado ningún bloqueo.</p>}
  {result.solutions.map((s,i)=><section className="panel" key={i}><h3>{result.name} · Propuesta {i+1}</h3>
  <p>Media local {s.rating} · Valor conocido {money(s.total_cost)} · {s.player_ids.length} copias locales</p>
  <ul>{s.players.map(p=><li key={p.id}>{p.name} · {p.rating} · {p.position} · {p.card_type||'Variante desconocida'} · Copia local #{p.id}

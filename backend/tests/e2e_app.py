@@ -17,6 +17,15 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session
 from catalog_fixture import witness_definitions
 fixture_request = ContextVar('fixture_request', default=False)
+# Existing practice references intentionally expire in production. Only marked
+# disposable fixture requests exercise the diary at their historical review date.
+from datetime import datetime, timezone
+from app.services import practice
+class PracticeFixtureClock(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        return cls(2026, 10, 20, tzinfo=timezone.utc) if fixture_request.get() else datetime.now(tz)
+practice.datetime = PracticeFixtureClock
 def browser_witness(db, *_):
     if fixture_request.get():
         witness_definitions(db)

@@ -46,7 +46,7 @@ test('privacy distinguishes game tokens from credentials in headings and fields'
 test('inspector reports omitted media, mixed text, long requirements and forms without claiming complete coverage',async({page})=>{
  await page.setContent(html())
  await page.locator('section').evaluate(el=>{
-  el.insertAdjacentHTML('beforeend','<div>Filtro <b>Media</b></div><p>'+('requisito largo '.repeat(15))+'</p><canvas>Private fallback</canvas><img width="20" height="20"><div class="host"></div><form><button>Never click</button></form>')
+  el.insertAdjacentHTML('beforeend','<div>Filtro <b>Media</b></div><p>'+('requisito largo '.repeat(400))+'</p><canvas>Private fallback</canvas><img width="20" height="20"><div class="host"></div><form><button>Never click</button></form>')
   el.querySelector('.host')!.attachShadow({mode:'open'}).innerHTML='<span>Shadow private</span>'
  })
  const map=await inspect(page),omitted=map.coverage!.omitted
@@ -76,7 +76,7 @@ test('same reader scopes duplicate field selectors per row, preserves unknowns a
  await expect(extractProfile(p,await inspect(page))).rejects.toThrow('Idioma')
  await page.evaluate(()=>document.documentElement.lang='es')
  await page.locator('article').first().evaluate(el=>el.insertAdjacentHTML('beforeend','<span class="name">Duplicado</span>'))
- await expect(extractProfile(p,await inspect(page))).rejects.toThrow('estructura cambió')
+ await expect(extractProfile(p,await inspect(page))).rejects.toThrow('no único dentro del registro')
  const ambiguous=await inspect(page),newDefinition=await definition(ambiguous)
  await expect(extractProfile(newDefinition,ambiguous)).rejects.toThrow('no único dentro del registro')
 })
@@ -117,11 +117,13 @@ test('long requirements, nested record scopes and oversized regions fail without
  expect(preview.records[0]?.values).toEqual({title:'Una regla',requirement_text:'Media mínima 80'})
  expect(preview.ingestion_enabled).toBe(false)
  await page.locator('.text').evaluate(el=>el.textContent='Requisito largo '.repeat(20))
+ expect((await extractProfile(dcp,await inspect(page))).records[0]?.values.requirement_text).toBe('Requisito largo '.repeat(20).trim())
+ await page.locator('.text').evaluate(el=>el.textContent='Requisito largo '.repeat(400))
  await expect(extractProfile(dcp,await inspect(page))).rejects.toThrow('obligatorio')
  await page.locator('.text').evaluate(el=>el.textContent='Media mínima 80')
  await page.locator('section').evaluate(el=>{const row=el.querySelector('article')!;for(let i=1;i<31;i++)el.append(row.cloneNode(true))})
  const large=await inspect(page)
- await expect(extractProfile({...dcp,structure_hash:await structureHash(large)},large)).rejects.toThrow('entre 1 y 30')
+ expect((await extractProfile(dcp,large)).records).toHaveLength(31)
  await page.locator('section').evaluate(el=>{el.innerHTML='<h2>DCP sintético</h2><article class="requirement"><span class="title">Una regla</span><article class="requirement"><span class="text">No solapar</span></article></article>'})
  const nested=await inspect(page)
  await expect(extractProfile({...dcp,structure_hash:await structureHash(nested)},nested)).rejects.toThrow('solapados')
@@ -154,7 +156,7 @@ test('compiled panel edits and tests a scoped profile without backend or real-so
   expect((await send('profile-enable',{profile_id})).ok).toBe(false)
   expect((await send('profile-read',{profile_id})).ok).toBe(false)
   await panel.locator('#profile-choice').selectOption(profile_id)
-  await expect(panel.locator('#profile-state')).toContainText('Probado con muestra')
+  await expect(panel.locator('#profile-state')).toContainText('Definición probada')
   expect(JSON.parse(await panel.locator('#profile-definition').inputValue())).toEqual(configured)
   expect((await send('profile-disable',{profile_id})).ok).toBe(true)
   expect((await send('status')).profiles[0].status).toBe('disabled')
