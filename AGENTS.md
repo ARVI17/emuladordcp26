@@ -4,6 +4,8 @@ Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa a
 
 ## Estado y alcance
 
+- Sprint «Analizar mi club»: extensión 0.5.0 y migración aditiva `0020`, checkpoint por contexto, informes calculados y admisión incremental optativa para inventario sin conflictos. El lector automático solo reconoce el esquema propio local; EA conserva diagnóstico estructural sin extracción automática. [Contrato y pendientes reales](docs/ANALYZE_CLUB.md). Personal comprobado: `ea27c61/0019` en 8090, aún sin desplegar este sprint.
+
 - Extensión 0.4.0 y migración `0019`: observaciones por dominio, asignación visual, fragmentos/manifiesto y revisión en backend. El checkpoint reanuda transporte manual, no navegación EA. No hay perfil real distribuido; pruebas del club personal pendientes. [Estado vigente](docs/VIEW_RECOGNITION.md); las entradas 0.3.0/0018 siguientes son antecedentes.
 
 - Aplicación personal local no oficial: React/FastAPI/PostgreSQL/OR-Tools, Ollama opcional. Solo FC27 en UI y rutas públicas; FC26 histórico permanece aislado, sin borrar ni reconvertir.

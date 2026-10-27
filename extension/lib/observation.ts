@@ -16,7 +16,7 @@ export type DomainPayload=z.infer<typeof domainPayload>
 // All IDs, dates, fragments and hashes are created BEFORE persisting the queue.
 // Retry sends the same bytes. No content-script code gets the local credential.
 export async function observationEvents(profile:ExtractorProfile,preview:Awaited<ReturnType<typeof extractProfile>>,
-  context:{binding:string;stream:string;sequence:number;documentRef:string;observedAt:string;source:'observed_page_dom'|'synthetic_dom'|'user_export_dom'}){
+  context:{binding:string;stream:string;sequence:number;documentRef:string;observedAt:string;source:'observed_page_dom'|'synthetic_dom'|'user_export_dom';page?:string;filters?:string;virtualized?:boolean|null}){
   const domain=profile.definition.view==='header'?'account':profile.definition.view
   const payloads:DomainPayload[]=[]
   for(let offset=0;offset<preview.records.length;offset+=30){
@@ -47,8 +47,8 @@ export async function observationEvents(profile:ExtractorProfile,preview:Awaited
       profile:{profile_id:profile.id,revision:profile.revision,definition_hash:await hash(profile.definition),
         structure_hash:profile.definition.structure_hash,origin:profile.definition.origin,route:profile.definition.route,
         language:profile.definition.language,edition:'FC27',omissions:preview.coverage.omitted},
-      scope:{page:domain,filters:'',location:domain==='squad'?'squad':['inventory','detail'].includes(domain)?'club':'unknown',
-        visible_count:preview.records.length,virtualized:preview.coverage.virtualized,global_complete:false},
+      scope:{page:context.page||domain,filters:context.filters||'',location:domain==='squad'?'squad':['inventory','detail'].includes(domain)?'club':'unknown',
+        visible_count:preview.records.length,virtualized:context.virtualized??preview.coverage.virtualized,global_complete:false},
       fragment_index:index,fragment_count:payloads.length,manifest,payload:payloads[index]}
     const complete={...event,payload_hash:await hash(event)}
     if(new TextEncoder().encode(JSON.stringify(complete)).length>128000)throw Error('Fragmento mayor de 128 KB; selecciona una región menor. No se recortó contenido.')

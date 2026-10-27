@@ -5,8 +5,10 @@ import {sensitiveText} from '../lib/privacy'
 import {viewProfile,viewType} from '../lib/view-profile'
 import {draftForMap,bindDefinition,extractProfile,saveDefinition,recordSample,recordContrast,activateProfile,structureHash,EXTRACTOR_REVISION} from '../lib/profile-extraction'
 import {observationEvents} from '../lib/observation'
+import {diagnoseVisible} from '../lib/diagnostic'
+import {automaticProfile} from '../lib/automatic-profile'
 import type {ExtractorProfile,Proof} from '../lib/profile-extraction'
-type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown;compatibility?:unknown;checkpoint?:{status:string;reason:string;observation_id?:string;observed_at?:string;profile_id?:string}}
+type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown;compatibility?:unknown;workflow?:any;diagnostic?:ReturnType<typeof diagnoseVisible>;automaticProfiles?:ExtractorProfile[];seenViews?:string[];handledRequest?:string;observedContext?:string;readerMetrics?:{reads:number;repeated:number;last_ms:number};checkpoint?:{status:string;reason:string;observation_id?:string;observed_at?:string;profile_id?:string}}
 const initial=():State=>({base:'http://localhost:8090',pending:[],sequence:0,stream:crypto.randomUUID()})
 export default defineBackground(()=>{
   // Private to extension contexts. No credentials ever go to the content script.
@@ -36,13 +38,82 @@ export default defineBackground(()=>{
   const pause=async()=>{
     const {active}=await chrome.storage.session.get('active')
     if(active)await chrome.tabs.sendMessage(active.tabId,{kind:'pause'}).catch(()=>{})
-    await chrome.storage.session.remove('active')
+    await chrome.storage.session.remove(['active','resumeTab'])
+  }
+  const postView=async(s:State,code:string,source='unknown',regions=0)=>{
+    if(s.credential&&s.workflow?.status==='active')s.workflow=await request(s,'workflow/view',{
+      code,source,candidate_regions:regions,profile_verified:code==='ready_sample'})
+    await save(s)
+  }
+  const readAutomatic=async(s:State,active:any)=>{
+    const started=performance.now()
+    const tab=await chrome.tabs.get(active.tabId)
+    if(!tab.url||!admitted(tab.url))throw Error('Permiso o documento distinto: vuelve a autorizar la pestaña.')
+    const capture=async()=>{
+      const [r]=await chrome.scripting.executeScript({target:{tabId:active.tabId},func:inspectRegion,args:[sensitiveText.source,'[data-club-lab-sample="1"]']})
+      if(r?.documentId!==active.documentId||!r?.result||r.result.blocked)throw Error(r?.result?.blocked||'Documento cambiado; lectura detenida.')
+      return r.result
+    }
+    const map=await capture()
+    if(map.coverage?.loading){await postView(s,'loading');return}
+    // Stability is checked with the same bounded extraction path, after debounce.
+    await new Promise(r=>setTimeout(r,250))
+    if(stopRequested)return
+    if(await hash(map)!==await hash(await capture())){await postView(s,'loading');return}
+    const context=await hash([map.sample?.context,map.sample?.source])
+    if((active.context||s.observedContext)&&(active.context||s.observedContext)!==context){await pause();await postView(s,'structure_changed');return}
+    s.observedContext=context;active.context=context;await chrome.storage.session.set({active})
+    const source=map.sample?.source
+    if(source!=='synthetic_dom'&&source!=='user_export_dom')throw Error('La muestra debe declarar su procedencia propia.')
+    const {profile,preview}=await automaticProfile(map,new URL(tab.url).origin,s.automaticProfiles||[])
+    const signature=await hash({profile:profile.definition,records:preview.records,page:map.sample?.page,filters:map.sample?.filters,context})
+    if((s.seenViews||[]).includes(signature)){
+      s.readerMetrics={reads:s.readerMetrics?.reads||0,repeated:(s.readerMetrics?.repeated||0)+1,last_ms:Math.round(performance.now()-started)}
+      s.message='Vista ya observada; recorrido conservado, sin duplicar cartas ni detener el análisis.';await save(s);return
+    }
+    const observedAt=new Date().toISOString()
+    const events=await observationEvents(profile,preview,{binding:s.binding!,stream:s.stream,sequence:s.sequence,
+      documentRef:active.documentRef,observedAt,source,page:(map.sample?.page||profile.definition.view).slice(0,80),
+      filters:(map.sample?.filters||'').slice(0,240),virtualized:map.sample?.virtualized})
+    if(s.pending.length+events.length>100||new TextEncoder().encode(JSON.stringify([...s.pending,...events])).length>2_000_000)throw Error('Cola llena; conserva la vista y reintenta tras enviar los pendientes.')
+    s.automaticProfiles=[...(s.automaticProfiles||[]).filter(p=>p.id!==profile.id).slice(-19),profile]
+    s.pending.push(...events);s.sequence+=events.length;s.seenViews=[...(s.seenViews||[]).slice(-99),signature]
+    s.checkpoint={status:'reading',reason:'Vista estable fragmentada; envío local en curso',observed_at:observedAt,observation_id:events[0]?.observation_id,profile_id:profile.id}
+    s.readerMetrics={reads:(s.readerMetrics?.reads||0)+1,repeated:s.readerMetrics?.repeated||0,last_ms:Math.round(performance.now()-started)}
+    await save(s)
+    try{
+      await flush(s)
+      await postView(s,'ready_sample',source)
+    }catch{
+      s.checkpoint={...s.checkpoint,status:'paused',reason:'Sin acuse. Cola persistida; el panel reintentará al recuperar el backend.'};await save(s)
+    }
+  }
+  const analyzeVisible=async(s:State)=>{
+    const {selectedTab}=await chrome.storage.session.get('selectedTab')
+    const tab=typeof selectedTab==='number'?await chrome.tabs.get(selectedTab).catch(()=>null):(await chrome.tabs.query({active:true,lastFocusedWindow:true}))[0]
+    if(!tab?.id||!tab.url||(!admitted(tab.url)&&!eaDiagnostic(tab.url))){await postView(s,'permission_required');return}
+    await pause()
+    if(eaDiagnostic(tab.url)){
+      const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:diagnoseVisible})
+      s.diagnostic=result?.result
+      s.message='Diagnóstico estructural disponible. No se ha acreditado un mecanismo de lectura automática permitido para EA.'
+      await postView(s,s.diagnostic?.code==='sensitive_screen'?'sensitive_screen':'authorization_required','observed_page_dom',s.diagnostic?.regions.length||0)
+      return
+    }
+    if(!s.credential||!s.binding){s.message='Empareja una vez desde Mi cuenta para conservar lecturas y calcular propuestas.';await save(s);return}
+    const [doc]=await chrome.scripting.executeScript({target:{tabId:tab.id},files:['watch.js']})
+    if(!doc?.documentId)throw Error('Documento no disponible; concede permiso con el icono de la extensión.')
+    const active={tabId:tab.id,documentId:doc.documentId,documentRef:crypto.randomUUID(),nonce:crypto.randomUUID(),workflow:true}
+    await chrome.storage.session.set({active})
+    const answer=await chrome.tabs.sendMessage(tab.id,{kind:'watch-start',...active})
+    if(!answer?.ok)throw Error('Perfil requiere revisión; no hay una región propia declarada y única.')
+    await readAutomatic(s,active)
   }
   chrome.action.onClicked.addListener(tab=>{if(tab.id){void chrome.storage.session.set({selectedTab:tab.id,...(tab.url&&eaDiagnostic(tab.url)?{officialTab:tab.id}:{})});void chrome.sidePanel.open({tabId:tab.id})}})
-  chrome.tabs.onUpdated.addListener((id,change)=>{if(change.status==='loading')void chrome.storage.session.get('active').then(({active})=>{if(active?.tabId===id)return chrome.storage.session.remove('active')})})
+  chrome.tabs.onUpdated.addListener((id,change)=>{if(change.status==='loading')void chrome.storage.session.get('active').then(({active})=>{if(active?.tabId===id){if(active.workflow)void chrome.storage.session.set({resumeTab:id});return chrome.storage.session.remove('active')}})})
   chrome.permissions.onRemoved.addListener(()=>{void pause()})
   chrome.runtime.onMessage.addListener((message,sender,reply)=>{
-    if(message?.kind==='pause'&&sender.id===chrome.runtime.id&&sender.url===chrome.runtime.getURL('sidepanel.html'))stopRequested=true
+    if((message?.kind==='pause'||(message?.kind==='workflow-control'&&['pause','cancel'].includes(message.action)))&&sender.id===chrome.runtime.id&&sender.url===chrome.runtime.getURL('sidepanel.html')){stopRequested=true;void pause()}
     serial=serial.then(async()=>{
       await ready
       if(JSON.stringify(message).length>128000)throw Error('Mensaje demasiado grande')
@@ -51,6 +122,13 @@ export default defineBackground(()=>{
         const {active}=await chrome.storage.session.get('active')
         if(!active || sender.id!==chrome.runtime.id || sender.frameId!==0 || sender.tab.id!==active.tabId || sender.documentId!==active.documentId || !admitted(sender.url||'') || message.nonce!==active.nonce || message.documentRef!==active.documentRef)throw Error('Documento no activado')
         if(message.kind==='reader-error'){s.message=String(message.message).slice(0,200);await save(s);return {ok:false,error:s.message}}
+        if(message.kind==='view-changed'){
+          const workflow=await request(s,'workflow')
+          if(!active.workflow||workflow.status!=='active'){await pause();return {ok:false,error:'Recorrido detenido'}}
+          s.workflow=workflow
+          try{await readAutomatic(s,active)}catch{await pause();await postView(s,'structure_changed');throw Error('Perfil requiere revisión. Se conserva la lectura anterior.')}
+          return {ok:true}
+        }
         if(message.kind!=='observation')throw Error('Mensaje no permitido')
         const data=reading.parse(message.data)
         if(forbidden.test(JSON.stringify(data)))throw Error('Campo sensible rechazado')
@@ -67,7 +145,44 @@ export default defineBackground(()=>{
         return {ok:true}
       }
       if(sender.id!==chrome.runtime.id || sender.url!==chrome.runtime.getURL('sidepanel.html'))throw Error('Panel no autorizado')
-      if(message.kind==='status')return {ok:true,version:chrome.runtime.getManifest().version,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,checkpoint:s.checkpoint,receipt:s.lastReceipt,proposal:s.proposal,paired:!!s.credential,base:s.base,compatibility:s.compatibility,maps:(await chrome.storage.local.get('viewMaps')).viewMaps||[],profiles:(await chrome.storage.local.get('extractorProfiles')).extractorProfiles||[]}
+      if(message.kind==='status')return {ok:true,version:chrome.runtime.getManifest().version,extensionId:chrome.runtime.id,pending:s.pending.length,message:s.message,checkpoint:s.checkpoint,receipt:s.lastReceipt,proposal:s.proposal,workflow:s.workflow,diagnostic:s.diagnostic,readerMetrics:s.readerMetrics,paired:!!s.credential,base:s.base,compatibility:s.compatibility,maps:(await chrome.storage.local.get('viewMaps')).viewMaps||[],profiles:(await chrome.storage.local.get('extractorProfiles')).extractorProfiles||[]}
+      if(message.kind==='analyze-club'){
+        stopRequested=false
+        if(s.credential){
+          const compatible=await compatibility(s.base);s.compatibility=compatible
+          if(!compatible.compatible||!(compatible.capabilities as any)?.workflow_version)throw Error('Este backend todavía no admite Analizar mi club. Requiere esquema 0020; el destino se conserva.')
+          s.workflow=await request(s,'workflow/start',{})
+          s.handledRequest=s.workflow.requested_at
+          if(s.pending.length)await flush(s)
+          await save(s)
+        }
+        await analyzeVisible(s);return {ok:true}
+      }
+      if(message.kind==='workflow-poll'){
+        if(!s.credential)return {ok:true}
+        if(!s.compatibility){s.compatibility=await compatibility(s.base);await save(s)}
+        if(!(s.compatibility as any)?.capabilities?.workflow_version)return {ok:true}
+        // Polling the LOCAL checkpoint never reads the EA DOM or navigates EA.
+        const workflow=await request(s,'workflow');s.workflow=workflow
+        const {active,resumeTab}=await chrome.storage.session.get(['active','resumeTab'])
+        if(workflow.status!=='active'){if(active?.workflow)await pause();await save(s);return {ok:true}}
+        if(s.handledRequest!==workflow.requested_at||resumeTab){
+          s.handledRequest=workflow.requested_at;stopRequested=false;await save(s);await analyzeVisible(s)
+        }
+        if(s.pending.length&&!stopRequested){await flush(s);s.workflow=await request(s,'workflow/refresh',{})}
+        await save(s);return {ok:true}
+      }
+      if(message.kind==='workflow-control'){
+        if(!['pause','resume','cancel'].includes(message.action))throw Error('Acción no admitida')
+        if(message.action!=='resume')await pause()
+        s.workflow=await request(s,'workflow/action',{action:message.action});await save(s);return {ok:true}
+      }
+      if(message.kind==='diagnostic-one'){
+        const [tab]=await chrome.tabs.query({active:true,lastFocusedWindow:true})
+        if(!tab?.id||!tab.url||(!eaDiagnostic(tab.url)&&!admitted(tab.url)))throw Error('Pulsa el icono en la pestaña oficial o muestra propia para autorizar el diagnóstico.')
+        const [result]=await chrome.scripting.executeScript({target:{tabId:tab.id},func:diagnoseVisible})
+        s.diagnostic=result?.result;await save(s);return {ok:true,diagnostic:s.diagnostic}
+      }
       if(message.kind==='profile-draft'){
         const {viewMaps=[]}=await chrome.storage.local.get('viewMaps')
         const entry=viewMaps.find((m:any)=>m.map_id===message.map_id)
@@ -171,10 +286,10 @@ export default defineBackground(()=>{
         if(!compatible.compatible)throw Error(compatible.reason)
         if(!/^[0-9]{6}$/.test(claim.code)||! /^[a-f0-9-]{36}$/.test(claim.pairing_id))throw Error('Código o emparejamiento inválido')
         const result=await request({...s,base,credential:undefined},'claim',claim)
-        await pause();await save({...initial(),base,credential:result.credential,binding:result.context_binding,message:'Emparejado. Revisa el contexto antes de activar una muestra.'})
+        await pause();await save({...initial(),base,credential:result.credential,binding:result.context_binding,compatibility:compatible,message:'Emparejado. Revisa el contexto antes de activar una muestra.'})
         return {ok:true}
       }
-      if(message.kind==='pause'){await pause();if(s.checkpoint){s.checkpoint={...s.checkpoint,status:'paused',reason:'Pausa solicitada; historial y cola conservados'};await save(s)}return {ok:true}}
+      if(message.kind==='pause'){await pause();if(s.workflow?.status==='active')s.workflow=await request(s,'workflow/action',{action:'pause'});if(s.checkpoint){s.checkpoint={...s.checkpoint,status:'paused',reason:'Pausa solicitada; historial y cola conservados'};await save(s)}return {ok:true}}
       if(message.kind==='disconnect'){
         await pause()
         // Do not erase observations silently. The explicit second action discards them.

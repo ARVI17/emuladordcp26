@@ -5,7 +5,7 @@ import type {inspectRegion} from './inspect-region'
 import type {ViewProfile} from './view-profile'
 
 // Exact selectors produced by the bounded inspector, not arbitrary CSS/JS.
-const locator=z.string().max(180).regex(/^[a-z][a-z0-9-]*(?:\.[a-z][a-z_-]{1,40}){0,3}$/i)
+const locator=z.string().max(180).regex(/^[a-z][a-z0-9-]*(?:(?:\.[a-z][a-z_-]{1,40}){0,3}|\[data-card\]|\[data-field="[a-z_]{1,30}"\])$/i)
 export const fields={
   header:['club_name','balance'],account:['club_name','balance'],
   inventory:['name','rating','position','card_type','league','club','nationality','is_loan','is_evolution','tradable','rare','special','first_owner','gallery_score'],

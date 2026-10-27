@@ -1,5 +1,7 @@
 # Reconocimiento e ingesta por dominios · extensión 0.4.0
 
+**Actualización:** el flujo vigente 0.5.0/0020 se describe en [ANALYZE_CLUB.md](ANALYZE_CLUB.md). El despliegue autorizado anterior dejó la instalación personal en `ea27c61/0019`; se comprobó de nuevo en 8090. Las instrucciones de selección manual que siguen describen la herramienta avanzada conservada de 0.4.0. La extracción automática EA sigue pendiente de autorización y contraste real.
+
 Conserva WXT/MV3 y el inspector privado. Conecta **perfil → observación fragmentada → recibo PostgreSQL → revisión en Club Lab → inventario/requisitos → cálculo existente**. Las pruebas usan datos sintéticos. **No se ha contrastado un perfil ni una propuesta con el club personal.**
 
 ## Versiones y destino

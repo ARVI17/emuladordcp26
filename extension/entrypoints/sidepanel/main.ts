@@ -19,6 +19,14 @@ function profileState(){
 }
 async function refresh(){
  const r=await chrome.runtime.sendMessage({kind:'status'})
+ const workflow=r.workflow,report=workflow?.report
+ el('workflow-next').textContent=workflow?.status==='paused'||workflow?.status==='cancelled'?'Recorrido detenido; historial y cola conservados.':report?.next_action||r.message||'Autoriza la pestaña desde el icono y empareja el lector una vez.'
+ const stages=el('workflow-stages');stages.replaceChildren()
+ for(const stage of report?.stages||[]){const li=document.createElement('li');li.textContent=stage.label+' · '+({complete:'comprobado',partial:'parcial',pending:'pendiente',blocked:'requiere una acción'} as Record<string,string>)[stage.status]+' — '+stage.evidence;stages.append(li)}
+ el('workflow-coverage').textContent=report?`${report.inventory_count} cartas admitidas; ${report.pending_observations} observaciones pendientes. Cobertura parcial. Siguiente sección: ${report.next_section}. ${report.main.unchanged?'Principal local sin cambios.':'La principal local cambió.'}`:''
+ const groups=report?.modules?.squads?.resultú.groups||[]
+ el('workflow-results').textContent=report?[(report.source_counts?.synthetic_dom?'Incluye MUESTRAS SINTÉTICAS; no acredita EA.':'Datos locales con procedencia; sin identidad EA verificada.'),...groups.map((g:any)=>g.profiles.join(' / ')+': '+g.squad.lineup.map((p:any)=>p.slot+' '+p.player.name).join(', ')),...Object.entries(report.modules).filter(([,v]:any)=>v.status==='pending').map(([k,v]:any)=>k+': '+v.reason)].join('\n\n'):''
+ el('reader-metrics').textContent=r.readerMetrics?`${r.readerMetrics.reads} vistas nuevas; ${r.readerMetrics.repeated} repeticiones evitadas; última lectura ${r.readerMetrics.last_ms} ms. OCR/IA por carta: 0.`:''
  el('extension-id').textContent=r.extensionId||''
  el('extension-version').textContent=r.version||'desconocida'
  if(!hydrated){(el('base') as HTMLInputElement).value=r.base;hydrated=true}
@@ -148,3 +156,30 @@ el('export-maps').addEventListener('click',async()=>{
  const a=document.createElement('a');a.href=url;a.download='club-lab-mapa-revisado.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
 })
 void refresh()
+
+for(const kind of ['analyze-club','diagnostic-one'])el(kind).addEventListener('click',async()=>{
+ const button=el(kind) as HTMLButtonElement;button.disabled=true
+ try{
+  const result=await chrome.runtime.sendMessage({kind})
+  if(!result.ok)throw Error(result.error)
+  if(result.diagnostic){
+   const url=URL.createObjectURL(new Blob([JSON.stringify(result.diagnostic,null,2)],{type:'application/json'}))
+   const link=document.createElement('a');link.href=url;link.download='club-lab-esqueleto-sanitizado.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
+  }
+  await refresh()
+ }catch(e){el('workflow-next').textContent=e instanceof Error?e.message:'No se pudo analizar la vista.'}
+ finally{button.disabled=false}
+})
+for(const action of ['pause','resume','cancel'])el('workflow-'+action).addEventListener('click',async()=>{
+ const result=await chrome.runtime.sendMessage({kind:'workflow-control',action})
+ if(!result.ok)el('workflow-next').textContent=result.error
+ else await refresh()
+})
+let polling=false,failures=0,nextPoll=0
+setInterval(async()=>{
+ if(polling||Date.now()<nextPoll)return
+ polling=true
+ try{const result=await chrome.runtime.sendMessage({kind:'workflow-poll'});if(!result.ok)throw Error(result.error);failures=0}
+ catch{failures++;nextPoll=Date.now()+Math.min(60000,5000*2**Math.min(failures,4))}
+ finally{polling=false}
+},5000)

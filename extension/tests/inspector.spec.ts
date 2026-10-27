@@ -23,7 +23,7 @@ test('compiled inspector: private bounded maps, no forms or clicks; old backend 
  try{
   const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
   const id=new URL(worker.url()).hostname
-  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`)
+  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`);await panel.locator("#technical > summary").click();await panel.locator("#pairing-settings > summary").click();await panel.locator("#legacy-tools > summary").click()
   const send=(kind:string,extra={})=>panel.evaluate(m=>chrome.runtime.sendMessage(m),{kind,...extra})
   expect((await send('status')).base).toBe('http://localhost:8090')
   expect((await send('check',{base:'http://127.0.0.1:8090'})).ok).toBe(true)

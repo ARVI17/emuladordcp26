@@ -105,6 +105,21 @@ def test_header_squad_dcp_and_solver_preserve_main_and_unknown_progress(client,m
     assert all(p['name'].startswith('Reserva sintética') for p in proposal.json()['solutions'][0]['players'])
     assert client.get('/squads/main').json()['state_hash']==main['state_hash']
     assert client.get('/players').json()['total']==22
+    goal=client.post('/objective-planning',json=dict(name='Objetivo sintético observado',phrase='REVISAR OBJETIVO',rules=dict(
+        source_reference='Transcripción sintética',source_text='Juega con once cartas de media 80 o más.',
+        observed_at=now().isoformat(),reviewed=True,mode='any',min_difficulty='not_required',loans_allowed=False,
+        conditions=[dict(id='rating',source_text='Once cartas de media 80 o más',field='rating',comparison='ge',value=80,count=11,reviewed=True)])))
+    assert goal.status_code==201,goal.text
+    analysis=client.post('/club/analyze',json={})
+    assert analysis.status_code==200,analysis.text
+    report=analysis.json()['report']
+    assert report['main']['complete'] and report['main']['unchanged']
+    assert report['modules']['dcp']['proposals'][0]['solutions']
+    assert all(p['name'].startswith('Reserva sintética') for p in report['modules']['dcp']['proposals'][0]['solutions'][0]['players'])
+    assert report['modules']['objectives']['proposals'][0]['proposals']
+    assert report['source_counts']=={'synthetic_dom':22}
+    assert client.get('/squads/main').json()['state_hash']==main['state_hash']
+    assert client.get('/players').json()['total']==22
 
 
 def test_reobservation_no_copy_multiplication_no_resurrection_no_silent_conflicts(client,monkeypatch):

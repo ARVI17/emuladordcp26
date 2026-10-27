@@ -134,3 +134,4 @@ class ObservationFragment(InputModel):
 class ObservationReview(InputModel):
     confirmation: Literal['REVISAR OBSERVACION DOM']
     context_confirmed: Literal[True]
+    enable_incremental: bool = False

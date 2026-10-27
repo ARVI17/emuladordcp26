@@ -61,7 +61,7 @@ def summary(row):
         global_complete=False, provider_verified=False, **row.review_data)
 
 
-def review_observation(db, row):
+def review_observation(db, row, *, automatic=False):
     if row.review_data:
         return summary(row)
     if row.status != 'review_required' or now()-utc(row.observed_at) > timedelta(minutes=30):
@@ -83,6 +83,9 @@ def review_observation(db, row):
         for ordinal, c in enumerate(piece.get('records', []) if row.domain in {'inventory', 'detail', 'squad'} else []):
             key = ambiguity_key(c)
             existing = by_key[key]
+            if automatic and (multiplicity[key] != 1 or c.get('location') != 'club'):
+                blocked.append(dict(fragment=index, ordinal=ordinal, reason='Copia repetida o ubicación sin aprobar; revisión necesaria'))
+                continue
             # A visual identity is not an EA copy ID. Reuse only a unique reviewed
             # match; never create another copy from an old/ambiguous observation.
             if existing:
@@ -91,6 +94,9 @@ def review_observation(db, row):
                     blocked.append(dict(fragment=index, ordinal=ordinal, reason='Identidad ambigua o retirada; no se multiplicó ni reactivó la copia'))
                     continue
                 facts = p.validation_evidence
+                if facts.get('source_kind') and facts['source_kind'] != meta['source_kind']:
+                    blocked.append(dict(fragment=index, ordinal=ordinal, reason='Origen diferente: una muestra no se convierte en posesión observada'))
+                    continue
                 if utc(row.observed_at) < utc(datetime.fromisoformat(facts['observed_at'])):
                     blocked.append(dict(fragment=index, ordinal=ordinal, reason='Existe una observación más reciente'))
                     continue
@@ -145,6 +151,7 @@ def review_observation(db, row):
                     dates[key] = prior.get('field_observed_at', {}).get(key, prior.get('observed_at'))
             p.unknown_fields = sorted(set(p.unknown_fields) - set(previous_fields))
             p.validation_evidence = {**p.validation_evidence, 'source_kind':meta['source_kind'],
+                'review_method':'approved_profile_rules' if automatic else 'manual_region_review',
                 'reader_version':meta['reader_version'], 'observation_id':row.id, 'profile':meta['profile'],
                 'observed_fields':sorted(set(previous_fields) | set(current_fields)), 'field_observed_at':dates,
                 'additional_facts':extra,
@@ -154,5 +161,6 @@ def review_observation(db, row):
     row.status = 'reviewed'
     row.review_data = dict(reading_ids=readings, pending_records=blocked, reused_copies=reused,
         context_confirmed=True, rule_review_required=row.domain in {'dcp','objective'},
-        progress_applied=False, main_automatically_changed=False)
+        progress_applied=False, main_automatically_changed=False,
+        admission='approved_profile_rules' if automatic else 'manual_region_review')
     return summary(row)

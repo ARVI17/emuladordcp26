@@ -39,7 +39,7 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
  try{
   let worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
   const id=new URL(worker.url()).hostname
-  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`)
+  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`);await panel.locator("#technical > summary").click();await panel.locator("#pairing-settings > summary").click();await panel.locator("#legacy-tools > summary").click()
   const manifest=JSON.parse(await readFile(path.join(extension,'manifest.json'),'utf8'))
   expect(manifest.permissions).not.toContain('cookies');expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*'])
   const s=await context.request.post(base+'/api/app/session');expect(s.ok()).toBeTruthy()

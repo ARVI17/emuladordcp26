@@ -66,10 +66,10 @@ def capabilities(request: Request):
     return dict(protocol=1, schema_versions=[1,2], reader_versions=['semantic-sample-1','bounded-region-2'], max_batch_records=30,
                 source_kinds=['synthetic_dom', 'user_export_dom', 'observed_page_dom'],
                 observed_page_extraction='requires_private_profile_and_review', remote_navigation=False,
-                provider_verified=False, required_schema_revision='0019',
+                provider_verified=False, required_schema_revision='0020', workflow_version=1,
                 limits=dict(fragment_bytes=128000, fragments=10, records_per_observation=300, review_minutes=30),
                 capabilities=dict(discovery='guided', extract_loaded_view='conditional_profile',
-                    refresh_observation='manual', traverse_read_only=False, provider_sync=False, remote_write=False),
+                    refresh_observation='approved_profile_nonconflicting', traverse_read_only=False, provider_sync=False, remote_write=False),
                 conditions='Perfil privado contrastado, permiso de pestaña y confirmación del contexto. No equivale a autorización EA.',
                 evidence_url='https://help.ea.com/es/articles/ea-sports-fc/fc-rules/', checked_on='2026-10-27')
 
@@ -169,10 +169,16 @@ async def ingest(request: Request, document: ObservationBatch | ObservationFragm
     safe_text(json.dumps(raw, ensure_ascii=False))
     if payload.observed_at > now()+timedelta(minutes=2):
         raise HTTPException(422, 'La observación tiene una fecha futura')
-    with resource_locks(db, 'reader:'+grant.id):
+    from starlette.concurrency import run_in_threadpool
+    return await run_in_threadpool(ingest_transaction, db, grant, payload, raw)
+
+
+def ingest_transaction(db, grant, payload, raw):
+    # Incremental admission may reconcile 300 records: keep ORM/solver work off the event loop.
+    with resource_locks(db, 'inventory', 'reader:'+grant.id):
         db.refresh(grant)
         binding(db, grant)
-        if grant.status != 'active': raise HTTPException(401, 'Credencial revocada')
+        if grant.status != 'active' or utc(grant.expires_at) <= now(): raise HTTPException(401, 'Credencial revocada o caducada')
         old = db.get(ReaderEvent, str(payload.event_id))
         if old:
             if old.grant_id != grant.id or old.payload_hash != payload.payload_hash:
@@ -195,6 +201,11 @@ async def ingest(request: Request, document: ObservationBatch | ObservationFragm
         if is_v2:
             from app.services.observations import accept_fragment
             receipt.update(accept_fragment(db, grant, payload, raw))
+            db.flush()
+            from app.services.reader_workflow import auto_review
+            observation = db.get(ReaderObservation, str(payload.observation_id))
+            auto_review(db, observation)
+            receipt['status'] = observation.status
         row = ReaderEvent(event_id=str(payload.event_id), grant_id=grant.id, stream_id=str(payload.stream_id),
             sequence=payload.sequence, payload_hash=payload.payload_hash, payload=raw,
             receipt=receipt, observed_at=payload.observed_at)
@@ -277,6 +288,13 @@ def observation_review(identifier: str, payload: ObservationReview, db: Session 
         if grant.status != 'active' or grant.generation != db.info['context'].generation or utc(grant.expires_at) <= now():
             raise HTTPException(409, 'El contexto del lector caducó')
         result = review_observation(db, row)
+        if payload.enable_incremental:
+            from app.services.reader_workflow import approve_incremental
+            approve_incremental(db, row)
+        from app.services.reader_workflow import current, calculate
+        workflow = current(db)
+        if workflow and workflow.status == 'active':
+            calculate(db, workflow)
         record(db, 'review_domain_observation', 'reader', 0, {'observation_id':row.id, 'domain':row.domain})
         db.commit()
         return result

@@ -46,3 +46,18 @@ class ReaderObservation(ClubScoped, Base):
     review_data: Mapped[dict] = mapped_column(JSON, default=dict)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class ReaderWorkflow(ClubScoped, Base):
+    """One durable local checkpoint per context; contains no browser credential."""
+    __tablename__ = 'reader_workflows'
+    __table_args__ = (UniqueConstraint('club_context_id', name='uq_reader_workflow_context'),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    generation: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(20), default='active')
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    main_hash: Mapped[str] = mapped_column(String(64))
+    trusted_profiles: Mapped[dict] = mapped_column(JSON, default=dict)
+    view_state: Mapped[dict] = mapped_column(JSON, default=dict)
+    report: Mapped[dict] = mapped_column(JSON, default=dict)

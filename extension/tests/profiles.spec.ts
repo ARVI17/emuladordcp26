@@ -137,7 +137,7 @@ test('compiled panel edits and tests a scoped profile without backend or real-so
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]})
  try{
   const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker'),id=new URL(worker.url()).hostname
-  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`)
+  const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`);await panel.locator("#technical > summary").click();await panel.locator("#pairing-settings > summary").click();await panel.locator("#legacy-tools > summary").click()
   const send=(kind:string,extra={})=>panel.evaluate(m=>chrome.runtime.sendMessage(m),{kind,...extra})
   const page=await context.newPage();await page.goto('http://127.0.0.1:8090/reader-sample.html');await page.bringToFront();await select(page)
   expect((await send('recognize',{view:'inventory'})).ok).toBe(true)

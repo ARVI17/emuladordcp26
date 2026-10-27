@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+«Analizar mi club»: `api/reader_workflow.py`, `services/reader_workflow.py`, `schemas/reader_workflow.py`, `ReaderWorkflow`/`0020`, `ClubAnalysis.tsx`, `extension/lib/automatic-profile.ts`, `diagnostic.ts` y `entrypoints/watch.ts`. Orquestación local, checkpoint, contraste de principal, primera revisión por región e incrementos optativos sin conflictos. [Alcance vigente](ANALYZE_CLUB.md). Instalación personal comprobada `ea27c61/0019`; los estados de despliegue inferiores son históricos.
+
 Observaciones por dominio (27-oct-2026): extensión 0.4.0, `schemas/observations.py`, `services/observations.py`, tabla `reader_observations`/migración **0019** y `DomainObservations.tsx`. Asignación visual, v2 compatible con recibos v1, manifiestos de hasta diez fragmentos, revisión por observación y correspondencia conservadora de copias. Cabecera/principal/DCP reutilizan lectura asistida; Galería conserva evidencia separada. No hay perfil EA distribuido ni prueba del club personal. [Recorrido y pendientes](VIEW_RECOGNITION.md).
 
 Las siguientes ampliaciones describen hitos anteriores; comprueba la versión servida con `scripts/fc27.ps1 Estado`.

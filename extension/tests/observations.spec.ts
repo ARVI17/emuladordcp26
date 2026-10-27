@@ -30,7 +30,7 @@ test('compiled visual mapping → 65 records → lost ack/restarted worker → P
  try{
   let worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
   const id=new URL(worker.url()).hostname,panel=await context.newPage()
-  await panel.goto(`chrome-extension://${id}/sidepanel.html`)
+  await panel.goto(`chrome-extension://${id}/sidepanel.html`);await panel.locator("#technical > summary").click();await panel.locator("#pairing-settings > summary").click();await panel.locator("#legacy-tools > summary").click()
   const send=(kind:string,extra={})=>panel.evaluate(m=>chrome.runtime.sendMessage(m),{kind,...extra})
   const session=await (await context.request.post(base+'/api/app/session')).json()
   const headers={'X-CSRF-Token':session.csrf_token,'X-App-Entry':''}
