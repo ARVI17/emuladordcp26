@@ -58,6 +58,10 @@ def serialize_player(player: Player, protected_ids: set[int] | None = None) -> d
     from app.services.remote_evidence import field_known
     evidence = player.validation_evidence or {}
     result['ownership_source'] = 'user_reviewed_visual' if evidence.get('kind') == 'visual_copy' else 'observed' if evidence.get('kind') == 'observed_copy' else 'manual'
+    if evidence.get('dom_event_id'):
+        result['ownership_source'] = 'user_reviewed_dom'
+        result['source_kind'] = evidence.get('source_kind')
+        result.update(evidence.get('additional_facts',{}))
     result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') in {'observed_copy', 'visual_copy'} else None
     result['metadata_pending'] = [key for key in ('league', 'club', 'nationality', 'card_type', 'rare', 'special', 'chemistry', 'alternate_positions', 'attributes', 'playstyles', 'roles', 'is_loan', 'is_evolution', 'tradable', 'is_holographic') if not field_known(player, key)]
     for key in ('rare', 'special', 'chemistry', 'is_holographic', 'tradable', 'is_loan', 'is_evolution'):

@@ -11,9 +11,10 @@ python scripts/verify_docker.py --scope full
 # Cambios exclusivamente backend o frontend:
 python scripts/verify_docker.py --scope backend
 python scripts/verify_docker.py --scope frontend
+python scripts/verify_docker.py --scope extension
 ```
 
-Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emuladordcp26-check-*`, imágenes propias y puerto loopback 8082 (`--port` permite otro distinto de los habituales). Construye imágenes, inicia PostgreSQL/API/frontend/Nginx, espera salud, comprueba HTTP y migraciones. Pytest usa **otra base PostgreSQL** distinta de la API de navegador. Ambas viven en tmpfs; no contienen datos únicos. Full ejecuta Pytest, Vitest y Playwright móvil/escritorio; el build del frontend forma parte de todos los scopes.
+Requiere Python y Docker Compose. Usa un motor local, proyecto aleatorio `emuladordcp26-check-*`, imágenes propias y puerto loopback 8082 (`--port` permite otro distinto de los habituales). Construye imágenes, inicia PostgreSQL/API/frontend/Nginx, espera salud, comprueba HTTP y migraciones. Pytest usa **otra base PostgreSQL** distinta de la API de navegador. Ambas viven en tmpfs; no contienen datos únicos. Full ejecuta Pytest, Vitest, Playwright móvil/escritorio y la extensión MV3 compilada; el build del frontend forma parte de todos los scopes.
 
 Para preparar imágenes de una revisión Git limpia destinada a la instalación personal, `--build-environment local` cambia únicamente el metadato de procedencia. Conserva todas las guardas, bases temporales y limpieza; no despliega el principal. Así pueden fijarse los IDs de las mismas imágenes comprobadas para una actualización posterior autorizada, sin reconstruirlas después del pase. El resultado compara `/build.json` y `/api/build` con SHA y estado del árbol.
 
@@ -44,7 +45,9 @@ Retirar un contenedor no equivale a respaldar su capa escribible: inspecciona di
 
 ## Operación personal única
 
-`powershell -File scripts/fc27.ps1 Inicio|Estado|Pruebas|Parada` usa el proyecto canónico `emuladordcp26`, IDs existentes y el volumen `emuladordcp26_postgres_data`. Resuelve su código por ruta absoluta, comprueba motor local, duplicados y puerto 8080. Inicio no ejecuta `up`, builds ni recreaciones: otro worktree no produce otra aplicación. Si faltan servicios, exige revisar un despliegue; no inventa un proyecto o puerto alternativo. Parada conserva contenedores y datos. Los errores nativos se verifican explícitamente.
+`powershell -File scripts/fc27.ps1 Inicio|Estado|Pruebas|Parada` usa el proyecto canónico `emuladordcp26`, IDs existentes y el volumen `emuladordcp26_postgres_data`. Resuelve su código por ruta absoluta y comprueba motor local, duplicados y el único puerto loopback realmente publicado por Nginx. Inicio no ejecuta `up`, builds ni recreaciones: otro worktree no produce otra aplicación. Si faltan servicios, exige revisar un despliegue; no inventa un proyecto o puerto alternativo. Parada conserva contenedores y datos. Los errores nativos se verifican explícitamente.
+
+El puerto predeterminado es 8080; la instalación personal cambió a **8090** el 18-oct-2026 por petición del propietario. `Estado` muestra la URL efectiva. `APP_PORT` configura una nueva composición y los orígenes CORS locales predeterminados; un `CORS_ORIGINS` explícito debe coincidir. Cambiar el puerto de contenedores existentes requiere recrear Nginx y actualizar CORS del backend conservando sus imágenes y datos. El verificador rechaza todos los puertos publicados del principal, incluso detenido. Cambiar puerto no instala una nueva revisión de la aplicación.
 
 ## Diagnóstico focalizado
 

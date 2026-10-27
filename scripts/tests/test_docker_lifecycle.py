@@ -8,10 +8,15 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from docker_lifecycle import HostLock, OWNER, owned_container, prepare
+from docker_lifecycle import HostLock, OWNER, owned_container, prepare, published_ports
 
 
 class LifecycleGuards(unittest.TestCase):
+    def test_personal_ports_stay_reserved_when_containers_are_stopped(self):
+        containers=[{'State':{'Running':False},'HostConfig':{'PortBindings':{'80/tcp':[{'HostPort':'8090'}],'443/tcp':None}}},
+                    {'HostConfig':{'PortBindings':{'5432/tcp':[{'HostPort':'55432'}]}}},{}]
+        self.assertEqual(published_ports(containers),{8090,55432})
+
     def test_lock_is_shared_across_processes_and_released(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'lock'

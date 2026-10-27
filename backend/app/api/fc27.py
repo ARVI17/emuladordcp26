@@ -133,7 +133,7 @@ def gallery_sets(game_version: GameVersion | None = None, db: Session = Depends(
 
 
 def store_set(db, payload, version, existing=None):
-    values = payload.model_dump(exclude={"game_version", "slug"})
+    values = payload.model_dump(mode="json", exclude={"game_version", "slug"})
     slug = payload.slug or (existing.slug if existing else slug_for(payload.name))
     conflict = db.scalar(select(GallerySet).where(GallerySet.game_version == version, GallerySet.slug == slug).execution_options(include_pending_definitions=True))
     if conflict is not None and (existing is None or conflict.id != existing.id): raise HTTPException(409, "Ya existe un conjunto con este identificador")

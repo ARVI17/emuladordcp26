@@ -40,6 +40,13 @@ def output(docker, *args):
     return subprocess.check_output([*docker, *args], text=True).strip()
 
 
+def published_ports(containers):
+    """Reserve the personal installation's configured ports even while stopped."""
+    return {int(binding['HostPort']) for c in containers
+            for bindings in (c.get('HostConfig', {}).get('PortBindings') or {}).values()
+            for binding in bindings or [] if str(binding.get('HostPort', '')).isdigit()}
+
+
 def owned_container(container, manifest):
     labels = container['Config'].get('Labels') or {}
     if labels.get(OWNER) != manifest['run'] or labels.get('com.docker.compose.project') != manifest['project']:

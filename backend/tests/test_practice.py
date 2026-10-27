@@ -1,9 +1,20 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+import pytest
 from sqlalchemy import select
 from app.db.session import SessionLocal
 from app.models.entities import Player, now
 from app.models.planner import MatchRecord, PracticeSession
 from test_planner import fake_run
+
+
+@pytest.fixture(autouse=True)
+def practice_reference_clock(monkeypatch):
+    from app.services import practice
+    class ReviewedDate(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 10, 20, tzinfo=timezone.utc)
+    monkeypatch.setattr(practice, 'datetime', ReviewedDate)
 
 
 def create(client, **extra):

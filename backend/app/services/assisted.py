@@ -74,7 +74,7 @@ def reading_data(row, *, detail=True):
     return dict(id=row.id, session_id=row.session_id, scope=row.scope, page=row.page, filters=row.filters,
         status=row.status, observed_at=row.observed_at, reviewed_at=row.reviewed_at,
         original=row.original if detail else None, reviewed=row.reviewed if detail else None,
-        source='visual_assisted', provider_verified=False, image_retained=False)
+        source=row.original.get('source_kind','visual_assisted'), provider_verified=False, image_retained=False)
 
 
 def erase_draft(row):

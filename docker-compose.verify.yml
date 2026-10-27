@@ -38,3 +38,13 @@ services:
     command: [npm, test, --, --run]
     profiles: [test]
     mem_limit: 512m
+  extension-test:
+    build:
+      context: ./extension
+    profiles: [test]
+    environment:
+      READER_TEST_UPSTREAM: http://nginx
+    mem_limit: 768m
+    depends_on:
+      nginx:
+        condition: service_healthy

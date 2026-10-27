@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts'))
-from docker_lifecycle import HostLock, cleanup, prepare, recover, run_interruptible, save_manifest
+from docker_lifecycle import HostLock, cleanup, prepare, published_ports, recover, run_interruptible, save_manifest
 
 
 def validate(config, project):
@@ -44,7 +44,7 @@ def validate(config, project):
 
 def verify():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--scope', choices=['full', 'backend', 'frontend'], default='full')
+    parser.add_argument('--scope', choices=['full', 'backend', 'frontend', 'extension'], default='full')
     parser.add_argument('--pytest-path', action='append', default=[], help='Focused test file under backend/tests; omit for the full suite')
     parser.add_argument('--browser-spec', action='append', default=[], help='Focused spec under frontend/e2e; omit for all browser tests')
     parser.add_argument('--build-environment', choices=['test', 'local'], default='test',
@@ -74,6 +74,10 @@ def verify():
     if not detail['Endpoints']['docker']['Host'].startswith(('npipe://', 'unix://')):
         raise RuntimeError('Select a local Docker engine before verification')
     docker = ['docker', '--context', context]
+    main_ids = subprocess.check_output(docker+['ps', '-aq', '--filter', 'label=com.docker.compose.project=emuladordcp26'], text=True).split()
+    main = json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True)) if main_ids else []
+    if args.port in published_ports(main):
+        parser.error('El puerto pertenece a la instalación personal, incluso si está detenida')
     recover(docker, context)
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', 'docker-compose.review.yml', '-f', 'docker-compose.verify.yml']
     config = json.loads(subprocess.check_output(compose+['--profile', 'test', 'config', '--format', 'json'], cwd=ROOT, env=env, text=True))
@@ -82,7 +86,6 @@ def verify():
     effective = report_dir/'compose.json'
     effective.write_text(json.dumps(config, indent=2), encoding='utf-8')
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', str(effective)]
-    main_ids = subprocess.check_output(docker+['ps', '-aq', '--filter', 'label=com.docker.compose.project=emuladordcp26'], text=True).split()
     def main_state():
         if not main_ids: return []
         return [(c['Id'], c['State']['Status'], c['State']['StartedAt']) for c in json.loads(subprocess.check_output(docker+['inspect', *main_ids], text=True))]
@@ -97,7 +100,7 @@ def verify():
         print(name, 'PASSED' if code == 0 else 'FAILED', flush=True)
         if code: raise RuntimeError(f'{name} failed; see {report_dir/name}.log')
     try:
-        step('build', 'build', 'backend', 'frontend', 'frontend-test', 'frontend-e2e')
+        step('build', 'build', 'backend', 'frontend', 'frontend-test', 'frontend-e2e', *(['extension-test'] if args.scope in {'full','extension'} else []))
         step('startup', 'up', '-d', '--wait', '--wait-timeout', '120', 'database', 'test-database', 'backend', 'frontend', 'nginx')
         for path in ('/health', '/api/openapi.json'):
             with urllib.request.urlopen(f'http://127.0.0.1:{args.port}{path}', timeout=10) as response:
@@ -115,6 +118,8 @@ def verify():
         if args.scope in {'full', 'frontend'}:
             step('vitest', 'run', '--rm', '--no-deps', 'frontend-test')
             step('playwright', 'run', '--rm', '--no-deps', 'frontend-e2e', *(['npm','run','test:e2e','--',*args.browser_spec] if args.browser_spec else []))
+        if args.scope in {'full', 'extension'}:
+            step('extension', 'run', '--rm', '--no-deps', 'extension-test')
         result['status'] = 'PASSED'
     finally:
         # Finish owned cleanup even if the user presses Ctrl+C a second time.

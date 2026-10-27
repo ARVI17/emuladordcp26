@@ -9,6 +9,21 @@ concurrency:
   group: fc27-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compiled MV3 with real Chromium, Nginx and disposable PostgreSQL
+        run: python scripts/verify_docker.py --scope extension
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fc27-extension-verification
+          path: state/sprints
+          retention-days: 7
   backend:
     runs-on: ubuntu-latest
     services:

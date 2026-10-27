@@ -10,12 +10,12 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "5.2.2",
     "@tanstack/react-query": "^5.74.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.56.1",
-    "zod": "^3.24.3"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",

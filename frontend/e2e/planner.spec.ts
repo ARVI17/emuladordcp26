@@ -54,6 +54,7 @@ test('aplica comisión configurable y muestra alerta basada en cotización fecha
 })
 
 test('planifica práctica por plataforma y vincula un partido de la misma edición',async({page},testInfo)=>{
+ await page.setExtraHTTPHeaders({'X-Catalog-Fixture':'1'})
  await openLocal(page)
  await go(page,'Planes')
  await page.getByText('Rutina de práctica FC27',{exact:true}).click()
@@ -122,7 +123,9 @@ test('al abrir no certifica datos locales como club conectado',async({page},test
  await go(page,'Mi cuenta')
  await expect(page.getByRole('heading',{name:'Integración pendiente',exact:true})).toBeVisible()
  await expect(page.getByRole('heading',{name:'Mi cuenta / Mi club'})).toBeVisible()
- await expect(page.getByRole('link',{name:'Abrir FC27 oficial ↗'})).toHaveAttribute('target','_blank')
+ await expect(page.getByRole('link',{name:'Abrir acceso oficial a FC27 ↗'})).toHaveAttribute('target','_blank')
+ await page.getByRole('button',{name:'Seleccionar pestaña de FC27'}).click()
+ await expect(page.getByText(/El inspector funciona aunque/)).toBeVisible()
  await expect(page.getByText('No vinculada',{exact:true})).toBeVisible()
  await expect(page.getByText('No sincronizados',{exact:true})).toBeVisible()
  await expect(page.getByText('Progreso sin consultar',{exact:true})).toBeVisible()

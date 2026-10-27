@@ -599,6 +599,9 @@ def optimization_payload(db: Session, segment: Segment, request: OptimizeRequest
         raise HTTPException(422, 'Las protecciones no se pueden exceptuar desde un DCP.')
     version = current_version(db)
     requirements = requirements_for_batch(db, segment)
+    requirements = {**requirements, 'required_player_ids': sorted(set(requirements.get('required_player_ids',[])) | set(request.locked_ids))}
+    try: requirements = normalize_requirements(requirements)
+    except ValueError: raise HTTPException(422, 'Las cartas fijadas no caben o contradicen los requisitos revisados') from None
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False))).all()
     protected = effective_protected_ids(db, version)
     from app.services.dcp_review import eligible, issue_review
