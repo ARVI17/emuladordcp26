@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="380" viewBox="0 0 1200 380" role="img" aria-label="Portada colorida FC Club Lab, inventario, optimización e inteligencia artificial">
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#08152C"/><stop offset=".52" stop-color="#151343"/><stop offset="1" stop-color="#053449"/></linearGradient>
+ <linearGradient id="rule" x1="0" x2="1"><stop offset="0" stop-color="#22D3EE"/><stop offset=".48" stop-color="#C084FC"/><stop offset="1" stop-color="#FB7185"/></linearGradient>
+ <radialGradient id="haze"><stop offset="0" stop-color="#22D3EE" stop-opacity=".26"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></radialGradient>
+ <radialGradient id="haze2"><stop offset="0" stop-color="#C084FC" stop-opacity=".24"/><stop offset="1" stop-color="#C084FC" stop-opacity="0"/></radialGradient>
+ <clipPath id="round"><rect width="1200" height="380" rx="26"/></clipPath>
+</defs>
+<g clip-path="url(#round)">
+ <rect width="1200" height="380" fill="url(#bg)"/>
+ <circle cx="204" cy="31" r="270" fill="url(#haze)"/>
+ <circle cx="1045" cy="298" r="280" fill="url(#haze2)"/>
+ <path d="M520 0 L1200 0 L1200 380 L860 380Z" fill="#FFFFFF" fill-opacity=".023"/>
+ <line x1="730" y1="0" x2="730" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="785" y1="0" x2="785" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="840" y1="0" x2="840" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="895" y1="0" x2="895" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="950" y1="0" x2="950" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="1005" y1="0" x2="1005" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="1060" y1="0" x2="1060" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="1115" y1="0" x2="1115" y2="380" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="26" x2="1200" y2="26" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="82" x2="1200" y2="82" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="138" x2="1200" y2="138" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="194" x2="1200" y2="194" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="250" x2="1200" y2="250" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="306" x2="1200" y2="306" stroke="#FFFFFF" stroke-opacity=".035"/><line x1="720" y1="362" x2="1200" y2="362" stroke="#FFFFFF" stroke-opacity=".035"/>
+ <path d="M0 0 H1200" stroke="url(#rule)" stroke-width="9"/>
+ <path d="M0 376 H1200" stroke="url(#rule)" stroke-opacity=".85" stroke-width="4"/>
+ <rect x="58" y="59" width="10" height="26" rx="5" fill="#C084FC"/>
+ <text x="85" y="78" font-family="Arial,sans-serif" font-size="16" letter-spacing="3.4" font-weight="700" fill="#C084FC">ARVI17  /  PROYECTO DESTACADO</text>
+ <text x="62" y="166" font-family="Arial,sans-serif" font-size="76" letter-spacing="-2.2" font-weight="900" fill="#FFFFFF">FC CLUB LAB</text>
+ <rect x="64" y="185" width="310" height="5" rx="2.5" fill="url(#rule)"/>
+ <text x="64" y="234" font-family="Arial,sans-serif" font-size="22" font-weight="600" fill="#DAE9FA">Tu centro de control para DCP y plantillas</text>
+ <text x="64" y="268" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#A9C2D9">Inventario · optimización · visión por computador · IA local</text>
+ <rect x="72" y="305" width="118" height="38" rx="19" fill="#22D3EE" fill-opacity=".14" stroke="#22D3EE" stroke-opacity=".55"/><text x="131" y="330" text-anchor="middle" font-size="14" font-family="Arial,sans-serif" font-weight="700" letter-spacing=".5" fill="#EFF6FF">FASTAPI</text>
+<rect x="202" y="305" width="118" height="38" rx="19" fill="#22D3EE" fill-opacity=".14" stroke="#22D3EE" stroke-opacity=".55"/><text x="261" y="330" text-anchor="middle" font-size="14" font-family="Arial,sans-serif" font-weight="700" letter-spacing=".5" fill="#EFF6FF">REACT</text>
+<rect x="332" y="305" width="124" height="38" rx="19" fill="#22D3EE" fill-opacity=".14" stroke="#22D3EE" stroke-opacity=".55"/><text x="394" y="330" text-anchor="middle" font-size="14" font-family="Arial,sans-serif" font-weight="700" letter-spacing=".5" fill="#EFF6FF">POSTGRESQL</text>
+<rect x="468" y="305" width="118" height="38" rx="19" fill="#22D3EE" fill-opacity=".14" stroke="#22D3EE" stroke-opacity=".55"/><text x="527" y="330" text-anchor="middle" font-size="14" font-family="Arial,sans-serif" font-weight="700" letter-spacing=".5" fill="#EFF6FF">OLLAMA</text>
+ <g transform="translate(930 188)">
+ <circle r="128" fill="none" stroke="#22D3EE" stroke-opacity=".28" stroke-width="2"/>
+ <circle r="104" fill="#0A1730" fill-opacity=".6" stroke="#C084FC" stroke-opacity=".65" stroke-width="2"/>
+ <circle r="83" fill="none" stroke="#22D3EE" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="10 9"/>
+ <path d="M-48 -18 L0 -55 L51 -17 L32 44 L-34 44 Z" fill="#C084FC" fill-opacity=".12" stroke="#C084FC" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M0 -55 V-83 M51 -17 L83 -23 M32 44 L54 73 M-34 44 L-60 68 M-48 -18 L-81 -30" stroke="#22D3EE" stroke-width="3" opacity=".5"/>
+ <text y="16" text-anchor="middle" font-family="Arial,sans-serif" font-size="49" font-weight="800" fill="white" letter-spacing="-2">FC</text>
+ <text y="100" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#22D3EE" letter-spacing="3">CLUB LAB</text>
+ <circle cx="-104" cy="-30" r="5" fill="#22D3EE"/><circle cx="101" cy="19" r="6" fill="#C084FC"/><circle cy="-104" r="5" fill="#F59E0B"/>
+ </g>
+</g>
+<rect x="1.25" y="1.25" width="1197.5" height="377.5" rx="25" fill="none" stroke="#22D3EE" stroke-opacity=".23" stroke-width="2.5"/>
+</svg>
