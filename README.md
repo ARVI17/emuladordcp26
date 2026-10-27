@@ -1,3 +1,40 @@
+<div align="center">
+
+# ⚽ FC Club Lab · Asistente local de plantillas y DCP
+
+### Inventario de cartas · Optimización · Visión por computador · IA local
+
+**Un entorno experimental para planificar tu club, revisar cartas y preparar soluciones a desafíos de creación de plantillas (DCP/SBC).**
+
+![Python](https://img.shields.io/badge/Python-FastAPI-3776AB?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/React-TypeScript-149ECA?logo=react&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Datos-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Local-2496ED?logo=docker&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-IA%20local-222222)
+![Estado](https://img.shields.io/badge/Proyecto-En%20desarrollo-F59E0B)
+
+[**Instalación**](#inicio-en-un-comando) · [**Emulador Android**](#emulador-o-teléfono-android-por-adb) · [**Guía de uso**](docs/USER_GUIDE.md)
+
+</div>
+
+---
+
+## 🧭 Vista general
+
+| Módulo | Función |
+| --- | --- |
+| 🃏 Inventario | Registrar, importar, proteger, filtrar y exportar cartas. |
+| 🧩 DCP / SBC | Calcular alternativas con un optimizador determinista. |
+| 📷 Capturas y OCR | Extraer propuestas de datos para revisión manual. |
+| 🧠 IA local | Asistente basado en Ollama con datos acotados del inventario. |
+| 📱 ADB | Preparación asistida en emulador o dispositivo autorizado, con confirmaciones. |
+| 🗄️ Persistencia | PostgreSQL, migraciones y copias de seguridad. |
+
+> **Alcance:** Proyecto no oficial. La documentación actual describe un asistente local; no garantiza conexión a cuentas reales de EA ni automatización integral. No compartas contraseñas, cookies o tokens.
+
+<details>
+<summary><strong>📚 Documentación técnica completa e instrucciones originales</strong></summary>
+
 # emuladordcp26 — Asistente local FC 26
 
 Aplicación local, mobile-first y no oficial para administrar un club ficticio, proteger cartas, organizar plantillas y objetivos, importar inventario, revisar capturas con OCR y resolver DCP mediante optimización determinista. Puede preparar en un teléfono o emulador Android conectado por ADB una combinación ya calculada, siempre con autorización explícita y deteniéndose antes de la entrega final. El frontend consume una API FastAPI real y toda la información se persiste en PostgreSQL local.
@@ -134,3 +171,6 @@ Playwright está configurado para iPhone 13 y su imagen de prueba incluye el nav
 La aplicación está pensada para una red local confiable, restringe CORS, valida entradas, limita archivos, usa ORM parametrizado, nombres seguros, errores sin trazas y cabeceras de seguridad. No la expongas directamente a Internet. No es una aplicación oficial, afiliada ni aprobada por Electronic Arts. No implementa compras, ventas, partidos, scraping autenticado ni entregas finales automáticas. La preparación ADB solo reproduce un plan revisable y siempre se detiene antes de la acción irreversible.
 
 Documentación adicional: [arquitectura](docs/ARCHITECTURE.md), [guía](docs/USER_GUIDE.md), [optimizador](docs/OPTIMIZER.md), [seguridad](docs/SECURITY.md), [pruebas](docs/TESTING.md) y [limitaciones](docs/KNOWN_LIMITATIONS.md).
+
+
+</details>
