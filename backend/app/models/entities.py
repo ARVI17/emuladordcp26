@@ -136,3 +136,19 @@ class AutomationPlan(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+class InventoryScan(Base):
+    __tablename__ = "inventory_scans"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    status: Mapped[str] = mapped_column(String(30), default="scanning", index=True)
+    device_serial: Mapped[str] = mapped_column(String(120))
+    screen_size: Mapped[list] = mapped_column(JSON, default=list)
+    captured_pages: Mapped[int] = mapped_column(Integer, default=0)
+    capture_hashes: Mapped[list] = mapped_column(JSON, default=list)
+    candidates: Mapped[list] = mapped_column(JSON, default=list)
+    candidate_count: Mapped[int] = mapped_column(Integer, default=0)
+    imported_player_ids: Mapped[list] = mapped_column(JSON, default=list)
+    imported_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
