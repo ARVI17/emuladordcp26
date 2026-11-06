@@ -12,7 +12,8 @@ def upgrade():
     # 0017 uses live ORM metadata on fresh installs; preserve that historical migration.
     if 'scan_data' not in {c['name'] for c in sa.inspect(op.get_bind()).get_columns('capture_sessions')}:
         op.add_column('capture_sessions', sa.Column('scan_data', sa.JSON(), nullable=False, server_default='{}'))
-    op.alter_column('capture_sessions', 'scan_data', server_default=None)
+    with op.batch_alter_table('capture_sessions') as batch:
+        batch.alter_column('scan_data', existing_type=sa.JSON(), server_default=None)
     op.create_table('visual_snapshots',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('club_context_id', sa.Integer(), nullable=False),

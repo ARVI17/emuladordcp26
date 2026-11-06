@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test'
 import {createServer,request,type Server} from 'node:http'
 
 // An actual loopback origin exercises the same secure-context boundary as the host.
-const isolated=process.env.PLAYWRIGHT_DISPOSABLE_DB==='1'
+const isolated=process.env.PLAYWRIGHT_DISPOSABLE_DB==='1'&&process.env.PLAYWRIGHT_BASE_URL==='http://nginx'
 test.use(isolated?{baseURL:'http://127.0.0.1:8082'}:{})
 let proxy:Server|undefined
 test.beforeAll(async()=>{
