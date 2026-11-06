@@ -2,7 +2,7 @@
 
 El inicio de sesión pertenece a EA. Club Lab no pide contraseña, MFA, cookies ni tokens de EA. La [Web App oficial](https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/) se verificó desde la [ayuda de EA](https://help.ea.com/es/articles/ea-sports-fc/early-web-and-companion-app-start/) el 5-nov-2026.
 
-1. Abre Club Lab local y entra en **Mi cuenta**. Crea un contexto de lectura asistida o selecciona el que ya corresponde a tu club. No mezcles cuentas en un contexto.
+1. Abre **http://localhost:8090**; tras la actualización usa Ctrl+F5 si ves la interfaz anterior. Entra en **Mi cuenta**. Crea un contexto de lectura asistida o selecciona el que ya corresponde a tu club. No mezcles cuentas en un contexto.
 2. En **Escanear mi club**, pulsa **Abrir aplicación oficial de FC 27**. Inicia sesión y completa la verificación por tu cuenta. Abre una lista de jugadores antes de compartir.
 3. Regresa a Club Lab, elige la sección y acepta el aviso de procesamiento visual local. Puedes configurar hasta cinco máscaras porcentuales, y una región de extracción. La detección de privacidad examina primero la pantalla recibida completa.
 4. Pulsa **Compartir pestaña y comenzar escaneo**. Elige la pestaña o ventana del club en el selector del navegador. No selecciones correo, login, pagos, perfil ni escritorio completo.

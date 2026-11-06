@@ -8,7 +8,7 @@ El repositorio conserva el nombre `emuladordcp26` y sus volúmenes. **FC27 es la
 
 **Revisión del planificador, 11 de octubre de 2026:** la entrada comprueba sesión, contexto y capacidades. La conexión EA muestra **Integración pendiente**: falta autorización/documentación para este proyecto. Solo la elección explícita de **Abrir registro local** habilita simulaciones con datos locales. Incluye planes revisables, reservas de cartas/monedas, cinco perfiles de plantilla, fichajes condicionados a datos verificados, mercado/diario y 50 referencias. [Implementación, comparación y límites](docs/FC27_PLANNER.md).
 
-La instalación personal utiliza únicamente `emuladordcp26` en `http://localhost:8080`. Inicia los contenedores existentes con `powershell -File scripts/fc27.ps1 Inicio`; consulta `Estado` o detén con `Parada`. El script no construye, recrea ni actualiza la instalación. Las pruebas usan `python scripts/verify_docker.py --scope full` y cierran sus recursos al terminar. [Operación y pruebas](docs/DEVELOPMENT_WORKFLOW.md).
+La instalación personal utiliza únicamente `emuladordcp26` en `http://localhost:8090`. Inicia los contenedores existentes con `powershell -File scripts/fc27.ps1 Inicio`; consulta `Estado` o detén con `Parada`. El script no construye, recrea ni actualiza la instalación. Las pruebas usan `python scripts/verify_docker.py --scope full` y cierran sus recursos al terminar. Si Docker agotó sus pools, añade `--subnet 10.231.27.0/24` solo cuando esté libre. [Operación y pruebas](docs/DEVELOPMENT_WORKFLOW.md).
 
 ## Qué puedes hacer
 
