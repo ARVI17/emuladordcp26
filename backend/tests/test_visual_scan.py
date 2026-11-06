@@ -119,12 +119,16 @@ def test_replay_rate_stopped_and_context_isolation(client, monkeypatch):
     enter(client)
     assert client.post('/visual-scans', json={'consent':False}).status_code == 422
     scan = start(client)
+    current_time = now()
+    monkeypatch.setattr('app.api.visual_scan.now', lambda: current_time)
     frame(client, monkeypatch, scan, 1, 'FC27 Mi club\n84 MC Carta Uno')
     send=lambda seq: client.post(f'/visual-scans/{scan}/frames?sequence={seq}', content=pixels(2), headers={'Content-Type':'image/png'})
     assert send(1).status_code == 409
     assert send(2).status_code == 429
+    current_time += timedelta(seconds=1)
+    assert send(2).status_code == 200
     client.post(f'/visual-scans/{scan}/transition', json={'action':'stop'})
-    assert send(2).status_code == 409
+    assert send(3).status_code == 409
     enter(client, 'Otro club aislado')
     assert client.get(f'/visual-scans/{scan}').status_code == 404
     assert client.get(f'/visual-scans/{scan}/candidates').status_code == 404
