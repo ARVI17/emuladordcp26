@@ -4,6 +4,8 @@ Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa a
 
 ## Estado y alcance
 
+- Incremento visual de 05-nov-2026: `/visual-scans`, migración aditiva `0021`, captura voluntaria mediante navegador, OCR en memoria, revisión y snapshots parciales. [Estado y pruebas](docs/IMPLEMENTATION_STATUS.md), [continuidad](docs/NEXT_SESSION.md). No instala extensiones ni usa DOM/API de EA. La base encontrada estaba en `0019`; no ejecutar migraciones desde el checkout antiguo `0005`. Las pruebas aisladas admiten `--subnet 10.231.27.0/24` si esa red está libre y los pools Docker están agotados.
+
 - Sprint «Analizar mi club»: extensión 0.5.0 y migración aditiva `0020`, checkpoint por contexto, informes calculados y admisión incremental optativa para inventario sin conflictos. El lector automático solo reconoce el esquema propio local; EA conserva diagnóstico estructural sin extracción automática. [Contrato y pendientes reales](docs/ANALYZE_CLUB.md). Personal comprobado: `ea27c61/0019` en 8090, aún sin desplegar este sprint.
 
 - Extensión 0.4.0 y migración `0019`: observaciones por dominio, asignación visual, fragmentos/manifiesto y revisión en backend. El checkpoint reanuda transporte manual, no navegación EA. No hay perfil real distribuido; pruebas del club personal pendientes. [Estado vigente](docs/VIEW_RECOGNITION.md); las entradas 0.3.0/0018 siguientes son antecedentes.

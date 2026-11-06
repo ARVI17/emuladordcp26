@@ -1,5 +1,7 @@
 # Club Lab · FC 27
 
+**Incremento visual, 5 de noviembre de 2026:** en Cuenta → Lectura asistida → **Escanear mi club** puedes compartir voluntariamente una pestaña, recorrer listas, revisar las candidatas y guardar un snapshot parcial. No conecta una cuenta EA ni confirma cartas sin revisión. [Uso y privacidad](docs/USER_LOGIN_AND_VISUAL_SCAN.md), [estado verificable y pendientes](docs/IMPLEMENTATION_STATUS.md), [siguiente sesión](docs/NEXT_SESSION.md). La instalación personal detectada usa **http://localhost:8090**; 8080 sigue siendo el valor predeterminado del Compose.
+
 Asistente local y no oficial para **analizar tus jugadores, armar plantillas, planificar DCP y llevar una Galería del club**. Incluye evoluciones con caminos y cadenas simuladas, noticias públicas y paquetes de contenido revisables. React/TypeScript, FastAPI, PostgreSQL y OR-Tools; chat local opcional con Ollama y lectura asistida de Companion por ADB.
 
 El repositorio conserva el nombre `emuladordcp26` y sus volúmenes. **FC27 es la única edición pública.** El histórico permanece oculto y protegido; no hay selector ni conversión automática. [Admisión, cuarentena y evidencia](docs/FC27_EXCLUSIVE.md).

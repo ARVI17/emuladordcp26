@@ -14,6 +14,18 @@ class CaptureSession(ClubScoped, Base):
     source: Mapped[str] = mapped_column(String(20))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    scan_data: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class VisualSnapshot(ClubScoped, Base):
+    __tablename__ = 'visual_snapshots'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey('capture_sessions.id'), unique=True)
+    previous_id: Mapped[int | None] = mapped_column(ForeignKey('visual_snapshots.id'))
+    before: Mapped[list] = mapped_column(JSON)
+    after: Mapped[list] = mapped_column(JSON)
+    changes: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
 class VisualReading(ClubScoped, Base):

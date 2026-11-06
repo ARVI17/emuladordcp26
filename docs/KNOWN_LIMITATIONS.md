@@ -1,5 +1,11 @@
 # Limitaciones conocidas
 
+## Incremento visual de 5 de noviembre de 2026
+
+El escaneo nuevo reconoce filas textuales legibles mediante el extractor existente; no tiene un detector entrenado de las fichas gráficas de EA ni reconocimiento canónico de versiones. La agrupación nombre/media/posición/variante y ocurrencia es provisional: copias iguales en páginas distintas pueden ser indistinguibles. La persona debe revisar cantidad, variantes y correspondencia; los conflictos conservan ambigüedad y no se vuelven elegibles automáticamente. La confianza es la menor confianza OCR de la línea, compartida por nombre/media/posición; no es certeza de identidad. Sin sesión real no se acredita precisión en EA.
+
+Lotes de 30 minutos, 50 páginas y 1000 candidatas; hasta 20 formularios visibles. No se deduce cobertura completa ni se elimina lo no visto. Detección de login/MFA/pagos heurística, no garantía: comparte solo vistas de juego y aplica máscaras. Captura de pestaña requiere escritorio compatible; en móvil existe carga manual. Precios externos y optimización de compras de las etapas 2–7 siguen pendientes en este incremento. [Matriz vigente](IMPLEMENTATION_STATUS.md).
+
 Actualizado el 18 de octubre de 2026. [FC27_PLANNER.md](FC27_PLANNER.md) distingue cada módulo de la integración pendiente. [TESTING.md](TESTING.md) separa resultados actuales e históricos.
 
 La extensión MV3 está probada con el contrato de muestra/exportación propia en Chromium, sin selectores EA inventados. No se obtuvo una muestra real permitida. Actualización automática de hechos EA, extracción DOM de DCP/objetivos/Evos/sobres y comprobación real del resultado permanecen pendientes. [Matriz, instalación y contratos](ASSISTED_READING.md).

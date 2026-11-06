@@ -208,14 +208,15 @@ def read_frame(db, session, content, scope, page, filters, region=None):
     return dict(**reading_data(row), repeated=False)
 
 
-def save_reading(db, row, payload):
+def save_reading(db, row, payload, *, capture_required=True):
     if row.status == 'reviewed':
         if row.reviewed.get('request_hash') != fingerprint(payload.model_dump(mode='json')):
             raise HTTPException(409, 'La lectura ya fue revisada. Crea otra observación para registrar cambios.')
         return reading_data(row)
     if row.status != 'pending':
         raise HTTPException(409, 'Esta lectura fue borrada. Lee otra vez la pantalla.')
-    capture_row(db, row.session_id)
+    if capture_required:
+        capture_row(db, row.session_id)
     if now()-utc(row.observed_at) > timedelta(minutes=30):
         raise HTTPException(409, 'La lectura caducó para revisión. Lee otra vez la pantalla.')
     safe_text(str(payload.model_dump()))

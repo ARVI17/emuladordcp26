@@ -1,5 +1,11 @@
 # Pruebas del planificador FC27
 
+## Incremento visual · 5 de noviembre de 2026
+
+Resultados y comandos actuales en [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md); los apartados inferiores son históricos. Se verifica con `python scripts/verify_docker.py --scope full --subnet 10.231.27.0/24 --build-environment local`, solo si esa subred está libre. Mantiene bases tmpfs y limpieza por identidad. El test de captura usa una pista real de canvas con contenido sintético y Tesseract real; un proxy loopback efímero dentro del contenedor permite probar un origen seguro real. El producto continúa exigiendo origen seguro/localhost. No es una prueba del permiso nativo ni una sesión EA real.
+
+Casos nuevos: 8+8 con cuatro repetidas → 12 candidatas; copias simultáneas y ambigüedad; revisión/corrección; repetición de commit; segundo lote parcial; aislamiento del seed/contexto; retiradas; cinco pantallas sensibles/desconocidas; límites/ROI/resolución; secuencias/frecuencia; detener durante OCR y terminación del proceso; carga binaria; estabilidad; permiso denegado y navegación. Las capturas de test son sintéticas y permanecen ignoradas por Git.
+
 ## Analizar mi club 0.5.0 (27-oct-2026)
 
 El pase focalizado Docker **458cd29d4d** pasó **11 Pytest/PostgreSQL**, **39 Vitest**, los **2 recorridos nuevos Playwright móvil/escritorio** y **14 pruebas de extensión compilada**. Incluyó build/TypeScript, arranque sin Ollama, health/OpenAPI, Alembic upgrade/current/check **0020** y limpieza por identidad; principal y volúmenes sin cambios. El pase previo **9cd577d30c** pasó 305 Pytest y 39 Vitest, pero falló en los dos recorridos nuevos de UI al recargar. Se corrigió la conservación del checkpoint entre generaciones de sesión sin reutilizar autorizaciones; el pase focalizado acredita la corrección. Los primeros builds detectaron errores de tipos/codificación corregidos antes de ese pase. Ningún intento fallido se cuenta como pase.

@@ -269,6 +269,7 @@ tr:last-child td {border-bottom:0}
 .panel fieldset{min-inline-size:0;border:0;padding:0}.profile-result{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border,#273448)}
 :root .official-entry{display:inline-block;padding:.85rem 1.1rem;border-radius:.75rem;background:#85f4c0;color:#09131b;font-weight:700;text-decoration:none}
 .account-entry{margin-bottom:1rem}
+.visual-scanner{border:2px solid #67d5a0;margin-bottom:1.5rem}.visual-scanner>label{display:block;margin:1rem 0}.visual-scanner .scan-review-card{border:1px solid var(--border,#637486);border-radius:10px;padding:1rem;margin:1rem 0}.scan-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem}.scan-metrics p{padding:.65rem;background:var(--bg,#10141b);border-radius:8px}.visual-scanner .button-row{margin:1rem 0;gap:.6rem}.visual-scanner .capture-preview{max-height:280px}
 .build-status{overflow-wrap:anywhere;font-size:.78rem}
 .build-status p{margin:.4rem 0}
 

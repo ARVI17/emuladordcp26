@@ -1,5 +1,11 @@
 # Seguridad local
 
+## Captura visual voluntaria (0021)
+
+Solo un gesto explícito y permiso del navegador inician la pista sin audio; se rechaza compartir el monitor completo. Pausa, detener, cambio de sección interna y cierre terminan pistas, temporizador y petición. El servidor comprueba secuencia, caducidad, generación y contexto mientras corre OCR y termina el proceso al cancelar. Recibe bytes con límite de 4 MB, sin spool multipart; Tesseract usa stdin/stdout y stderr descartado. No guarda fotogramas ni texto OCR completo; persiste únicamente datos estructurados revisables, hashes y auditoría sin secretos. Login, MFA, correo, pago, perfil y vistas desconocidas detienen el lote. Esta detección es heurística; no autoriza compartir pantallas sensibles.
+
+Las protecciones locales de sesión, CSRF, Host/Origin, contexto y cartas retiradas se reutilizan. La confirmación es atómica/idempotente y no llama EA. No se instala ni se usa la extensión previa para este flujo. [Permisos y uso](USER_LOGIN_AND_VISUAL_SCAN.md), [fuentes](PROVIDER_COMPLIANCE_MATRIX.md).
+
 ## Lector DOM local (0018)
 
 La extensión no recibe cookies/credenciales EA ni admite URLs/comandos de red arbitrarios. Una sesión local con CSRF aprueba un código de tres minutos/cinco intentos; el servidor conserva hashes de código/credencial. El token solo admite candidatas/propuestas y revocación propia; está ligado a contexto/generación/sesión y se guarda en storage privado de extensión, nunca en el content script. Host/Origin se validan además de autenticación. No se solicita permiso persistente sobre EA: activación de pestaña y transporte loopback.

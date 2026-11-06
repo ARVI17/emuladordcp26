@@ -9,6 +9,7 @@ import urllib.request
 import uuid
 import signal
 import sys
+import ipaddress
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +51,7 @@ def verify():
     parser.add_argument('--build-environment', choices=['test', 'local'], default='test',
                         help='Image provenance only; both choices use disposable isolated services and never deploy the main stack')
     parser.add_argument('--port', type=int, default=8082)
+    parser.add_argument('--subnet', help='Subred IPv4 privada /24 libre para motores sin pools disponibles')
     args = parser.parse_args()
     for prefix, selected, extension in [('backend/tests', args.pytest_path, '.py'), ('frontend/e2e', args.browser_spec, '.spec.ts')]:
         root = (ROOT/prefix).resolve()
@@ -81,6 +83,15 @@ def verify():
     recover(docker, context)
     compose = docker + ['compose', '--env-file', str(empty_env), '-p', project, '-f', 'docker-compose.review.yml', '-f', 'docker-compose.verify.yml']
     config = json.loads(subprocess.check_output(compose+['--profile', 'test', 'config', '--format', 'json'], cwd=ROOT, env=env, text=True))
+    if args.subnet:
+        subnet = ipaddress.ip_network(args.subnet, strict=True)
+        if subnet.version != 4 or not subnet.is_private or subnet.prefixlen != 24:
+            parser.error('La subred de prueba debe ser una red IPv4 privada /24')
+        ids = subprocess.check_output(docker+['network', 'ls', '-q'], text=True).split()
+        networks = json.loads(subprocess.check_output(docker+['network', 'inspect', *ids], text=True)) if ids else []
+        if any(subnet.overlaps(ipaddress.ip_network(c['Subnet'])) for n in networks for c in (n.get('IPAM', {}).get('Config') or []) if c.get('Subnet') and ':' not in c['Subnet']):
+            parser.error('La subred se superpone con una red Docker existente; no se modificó ninguna red')
+        config['networks']['default']['ipam'] = {'config': [{'subnet': str(subnet)}]}
     validate(config, project)
     manifest_path, manifest = prepare(config, project, context)
     effective = report_dir/'compose.json'

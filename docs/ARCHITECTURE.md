@@ -1,5 +1,9 @@
 # Arquitectura
 
+## Captura visual voluntaria (0021)
+
+`VisualScanner` recibe una pista de vídeo del navegador mediante gesto y consentimiento. Dos muestras estables disparan como máximo una petición binaria de imagen en curso. Las máscaras se aplican antes de enviar; la región opcional se recorta después del examen de privacidad. El backend limita tamaño, frecuencia, secuencia y sesión; ejecuta Tesseract por tuberías y comprueba cancelación durante el proceso. No hay captura del escritorio desde Docker ni almacenamiento de imágenes. Una lectura crea candidatas; solo una revisión explícita genera cartas y un `VisualSnapshot` atómico e idempotente. [Contrato completo](OCR_DATA_MODEL.md), [decisiones](ENGINEERING_DECISIONS.md).
+
 Esta referencia describe la actualización local para FC 27. Los contratos detallados están en [PROJECT_MAP.md](PROJECT_MAP.md), la selección de cartas en [OPTIMIZER.md](OPTIMIZER.md) y las verificaciones pendientes en [TESTING.md](TESTING.md).
 
 ## Servicios y acceso
