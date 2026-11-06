@@ -119,9 +119,13 @@ def test_replay_rate_stopped_and_context_isolation(client, monkeypatch):
     enter(client)
     assert client.post('/visual-scans', json={'consent':False}).status_code == 422
     scan = start(client)
+    frame(client, monkeypatch, scan, 1, 'FC27 Mi club\n84 MC Carta Uno')
     current_time = now()
     monkeypatch.setattr('app.api.visual_scan.now', lambda: current_time)
-    frame(client, monkeypatch, scan, 1, 'FC27 Mi club\n84 MC Carta Uno')
+    with SessionLocal() as db:
+        row = db.get(CaptureSession, scan)
+        row.scan_data = {**row.scan_data, 'last_frame_at': current_time.isoformat()}
+        db.commit()
     send=lambda seq: client.post(f'/visual-scans/{scan}/frames?sequence={seq}', content=pixels(2), headers={'Content-Type':'image/png'})
     assert send(1).status_code == 409
     assert send(2).status_code == 429
