@@ -9,7 +9,7 @@ it('explica la integración pendiente y exige elegir el registro local',()=>{
  expect(enter).not.toHaveBeenCalled()
  expect(screen.getByRole('link',{name:'Abrir acceso oficial a FC27 ↗'})).toHaveAttribute('href','https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/')
  fireEvent.click(screen.getByRole('button',{name:'Seleccionar pestaña de FC27'}))
- expect(screen.getByText(/El inspector funciona aunque/)).toBeInTheDocument()
+ expect(screen.getByText(/El selector pertenece al navegador/)).toBeInTheDocument()
  expect(screen.getByText('No vinculada')).toBeInTheDocument()
  expect(screen.getByText('No sincronizados')).toBeInTheDocument()
  expect(screen.getByText('Progreso sin consultar')).toBeInTheDocument()

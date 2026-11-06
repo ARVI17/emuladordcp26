@@ -29,7 +29,7 @@ export async function api<T>(path:string,options:RequestInit={}):Promise<T>{
   const headers=new Headers(options.headers)
   if(csrfToken)headers.set("X-CSRF-Token",csrfToken)
   if(appEntry)headers.set("X-App-Entry",String(appEntry))
-  if(options.body&&!(options.body instanceof FormData))headers.set('Content-Type','application/json')
+  if(options.body&&!(options.body instanceof FormData)&&!(options.body instanceof Blob))headers.set('Content-Type','application/json')
   const response=await fetch(`${API_URL}${path}`,{...options,headers})
   if(!response.ok){
     let detail=`No se pudo completar la solicitud (${response.status}).`

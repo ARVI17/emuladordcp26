@@ -1,6 +1,7 @@
 import {test,expect,openLocal} from './fixtures'
 
 test('Analizar mi club calcula, muestra el permiso pendiente y conserva un recorrido cancelable',async({page},info)=>{
+ test.setTimeout(60000)
  await openLocal(page)
  const analysis=page.getByRole('region',{name:'Analizar mi club',exact:true})
  await analysis.getByRole('button',{name:'Analizar mi club',exact:true}).click()
@@ -13,7 +14,11 @@ test('Analizar mi club calcula, muestra el permiso pendiente y conserva un recor
  await expect(analysis.getByRole('heading',{name:'Análisis pausado'})).toBeVisible()
  await page.reload()
  await expect(analysis.getByRole('heading',{name:'Análisis pausado'})).toBeVisible()
+ const resumed=page.waitForResponse(response=>response.url().endsWith('/api/club/analysis-workflow/action')&&response.request().postDataJSON()?.action==='resume',{timeout:30000})
  await analysis.getByRole('button',{name:'Reanudar análisis'}).click()
+ const response=await resumed
+ expect(response.ok()).toBeTruthy()
+ expect((await response.json()).status).toBe('active')
  await expect(analysis.getByRole('button',{name:'Pausar lectura'})).toBeVisible()
  await analysis.getByRole('button',{name:'Cancelar recorrido'}).click()
  await expect(analysis.getByRole('heading',{name:'Análisis cancelado'})).toBeVisible()

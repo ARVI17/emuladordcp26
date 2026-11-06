@@ -18,6 +18,16 @@ describe('errores de API comprensibles',()=>{
 
 import {dateTimeInput} from './client'
 import {vi} from 'vitest'
+import {api} from './client'
+it('envía píxeles binarios sin convertirlos en JSON ni multipart',async()=>{
+ const fetch=vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response('{}',{status:200,headers:{'Content-Type':'application/json'}}))
+ const blob=new Blob(['synthetic'],{type:'image/png'})
+ await api('/visual-scans/1/frames?sequence=1',{method:'POST',body:blob,headers:{'Content-Type':'image/png'}})
+ const init=fetch.mock.calls[0][1]!
+ expect(new Headers(init.headers).get('Content-Type')).toBe('image/png')
+ expect(init.body).toBe(blob)
+ fetch.mockRestore()
+})
 it('conserva la hora local al editar el vencimiento de una evolución',()=>{
   vi.spyOn(Date.prototype,'getTimezoneOffset').mockReturnValue(300)
   expect(dateTimeInput('2026-10-10T20:15:00Z')).toBe('2026-10-10T15:15')

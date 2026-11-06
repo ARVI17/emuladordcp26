@@ -48,6 +48,10 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r requirements.txt
         working-directory: backend
+      - name: Install OCR and fonts for visual scan tests
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa fonts-dejavu-core
       - name: Upgrade an existing FC26 database with data
         shell: bash
         env:

@@ -92,3 +92,5 @@ from app.api.gallery_planning import router as gallery_planning_router
 app.include_router(gallery_planning_router)
 from app.api.club_utilities import router as club_utilities_router
 app.include_router(club_utilities_router)
+from app.api.visual_scan import router as visual_scan_router
+app.include_router(visual_scan_router)
