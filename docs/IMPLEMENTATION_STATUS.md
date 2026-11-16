@@ -1,4 +1,14 @@
-# Estado verificable · corte 5 de noviembre de 2026
+# Estado verificable
+
+## Continuidad y prioridad competitiva · 16 de noviembre de 2026
+
+Estado funcional vigente en [PROJECT_STATUS](PROJECT_STATUS.md), generado desde PROJECT_STATE.json; [auditoría](AUDIT_20261116.md), [prompt maestro](MASTER_PROMPT.md) y [siguiente sesión](NEXT_SESSION.md). Se implementó el diagnóstico de solo lectura y su actualización desde operación/verificador, con validación de memoria en CI. No cambia aplicación, contratos, esquema ni datos.
+
+Instalación arrancada por sus IDs existentes: cinco servicios saludables en 8090, **8a80860/0021**, cero cartas FC27 activas, 132 históricas FC26 retiradas. El objetivo completo sigue pendiente por datos reales, identidad de copias/variantes, precios y compras integradas. Nuevos resultados de este sprint en [TESTING](TESTING.md).
+
+La ejecución actual detectó un bloqueo adicional: formaciones y referencias vencidas el 10-nov. No se mantiene el pase integral histórico como verde actual. KNOW-1 exige revalidación documental; el diagnóstico ahora informa 0/29/21 referencias vigentes/vencidas/pendientes y tres registros vencidos del paquete de contenido. Los controles permanecen activos.
+
+## Incremento visual · corte histórico 5 de noviembre de 2026
 
 Checkpoint del incremento visual. **No se ha completado el objetivo global de escaneo real + DCP + compras.** No se accedió a una sesión EA, no se instaló extensión ni se habilitó ningún proveedor externo. [Auditoría inicial](AUDIT_20261105.md).
 

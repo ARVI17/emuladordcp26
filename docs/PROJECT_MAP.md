@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Continuidad 16-nov-2026: [PROJECT_STATUS](PROJECT_STATUS.md) es la vista generada de `PROJECT_STATE.json`; [MASTER_PROMPT](MASTER_PROMPT.md) fija la prioridad competitiva y [NEXT_SESSION](NEXT_SESSION.md) el relevo actual. `scripts/project_status.py` observa Git, servicios personales por identidad y resultados aislados, sin consultar cuentas ni base de datos; escribe solo `state/continuity/`. `fc27.ps1` y el cierre de `verify_docker.py` lo regeneran. CI valida la memoria y sus pruebas en `scripts/tests/test_project_status.py`. [Auditoría actual](AUDIT_20261116.md).
+
 Incremento visual 05-nov-2026: head **0021** añade `CaptureSession.scan_data` y `VisualSnapshot`; `/visual-scans` en `backend/app/api/visual_scan.py`, contratos `schemas/visual_scan.py`, OCR cancelable `services/scan_ocr.py` y conciliación `services/visual_scan.py`. UI `frontend/src/components/VisualScanner.tsx`, muestreo/máscaras `lib/scan-sampler.ts`, tipos `types/visual-scan.ts`. Pruebas `test_visual_scan.py`, `scan-sampler.test.ts`, `visual-scan.spec.ts`. [Modelo/API](OCR_DATA_MODEL.md), [estado actual](IMPLEMENTATION_STATUS.md), [continuidad y despliegue efectivo](NEXT_SESSION.md). Las notas siguientes conservan el historial previo; no acreditan qué imagen se sirve ahora.
 
 Despliegue personal verificado tras el incremento: **8a80860 / 0021 en 8090**, backend/frontend idénticos a las imágenes del pase integral `dc69595a37`. PostgreSQL loopback 54326; cinco servicios saludables y datos anteriores preservados.

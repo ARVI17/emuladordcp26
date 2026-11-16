@@ -110,6 +110,7 @@ def verify():
         result['steps'].append({'name': name, 'exit': code, 'seconds': round(time.monotonic()-started, 2)})
         print(name, 'PASSED' if code == 0 else 'FAILED', flush=True)
         if code: raise RuntimeError(f'{name} failed; see {report_dir/name}.log')
+    result['started_at'] = datetime.now(timezone.utc).isoformat()
     try:
         step('build', 'build', 'backend', 'frontend', 'frontend-test', 'frontend-e2e', *(['extension-test'] if args.scope in {'full','extension'} else []))
         step('startup', 'up', '-d', '--wait', '--wait-timeout', '120', 'database', 'test-database', 'backend', 'frontend', 'nginx')
@@ -152,6 +153,7 @@ def verify():
             result['main_stack_unchanged'] = main_state() == before
             result['volumes_unchanged'] = subprocess.check_output(docker+['volume', 'ls', '-q'], text=True).split() == volumes_before
             if not result['main_stack_unchanged'] or not result['volumes_unchanged']: result['status'] = 'FAILED'
+            result['finished_at'] = datetime.now(timezone.utc).isoformat()
             (report_dir/'result.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
             print('Report:', report_dir/'result.json', flush=True)
             for signum, handler in previous.items(): signal.signal(signum, handler)
@@ -164,8 +166,17 @@ def main():
     signal.signal(signal.SIGTERM, cancelled)
     if hasattr(signal, 'SIGBREAK'):
         signal.signal(signal.SIGBREAK, cancelled)
-    with HostLock():
-        verify()
+    try:
+        with HostLock():
+            verify()
+    finally:
+        # A failed diagnostic must not replace the original test/cleanup outcome.
+        from project_status import write_status
+        try:
+            write_status()
+            print('Continuidad actualizada: state/continuity/latest.md', flush=True)
+        except Exception:
+            print('No se actualizó la continuidad; ejecutar scripts/project_status.py para diagnosticar.', flush=True)
 
 
 if __name__ == '__main__':

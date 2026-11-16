@@ -1,7 +1,7 @@
 name: FC27 verification
 on:
   push:
-    branches: [main, 'agent/**']
+    branches: [main, 'agent/**', 'codex/**']
   pull_request:
 permissions:
   contents: read
@@ -9,6 +9,15 @@ concurrency:
   group: fc27-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  continuity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/project_status.py --check
+      - run: python -m unittest discover -s scripts/tests -p test_project_status.py -v
   extension:
     runs-on: ubuntu-latest
     steps:
