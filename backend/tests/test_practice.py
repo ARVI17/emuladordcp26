@@ -7,16 +7,6 @@ from app.models.planner import MatchRecord, PracticeSession
 from test_planner import fake_run
 
 
-@pytest.fixture(autouse=True)
-def practice_reference_clock(monkeypatch):
-    from app.services import practice
-    class ReviewedDate(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return cls(2026, 10, 20, tzinfo=timezone.utc)
-    monkeypatch.setattr(practice, 'datetime', ReviewedDate)
-
-
 def create(client, **extra):
     response = client.post('/practice/sessions', json={'focus': 'runs', 'minutes': 15, 'platform': 'Xbox', **extra})
     assert response.status_code == 201, response.text

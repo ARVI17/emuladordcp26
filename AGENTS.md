@@ -1,5 +1,8 @@
 # Guía de trabajo · Club Lab FC27
 
+Cierre de revalidación 16-nov-2026: **96a8d21 / 0022 servido en 8090**, cinco servicios saludables, 132 históricos retirados y cero FC27 activos. Fuentes contrastadas en [SOURCE_REVIEW_20261116](docs/SOURCE_REVIEW_20261116.md): 11 identificadores de formación, 20 variantes y cinco pendientes; R33/R49 requieren contraste holográfico. Pases focalizado/integral y CI del código aprobados. [Resultados](docs/TESTING.md), [siguiente carga real](docs/REAL_CLUB_FIRST_LOAD.md), [recuperación y continuidad](docs/NEXT_SESSION.md). Los cortes inferiores son históricos.
+
+
 Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa afectada antes de cambiar datos, arquitectura o contratos. Las [invariantes detalladas](docs/IMPLEMENTATION_RULES.md) mantienen las protecciones de importación, ADB, OCR, consumos y restauración.
 
 ## Memoria y prioridad del producto

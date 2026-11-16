@@ -1,5 +1,12 @@
 # Estado verificable
 
+## Revalidación documental · 16-nov-2026
+
+Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).
+
+Se contrastaron 11 identificadores de formación, 20 variantes y 27 referencias. Dos presentaciones holográficas permanecen pendientes; caducidad exclusiva el 16-dic a las 22:10:56 UTC. Se sustituyeron fechas fijas de formaciones/prácticas, se añadieron pruebas de límites y migración controlada **0022**. [Evidencia](SOURCE_REVIEW_20261116.md), [pruebas](TESTING.md), [relevo y despliegue](NEXT_SESSION.md), [carga del club real](REAL_CLUB_FIRST_LOAD.md). El bloque siguiente describe la auditoría previa a esta corrección.
+
+
 ## Continuidad y prioridad competitiva · 16 de noviembre de 2026
 
 Estado funcional vigente en [PROJECT_STATUS](PROJECT_STATUS.md), generado desde PROJECT_STATE.json; [auditoría](AUDIT_20261116.md), [prompt maestro](MASTER_PROMPT.md) y [siguiente sesión](NEXT_SESSION.md). Se implementó el diagnóstico de solo lectura y su actualización desde operación/verificador, con validación de memoria en CI. No cambia aplicación, contratos, esquema ni datos.

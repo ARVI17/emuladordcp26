@@ -1,0 +1,208 @@
+{
+  "previous_observed_at": "2026-10-12T00:08:00+00:00",
+  "previous_valid_until": "2026-11-10T00:00:00+00:00",
+  "observed_at": "2026-11-16T22:10:56+00:00",
+  "valid_until": "2026-12-16T22:10:56+00:00",
+  "review_id": "sources-20261116",
+  "pending_reason": "La ficha muestra Pristine Holographic y selector Standard; falta contrastar la identidad exacta de cada presentación. No se certifica su equivalencia.",
+  "items": [
+    {
+      "reference_id": "R27",
+      "variant_id": "245956",
+      "name": "Christiane Endler",
+      "rating": 85,
+      "position": "POR",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/245956-christiane-endler/27-245956/"
+    },
+    {
+      "reference_id": "R28",
+      "variant_id": "203376",
+      "name": "Virgil van Dijk",
+      "rating": 88,
+      "position": "DFC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/203376-virgil-van-dijk/27-203376/"
+    },
+    {
+      "reference_id": "R29",
+      "variant_id": "236479",
+      "name": "Mapi León",
+      "rating": 88,
+      "position": "DFC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/236479-mapi-leon/27-236479/"
+    },
+    {
+      "reference_id": "R30",
+      "variant_id": "243715",
+      "name": "William Saliba",
+      "rating": 88,
+      "position": "DFC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/243715-william-saliba/27-243715/"
+    },
+    {
+      "reference_id": "R32",
+      "variant_id": "67336110",
+      "name": "Lucy Bronze",
+      "rating": 86,
+      "position": "DFC",
+      "card_type": "Team of the week",
+      "source_url": "https://www.fut.gg/players/227246-lucy-bronze/27-67336110/"
+    },
+    {
+      "reference_id": "R33",
+      "variant_id": "67361009",
+      "name": "Nuno Mendes",
+      "rating": 89,
+      "position": "LI",
+      "card_type": "Destined for Glory",
+      "source_url": "https://www.fut.gg/players/252145-nuno-mendes/27-67361009/"
+    },
+    {
+      "reference_id": "R34",
+      "variant_id": "265674",
+      "name": "Selma Bacha",
+      "rating": 86,
+      "position": "LI",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/265674-selma-bacha/27-265674/"
+    },
+    {
+      "reference_id": "R36",
+      "variant_id": "237289",
+      "name": "Patri Guijarro",
+      "rating": 88,
+      "position": "MCD",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/237289-patri-guijarro/27-237289/"
+    },
+    {
+      "reference_id": "R37",
+      "variant_id": "239053",
+      "name": "Federico Valverde",
+      "rating": 87,
+      "position": "MC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/239053-federico-valverde/27-239053/"
+    },
+    {
+      "reference_id": "R38",
+      "variant_id": "251854",
+      "name": "Pedri",
+      "rating": 90,
+      "position": "MC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/251854-pedri/27-251854/"
+    },
+    {
+      "reference_id": "R39",
+      "variant_id": "241667",
+      "name": "Aitana Bonmatí",
+      "rating": 90,
+      "position": "MC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/241667-aitana-bonmati/27-241667/"
+    },
+    {
+      "reference_id": "R40",
+      "variant_id": "252371",
+      "name": "Jude Bellingham",
+      "rating": 90,
+      "position": "MCO",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/252371-jude-bellingham/27-252371/"
+    },
+    {
+      "reference_id": "R41",
+      "variant_id": "256630",
+      "name": "Florian Wirtz",
+      "rating": 86,
+      "position": "MCO",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/256630-florian-wirtz/27-256630/"
+    },
+    {
+      "reference_id": "R42",
+      "variant_id": "246669",
+      "name": "Bukayo Saka",
+      "rating": 87,
+      "position": "ED",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/246669-bukayo-saka/27-246669/"
+    },
+    {
+      "reference_id": "R43",
+      "variant_id": "227102",
+      "name": "Caroline Graham Hansen",
+      "rating": 89,
+      "position": "ED",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/227102-caroline-graham-hansen/27-227102/"
+    },
+    {
+      "reference_id": "R44",
+      "variant_id": "238794",
+      "name": "Vini Jr.",
+      "rating": 89,
+      "position": "EI",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/238794-vinicius-jr/27-238794/"
+    },
+    {
+      "reference_id": "R45",
+      "variant_id": "269404",
+      "name": "Salma Paralluelo",
+      "rating": 87,
+      "position": "EI",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/269404-salma-paralluelo/27-269404/"
+    },
+    {
+      "reference_id": "R46",
+      "variant_id": "239085",
+      "name": "Erling Haaland",
+      "rating": 91,
+      "position": "DC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/239085-erling-haaland/27-239085/"
+    },
+    {
+      "reference_id": "R47",
+      "variant_id": "228093",
+      "name": "Marcus Thuram",
+      "rating": 85,
+      "position": "DC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/228093-marcus-thuram/27-228093/"
+    },
+    {
+      "reference_id": "R48",
+      "variant_id": "231747",
+      "name": "Kylian Mbappé",
+      "rating": 91,
+      "position": "DC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/231747-kylian-mbappe/27-231747/"
+    },
+    {
+      "reference_id": "R49",
+      "variant_id": "67372876",
+      "name": "Sophia Wilson",
+      "rating": 89,
+      "position": "DC",
+      "card_type": "Team of the week",
+      "source_url": "https://www.fut.gg/players/264012-sophia-wilson/27-67372876/"
+    },
+    {
+      "reference_id": "R50",
+      "variant_id": "258980",
+      "name": "Alessia Russo",
+      "rating": 88,
+      "position": "DC",
+      "card_type": "Rare",
+      "source_url": "https://www.fut.gg/players/258980-alessia-russo/27-258980/"
+    }
+  ]
+}

@@ -19,6 +19,47 @@ class FixtureClient(TestClient):
 
 def pytest_configure(config):
     config.addinivalue_line('markers', 'catalog_boundary: real catalog validation without synthetic witnesses')
+    config.addinivalue_line('markers', 'bundled_evidence: inspect the versioned source dates without test rebasing')
+
+
+@pytest.fixture(scope='session')
+def reviewed_public_fixture(tmp_path_factory):
+    """Test-only source windows; real clock and all admission guards stay active.
+
+    Public source freshness is checked separately with bundled_evidence. This
+    keeps workflow tests deterministic after a release's documentary review ends.
+    No production file or personal catalog is changed.
+    """
+    import json
+    from datetime import datetime, timedelta, timezone
+    from app.services.public_data import DATA_ROOT
+    folder = tmp_path_factory.mktemp('public-evidence')
+    start = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    end = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+    for name in ('fc27_content.json', 'fc27_references.json', 'fc27_variants.json', 'fc27_formations.json'):
+        data = json.loads((DATA_ROOT / name).read_text(encoding='utf-8'))
+        def rebase(value):
+            if isinstance(value, dict):
+                for key in ('observed_at', 'verified_at'):
+                    if key in value:
+                        value[key] = start
+                if 'valid_until' in value:
+                    value['valid_until'] = end
+                for key, child in value.items():
+                    if key != 'review_history':
+                        rebase(child)
+            elif isinstance(value, list):
+                for child in value:
+                    rebase(child)
+        rebase(data)
+        (folder / name).write_text(json.dumps(data), encoding='utf-8')
+    return folder
+
+
+@pytest.fixture(autouse=True)
+def public_evidence_window(request, monkeypatch, reviewed_public_fixture):
+    if not request.node.get_closest_marker('bundled_evidence'):
+        monkeypatch.setattr('app.services.public_data.DATA_ROOT', reviewed_public_fixture)
 
 
 @pytest.fixture()

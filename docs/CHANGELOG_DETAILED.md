@@ -1,5 +1,14 @@
 # Cambios detallados
 
+## 16 de noviembre de 2026 · formaciones y catálogo revalidados
+
+Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).
+
+La revisión vencida bloqueaba recomendaciones y las prácticas tenían otro corte fijo. Ahora las formaciones tienen evidencia individual y las prácticas usan sus referencias. Veinte variantes se mantienen documentadas; Nuno Mendes y Sophia Wilson requieren contraste entre presentación estándar/holográfica. La migración 0022 conserva revisiones locales y recibos previos, sin modificar inventario. Las pruebas de flujo usan ventanas temporales explícitas y otras pruebas verifican los límites reales versionados. Memoria incluye vigencia de formaciones y una guía de aceptación con 20 cartas reales. [Fuentes](SOURCE_REVIEW_20261116.md), [resultados](TESTING.md).
+
+
+La CI posterior del commit documental detectó una espera intermitente de 5 s en la prueba heredada de recuperación/cambio de contexto de la extensión. Se alinea la espera con el plazo del transporte y se comprueba también la pausa directamente y la ausencia de nuevas cartas del otro contexto. Es un cambio de prueba; no modifica la aplicación servida. Fallo y repeticiones en TESTING.md.
+
 ## 16 de noviembre de 2026 · continuidad y objetivo competitivo
 
 Antes: el relevo apuntaba a una rama/corte antiguos y el estado estaba repartido entre documentos históricos. Ahora: PROJECT_STATE.json define hitos y criterios, PROJECT_STATUS.md es su vista generada, MASTER_PROMPT.md prioriza la plantilla competitiva y NEXT_SESSION.md conserva el siguiente incremento exacto.

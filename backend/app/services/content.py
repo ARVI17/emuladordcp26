@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 import httpx
 
-BUILTIN = json.loads((Path(__file__).resolve().parent.parent / "data" / "fc27_content.json").read_text())
+from app.services.public_data import read_public_data
 NEWS_SOURCES = {"FC27": "https://www.ea.com/games/ea-sports-fc/fc-27"}
 MAX_NEWS_BYTES = 2_000_000
 
@@ -46,7 +46,7 @@ class NewsLinks(HTMLParser):
 
 def builtin_content(version):
     if version == "FC27":
-        result = deepcopy(BUILTIN)
+        result = read_public_data('fc27_content.json')
         result['articles'] = [a for a in result['articles'] if active_article(a)]
         if not active_evidence(result):
             result.update(features=[], verified_at=None)

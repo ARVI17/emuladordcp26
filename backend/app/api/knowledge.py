@@ -14,12 +14,13 @@ from app.services.audit import record
 from app.services.contexts import utc
 from app.services.locks import resource_locks
 from app.services.editions import current_version
+from app.services.public_data import read_public_data
 
 router = APIRouter(tags=["Conocimiento público"])
 
 
 def references():
-    return json.loads((Path(__file__).parents[1]/"data"/"fc27_references.json").read_text(encoding="utf-8"))
+    return read_public_data('fc27_references.json')
 
 
 @router.get("/knowledge")

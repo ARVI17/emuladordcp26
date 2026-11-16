@@ -94,12 +94,10 @@ def copy_result(player):
 
 def load_documented_catalog(db):
     """Versioned, reviewed facts only. Never creates Player/Gallery/price rows."""
-    import json
-    from pathlib import Path
+    from app.services.public_data import read_public_data
     from datetime import datetime
-    root = Path(__file__).parents[1] / 'data'
-    data = json.loads((root / 'fc27_variants.json').read_text(encoding='utf-8'))
-    refs = {row['id']: row['url'] for row in json.loads((root / 'fc27_references.json').read_text(encoding='utf-8'))}
+    data = read_public_data('fc27_variants.json')
+    refs = {row['id']: row['url'] for row in read_public_data('fc27_references.json')}
     for reference, variant, name, rating, position, card_type in data['items']:
         if db.scalar(select(CardVariant.id).where(CardVariant.game_version == 'FC27', CardVariant.variant_id == variant)):
             continue  # Never overwrite a later review or revocation on startup.

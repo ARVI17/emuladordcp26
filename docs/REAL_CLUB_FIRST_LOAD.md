@@ -1,0 +1,17 @@
+# Primera carga del club real
+
+Objetivo de la siguiente sesión: revisar **20 cartas reales**, corregir dos lecturas, repetir una vista sin duplicar y proteger el once más siete suplentes. Todavía no se ha aceptado este recorrido con el club personal. Las pruebas automáticas usan datos sintéticos.
+
+1. Comprobar `scripts/fc27.ps1 Estado` y abrir [Club Lab local](http://localhost:8090). Contrastar versión servida y estado en [NEXT_SESSION](NEXT_SESSION.md). La edición debe ser FC27; elegir expresamente el contexto de lectura asistida/visual de la cuenta. El contexto local histórico no se convierte automáticamente en tu cuenta.
+2. El propietario inicia sesión en la Web App oficial por su cuenta. En Club Lab abre **Escanear mi club**, revisa sección y máscaras de privacidad, marca el consentimiento y pulsa **Compartir pestaña y comenzar escaneo**. Elige únicamente la pestaña de juego ya abierta. No compartir la pantalla de acceso, correo o pagos.
+3. Mostrar un grupo pequeño de cartas y esperar a que quede estable. Pausar y usar **Revisar lote detectado** antes de recorrer todo el club. El OCR de filas legibles está probado con ejemplos sintéticos; la segmentación de fichas gráficas reales aún necesita contraste. Cero candidatas o identidad ambigua no equivale a club vacío: detener y revisar una muestra permitida antes de continuar.
+4. Contrastar nombre, media, posición, variante y cada copia. Corregir dos lecturas y dejar desconocido todo campo que no se vea. No deducir transferibilidad, cesión, Evo u holografía del nombre o de una ficha pública. R33/Nuno Mendes y R49/Sophia Wilson siguen pendientes de distinguir sus presentaciones del catálogo; no elegirlas por parecido.
+5. Seleccionar solamente copias revisadas, confirmar edición/propiedad/agrupación y escribir **GUARDAR SINCRONIZACION**. El resultado debe indicar snapshot, nuevas/actualizadas/conservadas y cobertura parcial. Las cartas que no aparezcan se conservan; el guardado es local.
+6. Repetir una vista del mismo contexto. Vincular la copia existente cuando corresponda y comprobar que no se crean duplicados. Una segunda copia legítima sigue siendo independiente. Completar hasta 20 cartas revisadas; no marcar el inventario como completo por alcanzar ese número.
+7. En Plantillas seleccionar explícitamente la principal y proteger once, banquillo y reservas pertinentes. Comparar después al menos tres alternativas con formaciones vigentes y datos disponibles. Las carencias de posiciones/atributos se muestran; media y química son aproximaciones locales.
+
+Registrar localmente en `state/` únicamente IDs de lote/snapshot, cantidades, correcciones, coincidencias y errores públicos; no imágenes, credenciales ni inventario en Git. Actualizar `PROJECT_STATE.json` (DATA-1, DATA-2 y TEAM-1) solo con resultados observados y regenerar `PROJECT_STATUS.md`.
+
+Si el OCR falla, conservar el lote pendiente y describir el patrón de error para el siguiente incremento del extractor. La lectura manual revisada de una ficha es la alternativa existente. Nunca crear cartas desde el catálogo para simular una importación correcta.
+
+Después de aceptar el club y proteger la principal: revisar un DCP real con fuente/requisitos/expiración; evaluar prescindibles transferibles y cotizaciones verificadas. Las simulaciones de mercado en modo visual siguen limitadas por cobertura. Faltan precios, reglas reales de Galería y contraste de copias antes de prometer recomendaciones completas. Club Lab no conecta la cuenta por introducir un usuario ni ejecuta compras, ventas o entregas EA.

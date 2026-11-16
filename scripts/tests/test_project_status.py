@@ -128,6 +128,12 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual(result[1]['status'], 'unknown')
             self.assertIsNone(result[1]['active'])
             self.assertEqual((result[2]['active'], result[2]['expired'], result[2]['pending']), (0, 2, 1))
+            self.assertEqual(result[3]['status'], 'unknown')
+            (target.parent/'fc27_formations.json').write_text(json.dumps({'items': {
+                'test': {'validation_status': 'documented', 'observed_at': '2000-01-01T00:00:00Z', 'valid_until': '2001-01-01T00:00:00Z'},
+                'missing': {'validation_status': 'pending_verification'}}}), encoding='utf-8')
+            formation = status.reference_freshness(root)[3]
+            self.assertEqual((formation['active'], formation['expired'], formation['pending']), (0, 1, 1))
             self.assertEqual(target.read_text(encoding='utf-8'), original)
 
     def container(self, host='127.0.0.1'):

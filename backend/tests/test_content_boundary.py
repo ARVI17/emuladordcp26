@@ -1,5 +1,5 @@
 """Production admission, without the synthetic variant/definition witness."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select, func
 from app.db.session import SessionLocal
@@ -62,7 +62,7 @@ def test_formations_are_distinct_documented_and_fail_closed_on_expiry(client, mo
     class Expired(datetime):
         @classmethod
         def now(cls, tz=None):
-            return cls(2027, 1, 1, tzinfo=timezone.utc)
+            return datetime.now(timezone.utc) + timedelta(days=2)
     monkeypatch.setattr(squad_analysis, 'datetime', Expired)
     assert client.get('/squads/formations').json()['items'] == []
     assert client.get('/club/analysis').json()['recommended_formation'] is None
@@ -95,9 +95,9 @@ def test_companion_build_unknown_keeps_even_matching_variant_in_quarantine(clien
 def test_fifty_references_are_documentary_never_ownership(client):
     rows = client.get('/knowledge').json()['items']
     assert len(rows) == 50 and len({r['id'] for r in rows}) == 50
-    assert sum(r['status']=='documented' for r in rows) == 29
+    assert sum(r['status']=='documented' for r in rows) == 27
     assert all(not r['personal_ownership'] and r['price'] is None for r in rows)
-    assert all(r['status']=='pending_verification' for r in rows if r['id'] in {'R26','R31','R35','R20','R21','R22'})
+    assert all(r['status']=='pending_verification' for r in rows if r['id'] in {'R26','R31','R33','R35','R49','R20','R21','R22'})
     assert client.get('/players').json()['total'] == 0
 
 
@@ -106,13 +106,13 @@ def test_practice_expiry_hides_instructions_and_blocks_new_session(client, monke
     class ReviewedDate(datetime):
         @classmethod
         def now(cls, tz=None):
-            return cls(2026, 10, 20, tzinfo=timezone.utc)
+            return datetime.now(timezone.utc)
     monkeypatch.setattr(practice, 'datetime', ReviewedDate)
     prior = client.post('/practice/sessions', json={'focus':'passing','minutes':10,'platform':'Xbox'}).json()
     class Expired(datetime):
         @classmethod
         def now(cls, tz=None):
-            return cls(2027, 1, 1, tzinfo=timezone.utc)
+            return datetime.now(timezone.utc) + timedelta(days=2)
     monkeypatch.setattr(practice, 'datetime', Expired)
     assert client.get('/practice/catalog').json()['drills'] == {}
     assert client.get('/practice/sessions').json() == []

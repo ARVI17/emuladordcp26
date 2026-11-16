@@ -212,7 +212,7 @@ def reference_freshness(root):
     """Inspect public bundled metadata only; never renew evidence or fetch sources."""
     current = datetime.now(timezone.utc)
     result = []
-    for relative in ('backend/app/data/fc27_references.json', 'backend/app/data/fc27_content.json', 'backend/app/data/fc27_variants.json'):
+    for relative in ('backend/app/data/fc27_references.json', 'backend/app/data/fc27_content.json', 'backend/app/data/fc27_variants.json', 'backend/app/data/fc27_formations.json'):
         row = {'path': relative, 'active': 0, 'expired': 0, 'pending': 0, 'status': 'observed'}
         try:
             value = json.loads((root/relative).read_text(encoding='utf-8'))
@@ -221,6 +221,8 @@ def reference_freshness(root):
                 items = [dict(observed_at=value.get('observed_at'), valid_until=value.get('valid_until'),
                               validation_status='documented') for _ in value['items']]
                 row['pending'] = len(value.get('pending', {}))
+            elif relative.endswith('fc27_formations.json'):
+                items = list(value['items'].values())
             else:
                 items = value if isinstance(value, list) else [value, *value.get('articles', [])]
             for item in items:
