@@ -6,17 +6,17 @@ Revisión humana: **2026-11-16**. Sprint: Revalidación documental, caducidad po
 
 Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.
 
-**Siguiente paso:** Completar la verificación y despliegue 0022; después aceptar 20 cartas reales mediante captura voluntaria, dos correcciones y reescaneo sin duplicar. Proteger once y siete suplentes antes de evaluar alternativas, DCP o ventas. Seguir docs/REAL_CLUB_FIRST_LOAD.md.
+**Siguiente paso:** Aceptar 20 cartas reales mediante captura voluntaria en localhost:8090, corregir dos lecturas y reescanear sin duplicar; proteger once y siete suplentes y comparar al menos tres alternativas. Seguir docs/REAL_CLUB_FIRST_LOAD.md. La revisión pública vence el 16-dic-2026 a las 22:10:56 UTC; no renovarla sin contraste.
 
 Disponible significa código existente; la validación con el club real se registra por separado. Estos estados no se convierten en completos por pasar pruebas sintéticas.
 
 | Hito | Implementación | Club real | Falta |
 | --- | --- | --- | --- |
 | MEM-1 · Memoria y continuidad | Disponible | No aplica | Revisar criterios y siguiente acción en cada sprint; el diagnóstico no decide que el producto esté terminado. |
-| KNOW-1 · Vigencia de formaciones y contenido | Parcial | Pendiente | Fuentes contrastadas el 16-nov: 11 identificadores de formación, 20 variantes y 27 referencias documentadas; R33/R49 pendientes por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC, sin renovación automática. Verificación integral y despliegue en curso; pruebas no acreditan el club real. |
+| KNOW-1 · Vigencia de formaciones y contenido | Disponible | Contrastado | Fuentes contrastadas el 16-nov y desplegadas en 96a8d21/0022: 11 identificadores de formación, 20 variantes y 27 referencias documentadas. Cinco variantes pendientes, incluidas R33/R49 por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC; sin renovación automática. Pases corregidos focalizado/integral y CI aprobados; no acreditan el club real. |
 | DATA-1 · Club real revisado | Parcial | Pendiente | Cero cartas FC27 activas al auditar. OCR con filas sintéticas; falta contrastar fichas reales. |
 | DATA-2 · Identidad de variantes y copias | Parcial | Pendiente | Agrupación provisional entre páginas; falta correspondencia canónica robusta para fichas gráficas y resolución de copias. |
-| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Cinco perfiles existen pero la revisión de formaciones está vencida: hoy no están habilitados. Faltan revalidación y prueba con el club real. |
+| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Formaciones revalidadas y cinco perfiles locales disponibles. Falta contrastar el club real, seleccionar/proteger explícitamente la principal y comparar al menos tres alternativas con sus carencias. |
 | DCP-1 · DCP activos útiles para el equipo | Parcial | Pendiente | Solver local y lectura manual existen; faltan un tradicional y un simplificado reales, vigencia y compras integradas. |
 | PRICE-1 · Precios y presupuesto trazables | Parcial | Pendiente | Cotizaciones manuales existen; importación/conciliación pendientes. Mercado y fichajes están bloqueados en contexto visual por require_module. |
 | TRADE-1 · Excedentes y compras para mejorar | Parcial | Pendiente | Comparador por puesto, planes y reservas existen; falta selección transversal de ventas y compras con impacto en el once completo. |

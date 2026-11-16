@@ -4,7 +4,7 @@
 
 **Memoria actualizable:** `python scripts/project_status.py` o `powershell -File scripts/fc27.ps1 Memoria` generan `state/continuity/latest.md` con Git, Docker y pruebas locales. Inicio/Estado/Parada y el cierre del verificador también lo regeneran. Los hitos se mantienen en `docs/PROJECT_STATE.json`; CI comprueba su vista generada. No hay un agente trabajando entre sesiones.
 
-**Revisión del 16-nov:** se contrastaron fuentes de formaciones y catálogo, con caducidad conservada y migración controlada 0022. Consulta [evidencia](docs/SOURCE_REVIEW_20261116.md), [pruebas/despliegue](docs/NEXT_SESSION.md) y [primera carga del club real](docs/REAL_CLUB_FIRST_LOAD.md). La existencia del catálogo no acredita tus cartas.
+**Revisión del 16-nov, instalada en 8090 (96a8d21/0022):** se contrastaron fuentes de formaciones y catálogo, con caducidad conservada y migración controlada 0022. Consulta [evidencia](docs/SOURCE_REVIEW_20261116.md), [pruebas/despliegue](docs/NEXT_SESSION.md) y [primera carga del club real](docs/REAL_CLUB_FIRST_LOAD.md). La existencia del catálogo no acredita tus cartas.
 
 **Incremento visual, 5 de noviembre de 2026:** en Cuenta → Lectura asistida → **Escanear mi club** puedes compartir voluntariamente una pestaña, recorrer listas, revisar las candidatas y guardar un snapshot parcial. No conecta una cuenta EA ni confirma cartas sin revisión. [Uso y privacidad](docs/USER_LOGIN_AND_VISUAL_SCAN.md), [estado verificable y pendientes](docs/IMPLEMENTATION_STATUS.md), [siguiente sesión](docs/NEXT_SESSION.md). La instalación personal detectada usa **http://localhost:8090**; 8080 sigue siendo el valor predeterminado del Compose.
 

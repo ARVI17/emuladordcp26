@@ -2,6 +2,8 @@
 
 ## 16 de noviembre de 2026 · formaciones y catálogo revalidados
 
+Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).
+
 La revisión vencida bloqueaba recomendaciones y las prácticas tenían otro corte fijo. Ahora las formaciones tienen evidencia individual y las prácticas usan sus referencias. Veinte variantes se mantienen documentadas; Nuno Mendes y Sophia Wilson requieren contraste entre presentación estándar/holográfica. La migración 0022 conserva revisiones locales y recibos previos, sin modificar inventario. Las pruebas de flujo usan ventanas temporales explícitas y otras pruebas verifican los límites reales versionados. Memoria incluye vigencia de formaciones y una guía de aceptación con 20 cartas reales. [Fuentes](SOURCE_REVIEW_20261116.md), [resultados](TESTING.md).
 
 

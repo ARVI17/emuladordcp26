@@ -3,7 +3,7 @@
   "reviewed_on": "2026-11-16",
   "mission": "Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.",
   "sprint": "Revalidación documental, caducidad por fuente y preparación del club real",
-  "next_action": "Completar la verificación y despliegue 0022; después aceptar 20 cartas reales mediante captura voluntaria, dos correcciones y reescaneo sin duplicar. Proteger once y siete suplentes antes de evaluar alternativas, DCP o ventas. Seguir docs/REAL_CLUB_FIRST_LOAD.md.",
+  "next_action": "Aceptar 20 cartas reales mediante captura voluntaria en localhost:8090, corregir dos lecturas y reescanear sin duplicar; proteger once y siete suplentes y comparar al menos tres alternativas. Seguir docs/REAL_CLUB_FIRST_LOAD.md. La revisión pública vence el 16-dic-2026 a las 22:10:56 UTC; no renovarla sin contraste.",
   "items": [
     {
       "id": "MEM-1",
@@ -27,10 +27,10 @@
     {
       "id": "KNOW-1",
       "title": "Vigencia de formaciones y contenido",
-      "implementation": "partial",
-      "real_validation": "pending",
+      "implementation": "available",
+      "real_validation": "passed",
       "depends_on": [],
-      "gap": "Fuentes contrastadas el 16-nov: 11 identificadores de formación, 20 variantes y 27 referencias documentadas; R33/R49 pendientes por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC, sin renovación automática. Verificación integral y despliegue en curso; pruebas no acreditan el club real.",
+      "gap": "Fuentes contrastadas el 16-nov y desplegadas en 96a8d21/0022: 11 identificadores de formación, 20 variantes y 27 referencias documentadas. Cinco variantes pendientes, incluidas R33/R49 por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC; sin renovación automática. Pases corregidos focalizado/integral y CI aprobados; no acreditan el club real.",
       "acceptance": [
         "Contrastar formaciones/posiciones y variantes necesarias con fuentes actuales, registrar evidencia y fecha; no renovar automáticamente ni eliminar la guarda.",
         "Separar en pruebas el reloj de escenarios históricos y el comportamiento real antes/después de caducidad; la fecha del sistema no debe crear falsos pases.",
@@ -98,7 +98,7 @@
         "DATA-1",
         "DATA-2"
       ],
-      "gap": "Cinco perfiles existen pero la revisión de formaciones está vencida: hoy no están habilitados. Faltan revalidación y prueba con el club real.",
+      "gap": "Formaciones revalidadas y cinco perfiles locales disponibles. Falta contrastar el club real, seleccionar/proteger explícitamente la principal y comparar al menos tres alternativas con sus carencias.",
       "acceptance": [
         "Selección explícita de principal, banquillo y reservas; proteger sus copias frente a consumo/venta.",
         "Comparar al menos tres alternativas con once y siete suplentes, posiciones legales, fijados/excluidos, fortalezas y carencias. Reutilizar protegidas para jugar.",

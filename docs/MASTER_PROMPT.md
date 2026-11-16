@@ -107,7 +107,7 @@ Al cerrar cada sprint informar: resultado útil, URL, cambios/migraciones, PASA/
 
 ## Primer siguiente incremento
 
-**KNOW-1 es previo a la recomendación competitiva:** la revisión de formaciones y contenido incluido venció el 10-nov-2026. Contrastar fuentes actuales, registrar evidencia y posiciones, y revisar las pruebas históricas que dependían del reloj real. Mantener las pruebas de rechazo por caducidad y repetir dos veces la regresión. No cambiar fechas sin evidencia ni presentar un contenedor saludable como función disponible. La captura de cartas puede comprobarse mientras se realiza esa revisión documental.
+**KNOW-1 es previo a la recomendación competitiva:** comprobar la vigencia efectiva en PROJECT_STATUS y el diagnóstico, y leer la última revisión de fuentes enlazada en NEXT_SESSION. Mantener el rechazo de revisiones futuras, vencidas o revocadas. Cuando caduquen, contrastar nuevamente fuentes/posiciones y repetir las regresiones; nunca cambiar fechas sin evidencia ni confundir salud de contenedores con disponibilidad funcional. Las pruebas backend de flujo usan ventanas temporales explícitas; las pruebas de límites conservan los archivos versionados y el navegador comprueba la vigencia efectiva. La captura revisada puede validarse por separado.
 
 Tomar DATA-1/DATA-2/TEAM-1 como secuencia prioritaria. Contrastar 20 cartas reales compartidas por el usuario, corregir dos, comprobar copias/variantes, reescanear y proteger once más siete suplentes. Si aún no hay una vista permitida disponible, avanzar en pruebas sintéticas de segmentación/reconciliación y señalar que la aceptación real sigue pendiente. No abrir ni capturar una sesión EA sin el gesto del propietario.
 
