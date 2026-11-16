@@ -1,4 +1,16 @@
-# Cambios del incremento visual · 5 de noviembre de 2026
+# Cambios detallados
+
+## 16 de noviembre de 2026 · continuidad y objetivo competitivo
+
+Antes: el relevo apuntaba a una rama/corte antiguos y el estado estaba repartido entre documentos históricos. Ahora: PROJECT_STATE.json define hitos y criterios, PROJECT_STATUS.md es su vista generada, MASTER_PROMPT.md prioriza la plantilla competitiva y NEXT_SESSION.md conserva el siguiente incremento exacto.
+
+Nuevo scripts/project_status.py, solo Python estándar: observa Git, contenedores personales por etiqueta/ID y binding loopback, builds públicos y resultados de pruebas; escribe un diagnóstico privado fechado en state/continuity. No consulta inventario o secretos ni ejecuta mutaciones. fc27.ps1 incorpora Memoria y regeneración tras operación; verify_docker.py registra fechas e intenta refrescar incluso tras fallo/cancelación. CI comprueba memoria y pruebas de procedencia; incluye ramas codex/**.
+
+El diagnóstico también cuenta vigencia del contenido/catálogo incluido. La verificación descubrió caducidad al 10-nov: 29 referencias y 22 variantes documentales vencidas, además de formaciones y contenido. Se reprodujo el fallo en dos ejecuciones aisladas, sin renovar fechas automáticamente. La continuidad pasa sus pruebas; la aplicación completa conserva ese bloqueo abierto.
+
+Sin cambios de API, solver, interfaz de producto, migración o dependencias. Se arrancaron los contenedores existentes; se conservan imágenes, volúmenes, histórico FC26 y la eliminación local ajena de .vscode/settings.json. La versión servida sigue en 8a80860/0021. Para deshacer únicamente esta ampliación de memoria basta un cambio Git revisado; no requiere restaurar datos ni recrear la instalación. Validación en TESTING.md.
+
+## Incremento visual · 5 de noviembre de 2026
 
 ## Base conservada
 

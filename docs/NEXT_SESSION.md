@@ -1,38 +1,52 @@
-# Continuación exacta · incremento visual FC27
+# Continuación exacta · Club Lab FC27
 
-Trabaja en `C:\Users\arvi_\emuladordcp26`, rama **agent/visual-capture-fc27-20261105**, basada en `34c4e05`, no en el checkout viejo `ffcf7e0`/0005. Lee AGENTS, PROJECT_MAP, IMPLEMENTATION_STATUS, OCR_DATA_MODEL y USER_LOGIN_AND_VISUAL_SCAN. No reconstruyas ni migres desde la rama antigua. No toques los cambios/worktree `emuladordcp26-fc27-planificador`.
+Corte **16 de noviembre de 2026**. Prioridad: **plantilla competitiva con las cartas reales del propietario**. DCP, monedas, compras, Galería y Evos sirven a ese objetivo. La entrega de continuidad no completa el producto.
 
-## Datos y operación
+## Leer y comprobar al retomar
 
-- Única instalación personal: proyecto Compose `emuladordcp26`, URL **http://localhost:8090**. Puerto 8080 es solo el predeterminado del repositorio.
-- Volúmenes que se preservan: `emuladordcp26_postgres_data`, `emuladordcp26_ollama_data`. Respaldo inicial ignorado por Git: `backups/visual-scan-before-20261105.dump`.
-- Estado inicial real: 0019, 44 tablas, 132 jugadores retirados, cero activos. No son evidencia del club EA. Base restaurada separada: `fc26_verify_visual_20261105`.
-- Windows reservó 55432; PostgreSQL quedó en 127.0.0.1:54326. Conserva .env y configuraciones privadas fuera de Git.
-- `powershell -File scripts/fc27.ps1 Estado` y `/api/build` acreditan imágenes servidas. No asumir que HEAD coincide con el contenedor.
+1. AGENTS.md, [estado y criterios](PROJECT_STATUS.md), [prompt maestro](MASTER_PROMPT.md), [auditoría actual](AUDIT_20261116.md) y código/pruebas de la capa elegida.
+2. Revisar git status --short, rama, worktrees y PR. Checkout: C:/Users/arvi_/emuladordcp26; rama codex/continuidad-club-competitivo-20261116, base 4ed6d48 de agent/visual-capture-fc27-20261105 / PR #8. Conservar la eliminación ajena de .vscode/settings.json. No tocar el worktree emuladordcp26-fc27-planificador (34c4e05).
+3. Ejecutar python scripts/project_status.py o powershell -File scripts/fc27.ps1 Memoria. Leer state/continuity/latest.md: fecha, HEAD, dirty, servicios, SHA servido y SHA/alcance de pruebas. No usar un informe antiguo para acreditar el estado actual.
+4. La fuente editable es PROJECT_STATE.json. Al cerrar actualizar hitos/fecha, ejecutar --render-plan y --check, y actualizar esta nota y TESTING. fc27.ps1 y el cierre del verificador regeneran el diagnóstico; no cambian por sí mismos la aceptación funcional ni trabajan entre sesiones.
 
-## Estado entregado de la instalación
+## Instalación personal acreditada
 
-Se actualizó la instalación local a **8a80860 / 0021** con las imágenes exactas del pase integral **dc69595a37**: 319 Pytest, 42 Vitest, 39 Playwright y 14 pruebas de extensión aprobados; una prueba de captura móvil omitida. Los commits `d3838e7`/`855fd0f` corrigen exclusivamente el reloj de un test para CI; el pase focalizado **6a377aee90** aprobó los 13 casos nuevos. Los commits posteriores de documentación tampoco cambian la aplicación servida.
+- Única instalación Compose: emuladordcp26, **http://localhost:8090**. Los cinco servicios estaban detenidos al comenzar; se arrancaron por los mismos IDs y quedaron saludables.
+- Frontend/API: **8a808605d27dabc43266fdc4feeb739789708e5f**, esquema **0021**, construcción local limpia. El código de aplicación coincide con esta rama; este sprint modifica memoria, diagnóstico, CI y documentación. No requiere nuevo despliegue ni migración.
+- Consulta READ ONLY del 16-nov: **132 jugadores históricos FC26 retirados, cero cartas activas FC27, cero snapshots visuales**. Sin borrado ni reconversión de inventario.
+- Volúmenes: emuladordcp26_postgres_data y emuladordcp26_ollama_data. PostgreSQL en **127.0.0.1:54326** por reserva de Windows sobre 55432; Nginx loopback 8090.
+- Composición privada fijada: state/visual-scan-release/release.compose.json; recuperación: original.compose.json, imágenes anteriores y backups/visual-scan-before-20261105.dump. Ese respaldo es histórico: obtener/restaurar uno nuevo antes de actualizar datos.
+- fc27.ps1 Inicio|Estado|Parada reutiliza contenedores. No usar Compose de un checkout viejo ni volver a 0005. No dejar otra aplicación permanente en 8081.
 
-El cierre también corrige exclusivamente la espera de `frontend/e2e/analyze-club.spec.ts`: reanudar espera la respuesta HTTP real y valida status active, en vez de asumir que el cálculo termina antes de cinco segundos. El pase **42cbb3ebe2** aprobó 42 Vitest y ambos recorridos móvil/escritorio. No reconstruir la aplicación solo para incorporar cambios de tests/documentación; el código desplegable permanece igual a 8a80860. Comprueba los checks actuales de la PR antes de concluir el estado de CI.
+## Próximo sprint: KNOW-1 y DATA-1 antes de TEAM-1
 
-Composición privada actual: `state/visual-scan-release/release.compose.json`; recuperación: `original.compose.json` e imágenes anteriores, además del dump. `release-evidence.json`, `external-checks.json`, `integrity-before.json`, `integrity-fc26.json` y logs documentan los checks. Backend fijado `sha256:0a6afeb5821213bae2436f4550c4eb404cf9efcb9c03b1eb8c7232f623be60a4`; frontend `sha256:82f3cebbf431597a3c14ad6eff8fc2573580593f887840f7c3ab6503c7c6e131`. Los cinco servicios están saludables; Nginx 127.0.0.1:8090 y PostgreSQL **127.0.0.1:54326**. No uses el Compose predeterminado para recrear esta instalación: .env se conservó y 55432 está reservado por Windows. `scripts/fc27.ps1 Inicio|Estado|Parada` reutiliza los contenedores correctos.
+**Bloqueo actual confirmado:** formaciones y 29 referencias documentadas vencieron el 10-nov; el paquete de contenido también venció. La suite integral actual detecta los bloqueos. Primero contrastar fuentes/posiciones de las formaciones necesarias, conservar evidencia y actualizar su revisión explícita. No alargar fechas para hacer pasar tests. Separar pruebas históricas con reloj controlado de la regresión de caducidad real. El diagnóstico muestra el recuento vigente/vencido/pendiente del checkout; consultar TESTING para las dos reproducciones.
 
-Base personal antes/después: 43 tablas de datos previos idénticas por hash/recuento; alembic_version pasa 0019→0021; reader_workflows/visual_snapshots nuevas y vacías al entregar. **132 jugadores retirados, cero activos**. Se conservan dos copias de verificación identificadas: `fc26_verify_visual_20261105` y `fc26_verify_visual_final_20261105`, ambas migradas a 0021; la segunda se comprobó también con imagen ea27c61/esquema 0019 antes de migrarla. No son nuevas instalaciones públicas. No eliminarlas como si fueran datos de terceros.
+1. **Aceptar el club real**: el propietario abre la Web App oficial y comparte voluntariamente una vista de juego. Contrastar 20 cartas, corregir dos y reescanear. Incluir once y siete suplentes. No solicitar credenciales ni iniciar captura/login por cuenta del usuario.
+2. **Resolver identidad**: comprobar variantes y copias legítimas, especialmente entre páginas. El extractor actual reconoce filas legibles sintéticas; no está contrastado con fichas gráficas EA. Si falla esa vista, medir segmentación/OCR con una muestra permitida, mejorar y repetir dos veces la regresión. Confianza textual no acredita identidad. Imágenes personales fuera de Git.
+3. **Proteger y comparar**: selección explícita de principal, banquillo y reservas; alternativas propias por posición/atributos. No inventar química oficial ni prometer victorias. Guardar una alternativa conserva principal y datos EA.
 
-Rama enviada, [PR #8 en borrador](https://github.com/ARVI17/emuladordcp26/pull/8), base `agent/fc27-dom-gallery`; sin merge a main ni despliegue externo. El estado de CI se registra en IMPLEMENTATION_STATUS y en la PR. La prueba de sesión EA, selector nativo real, Safari, hardware ADB e inferencia GPU no se ejecutó.
+Si no hay una vista real disponible, avanzar en extractor/reconciliación con pruebas sintéticas permitidas y mantener la aceptación personal pendiente. No convertir fixtures en club real para cerrar el hito.
 
-## Siguiente trabajo
+## Dependencias siguientes concretas
 
-1. Revisar los resultados definitivos al pie de IMPLEMENTATION_STATUS y el estado de Git/stack. No repetir suites completas sin cambio/fallo que lo justifique.
-2. Validación humana del MVP: compartir una vista del club ya abierta, observar 20 cartas, corregir dos y revisar variantes/copias. No afirmar precisión antes de esa prueba. No pedir credenciales ni sesión automatizada; no capturar login/MFA. Si el formato gráfico no se reconoce, conseguir una muestra permitida y mejorar segmentación/extractor con pruebas A/B. Los tests actuales reconocen filas sintéticas legibles.
-3. Añadir correspondencia canónica/variantes y resolución explícita de grupos que representan copias distintas entre páginas. Hoy se marcan inciertos y requieren leer fichas por separado. No elevar confianza OCR a certeza de propiedad/variante.
-4. Etapa 2: conectar lectura de un DCP tradicional y uno simplificado verificados al flujo; conservar origen/fecha/progreso. Ver FC27_DCP_RULES.
-5. Etapas 3–4: importación de precios permitidos con variante/plataforma/fecha; solvers con compras, presupuesto y coste de oportunidad. Probar mínimo por enumeración pequeña y status FEASIBLE_NOT_PROVEN. No habilitar FUTBIN/FUT.GG/FUTWIZ sin autorización/documentación que aplique al proyecto.
-6. Seguir etapas 5–7 del prompt original, sin declarar completado el objetivo global por tener UI previa.
+- services/contexts.py:require_module permite squads/analysis/chat/gallery en modo visual, pero bloquea market/transfers y consumos genéricos. Diseñar evidencia revisada y presupuesto declarado para **simulaciones**; no suprimir esa guarda.
+- services/providers.py:ADAPTERS sigue vacío. La Community API de otros sitios no autoriza este proyecto. Precios manuales/importados permitidos ofrecen una vía sin scraping EA.
+- DCP: tradicional y Streamlined reales, fuente/fecha/expiración y prueba independiente; después compras externas, presupuesto, oportunidad y optimalidad. _cost conserva los coeficientes efectivos; AppSetting es informativo.
+- Ventas: copias prescindibles/transferibles, protecciones y compromisos intactos, perjuicio deportivo y reposición. Una venta pendiente nunca financia una compra.
+- Galería: conjunto real, historial, premios reclamados, reglas/puntos y precios. Rutas locales existentes no acreditan la solución personal.
+- Mantener los criterios de [PROJECT_STATUS](PROJECT_STATUS.md). No reiniciar una auditoría general mientras estos hechos sigan acreditados.
 
-## Verificación reproducible
+## Verificación y entrega
 
-`python scripts/verify_docker.py --scope full --subnet 10.231.27.0/24 --build-environment local` usa solo tmpfs, puerto 8082 y recursos propios. Elige otra /24 privada libre si hay solapamiento; no borres redes ajenas. Logs/resultados en `state/sprints/`. Para diagnosticar: añadir `--pytest-path test_visual_scan.py --browser-spec visual-scan.spec.ts`; luego repetir integral si hubo cambios.
+    python -m unittest discover -s scripts/tests -v
+    python scripts/project_status.py --check
+    python scripts/verify_docker.py --scope full --subnet 10.231.27.0/24 --build-environment local
 
-La prueba de navegador usa canvas sintético y un proxy loopback efímero dentro del contenedor para ejercitar un origen seguro real; no modifica producción. No existe prueba de sesión EA, botón nativo de permiso real ni credenciales. No instalar la extensión previa para el nuevo flujo. Ollama/ADB no son necesarios; el comportamiento sin ellos forma parte del arranque aislado.
+El verificador rechaza solapamiento, usa tmpfs y conserva principal/volúmenes. Elegir otra /24 privada libre si hace falta, sin borrar redes ajenas. Resultados nuevos en [TESTING](TESTING.md); historia en [IMPLEMENTATION_STATUS](IMPLEMENTATION_STATUS.md).
+
+**Resultados de este sprint:** 23 pruebas de herramientas pasan (14 nuevas). Integral acb4979c15: 251 Pytest pasan / 68 fallan; repetición focalizada 65a7a5d1b1: 4 pasan / 8 fallan. Causas de caducidad en TESTING; no hay pase integral actual. Build/arranque/health/OpenAPI/Alembic/limpieza pasan y principal/volúmenes siguen iguales. Ambos ensayos sobre base 4ed6d48 con cambios locales, no atribuirlos a un commit posterior. No se ejecutaron Vitest/Playwright/extensión porque el verificador paró en Pytest.
+
+El pase histórico dc69595a37 sobre 8a80860 fue 319 Pytest, 42 Vitest, 39 Playwright y 14 extensión; canvas móvil omitido. No es estado verde actual. No se probó cuenta EA personal, selector nativo real, Safari, ADB físico o inferencia GPU.
+
+Código → pruebas pertinentes → Docker aislado → diff/secretos → commit → push/SHA remoto → PR en borrador. Sin merge automático. Registrar fallos, repeticiones, omisiones, SHA probado/servido y cambios ajenos. Despliegue futuro: permiso aplicable, respaldo reciente restaurado y recuperación preparada.

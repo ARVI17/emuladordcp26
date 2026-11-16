@@ -27,3 +27,9 @@ Versiones observadas dentro de la imagen de prueba, no afirmación de «última 
 | Ollama | Compose heredado aún usa latest | Lenguaje opcional | No interviene en OCR ni commit; suite sin servicio. Fijar versión tras probar inferencia queda pendiente. |
 
 Muestra de recursos (no benchmark): backend de API ~197,6 MiB/512 MiB en reposo durante verificación. No se midió el pico OCR real del propietario. PaddleOCR, ONNX, RapidFuzz, mss, BeautifulSoup/selectolax, Redis/Celery y OpenTelemetry **no instalados ni evaluados con A/B**; no hay evidencia que justifique su coste en este incremento. No se atribuyen licencias/versiones ni mejoras de exactitud a paquetes no probados.
+
+## Memoria operativa · decisión del 16 de noviembre de 2026
+
+Usar archivos versionados y Python estándar para continuidad: PROJECT_STATE.json como hitos editables, PROJECT_STATUS.md como vista comprobada, MASTER_PROMPT.md como visión y NEXT_SESSION.md como relevo. El diagnóstico privado observa Git/Docker/informes y conserva la diferencia entre código disponible, prueba sintética y aceptación personal. No añade servidor MCP, modelo, dependencia o migración.
+
+La regeneración ocurre al operar con fc27.ps1 y al cerrar verify_docker.py; no es un proceso en segundo plano. El chequeo CI valida estructura/dependencias/enlaces/sincronía de vista, pero no decide si se logró una función. Un fallo del diagnóstico no sustituye el error original de pruebas o cancelación. Salidas mediante lista explícita de campos; no persistir Docker Env, logs, inventario, tokens o respuestas privadas. HTTP solo sobre el binding loopback acreditado, sin proxy ni redirecciones.

@@ -52,3 +52,11 @@ El puerto predeterminado es 8080; la instalación personal cambió a **8090** el
 ## Diagnóstico focalizado
 
 El mismo verificador aislado acepta `--pytest-path test_assisted.py` y `--browser-spec assisted.spec.ts` (repetibles, archivos dentro de sus carpetas de pruebas). El informe registra la selección. No reemplazan la ejecución integral sin selectores antes de entregar cambios de contratos o admisión. No hay pruebas contra la base personal.
+
+## Continuidad del sprint
+
+Antes de editar: leer `PROJECT_STATUS.md` y `NEXT_SESSION.md`, revisar Git y ejecutar `python scripts/project_status.py`. El informe privado distingue versión servida, HEAD y SHA/alcance de pruebas; no consulta datos del club, `.env`, cookies ni capturas. Es una observación con fecha, no un servicio permanente.
+
+Después de implementar/verificar: actualizar los hitos afectados en `PROJECT_STATE.json`, ejecutar `python scripts/project_status.py --render-plan` y `--check`, registrar resultados en `TESTING.md` y dejar el siguiente paso en `NEXT_SESSION.md`. CI comprueba enlaces/dependencias/estados y la vista generada; no sustituye el juicio humano sobre aceptación real.
+
+`fc27.ps1 Memoria` solo genera el diagnóstico. `Inicio|Estado|Parada` también lo generan tras su operación y el verificador lo intenta en `finally`, sin ocultar fallos/cancelaciones originales. Un informe no convierte una prueba focalizada en integral ni acredita el HEAD por haber probado otro SHA.

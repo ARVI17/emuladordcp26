@@ -1,5 +1,11 @@
 # Club Lab · FC 27
 
+**Prioridad del producto:** una plantilla competitiva con tus cartas reales. DCP, ventas propuestas, compras, Galería y Evos deben ayudar a mejorarla. [Qué está hecho y qué falta](docs/PROJECT_STATUS.md) · [Prompt maestro y criterios](docs/MASTER_PROMPT.md) · [Continuar el trabajo](docs/NEXT_SESSION.md).
+
+**Memoria actualizable:** `python scripts/project_status.py` o `powershell -File scripts/fc27.ps1 Memoria` generan `state/continuity/latest.md` con Git, Docker y pruebas locales. Inicio/Estado/Parada y el cierre del verificador también lo regeneran. Los hitos se mantienen en `docs/PROJECT_STATE.json`; CI comprueba su vista generada. No hay un agente trabajando entre sesiones.
+
+**Bloqueo comprobado el 16-nov:** la revisión de formaciones y varias referencias venció el 10-nov. La recomendación de plantillas queda bloqueada hasta revalidar esas fuentes; los servicios saludables no acreditan disponibilidad de todas las funciones. Además falta incorporar el club real. [Diagnóstico y pendientes exactos](docs/AUDIT_20261116.md).
+
 **Incremento visual, 5 de noviembre de 2026:** en Cuenta → Lectura asistida → **Escanear mi club** puedes compartir voluntariamente una pestaña, recorrer listas, revisar las candidatas y guardar un snapshot parcial. No conecta una cuenta EA ni confirma cartas sin revisión. [Uso y privacidad](docs/USER_LOGIN_AND_VISUAL_SCAN.md), [estado verificable y pendientes](docs/IMPLEMENTATION_STATUS.md), [siguiente sesión](docs/NEXT_SESSION.md). La instalación personal detectada usa **http://localhost:8090**; 8080 sigue siendo el valor predeterminado del Compose.
 
 Asistente local y no oficial para **analizar tus jugadores, armar plantillas, planificar DCP y llevar una Galería del club**. Incluye evoluciones con caminos y cadenas simuladas, noticias públicas y paquetes de contenido revisables. React/TypeScript, FastAPI, PostgreSQL y OR-Tools; chat local opcional con Ollama y lectura asistida de Companion por ADB.
@@ -34,7 +40,7 @@ Requiere Docker Engine/Desktop con Compose. Ollama y un emulador consumen memori
 powershell -ExecutionPolicy Bypass -File scripts/fc27.ps1 Inicio
 ```
 
-Abre [la aplicación](http://localhost:8080), [la documentación HTTP](http://localhost:8080/api/docs) o [el health check](http://localhost:8080/health).
+En la instalación personal acreditada, abre [la aplicación](http://localhost:8090), [la documentación HTTP](http://localhost:8090/api/docs) o [el health check](http://localhost:8090/health). `fc27.ps1 Estado` informa el puerto efectivo; una instalación nueva usa 8080 por defecto.
 
 Una instalación nueva crea un perfil vacío y referencias documentales, sin cartas propias. El arranque normal no carga demo, incluso si conserva una variable `SEED_DEMO` heredada. Los fixtures sintéticos pertenecen exclusivamente al entorno de pruebas desechable.
 
@@ -42,7 +48,7 @@ Una instalación nueva crea un perfil vacío y referencias documentales, sin car
 
 1. Crea un respaldo de tu instalación antes de actualizar.
 2. Prepara imágenes identificadas por commit, restaura el respaldo en un entorno aislado y revisa el procedimiento de actualización antes de aplicarlo al principal.
-3. Alembic llega a `0014`: conserva cartas, saldos y reglas históricas. Las copias y definiciones sin evidencia vigente quedan fuera de las funciones activas, sin borrarse.
+3. El esquema actual llega a `0021`: conserva cartas, saldos y reglas históricas. Las copias y definiciones sin evidencia vigente quedan fuera de las funciones activas, sin borrarse. No migrar desde un checkout antiguo.
 4. Abre el registro manual FC27. Revisa las declaraciones en cuarentena contra el catálogo exacto; una marca manual no certifica una variante ni recupera saldos históricos.
 
 No cambies los nombres de los volúmenes ni uses `docker compose down -v` para actualizar. [Guía de actualización FC27](docs/FC27_UPGRADE.md).

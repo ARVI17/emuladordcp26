@@ -1,7 +1,12 @@
 ﻿[CmdletBinding()]
-param([ValidateSet('Inicio','Estado','Pruebas','Parada')][string]$Accion = 'Estado')
+param([ValidateSet('Inicio','Estado','Pruebas','Parada','Memoria')][string]$Accion = 'Estado')
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
+if ($Accion -eq 'Memoria') {
+    & python (Join-Path $projectRoot 'scripts/project_status.py')
+    if ($LASTEXITCODE -ne 0) { throw 'No se pudo actualizar la memoria operativa.' }
+    exit 0
+}
 function Invoke-Docker([string[]]$Arguments) {
     $result = & docker @Arguments
     if ($LASTEXITCODE -ne 0) { throw "Docker falló (código $LASTEXITCODE)." }
@@ -78,3 +83,5 @@ if ($Accion -ne 'Parada') {
         Write-Output ("Versión servida: {0} | {1}" -f $build.revision,$build.environment)
     } catch { Write-Warning 'La API todavía no responde; no se acredita la versión servida.' }
 }
+& python (Join-Path $projectRoot 'scripts/project_status.py')
+if ($LASTEXITCODE -ne 0) { Write-Warning 'La operación terminó, pero falta actualizar state/continuity/latest.md.' }

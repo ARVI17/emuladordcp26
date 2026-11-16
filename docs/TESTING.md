@@ -1,5 +1,27 @@
 # Pruebas del planificador FC27
 
+## Continuidad y auditoría actual · 16 de noviembre de 2026
+
+**La aplicación completa no pasa hoy.** Su revisión de formaciones, contenido y catálogo venció el 10-nov; la suite histórica esperaba esos datos vigentes. Se conserva la guarda de producción y se registra KNOW-1 como siguiente trabajo. No se cambió el reloj ni se alargaron fechas para ocultar estos fallos.
+
+| Ejecución | Resultado y alcance |
+| --- | --- |
+| `python -m unittest discover -s scripts/tests -p test_project_status.py -v` | PASA: 14 pruebas nuevas; repetidas durante revisión. Diagnóstico sin secretos/mutaciones, ausencia de evidencia, fechas, informes focalizados/fallidos, cierre y cancelación |
+| `python -m unittest discover -s scripts/tests -v` | PASA: 23 pruebas, incluidas las nueve guardas Docker anteriores |
+| `python scripts/project_status.py --render-plan` y `--check` | PASA: JSON, estados/dependencias, evidencias y vista generada |
+| `python scripts/verify_docker.py --scope full --subnet 10.231.27.0/24 --build-environment local` · **acb4979c15** | FALLA: **251 Pytest pasan, 68 fallan** en 391,45 s. Build, arranque, health/OpenAPI y Alembic current/check PASA |
+| `python scripts/verify_docker.py --scope backend --pytest-path test_content_boundary.py --pytest-path test_variant_boundary.py --subnet 10.231.27.0/24` · **65a7a5d1b1** | FALLA repetida: **4 pasan, 8 fallan**, 10,00 s. Reproduce formaciones vacías, contenido/referencias caducados y variantes no admitidas; build/arranque/health/OpenAPI/Alembic PASA |
+| Vitest, Playwright y extensión nuevos | NO_EJECUTADA: la integral se detuvo al fallar Pytest; no se presenta el pase del 5-nov como actual |
+| Operación personal | PASA: Inicio reutiliza IDs; Estado/Memoria generan el diagnóstico. Cinco servicios saludables, frontend/API 8a80860, schema 0021 |
+| Diff, sintaxis y enlaces | PASA: sintaxis Python, enlaces Markdown locales revisados y diff sin errores. Dos espacios finales de documentación se corrigieron y se repitió el chequeo |
+| Cuenta EA, 20 cartas personales, permiso nativo real, Safari, ADB físico e inferencia GPU | NO_EJECUTADA |
+
+Ambos verificadores usan **HEAD base 4ed6d4803ceac58aa0411883ff0c2462e3bcf3b1 con source_dirty=true** por el sprint en curso y el cambio ajeno preservado. El código de aplicación no difiere de 8a80860; estos resultados no se atribuyen a un commit posterior. El verificador cerró sus recursos por identidad en ambos intentos; `main_stack_unchanged=true` y `volumes_unchanged=true`. Los informes privados completos están en state/sprints con esos IDs. El diagnóstico se regeneró incluso tras FALLA y conserva separado el último pase histórico de noviembre 5.
+
+Reproducción documentada: `verified_formations()` devuelve vacío fuera de su intervalo; las primeras aserciones de `test_content_boundary.py` esperan datos antes de ese vencimiento. `fc27_references.json` contiene 29 registros documentados vencidos y 21 pendientes; el paquete de contenido, tres registros vencidos; `fc27_variants.json`, 22 variantes vencidas y tres pendientes. La falta de vigencia es una condición real del producto, además de la dependencia temporal de pruebas históricas. El siguiente incremento debe contrastar fuentes, actualizar evidencia explícita y separar escenarios con reloj controlado de pruebas de rechazo por caducidad.
+
+Sin cambios de aplicación/esquema ni actualización de datos, no se ejecutó otro backup/restore o despliegue. Se conservan los respaldos anteriores y la consulta READ ONLY actual; un despliegue futuro exige respaldo reciente restaurado.
+
 ## Incremento visual · 5 de noviembre de 2026
 
 Resultados y comandos actuales en [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md); los apartados inferiores son históricos. Se verifica con `python scripts/verify_docker.py --scope full --subnet 10.231.27.0/24 --build-environment local`, solo si esa subred está libre. Mantiene bases tmpfs y limpieza por identidad. El test de captura usa una pista real de canvas con contenido sintético y Tesseract real; un proxy loopback efímero dentro del contenedor permite probar un origen seguro real. El producto continúa exigiendo origen seguro/localhost. No es una prueba del permiso nativo ni una sesión EA real.
