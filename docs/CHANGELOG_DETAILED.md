@@ -1,5 +1,10 @@
 # Cambios detallados
 
+## 16 de noviembre de 2026 · formaciones y catálogo revalidados
+
+La revisión vencida bloqueaba recomendaciones y las prácticas tenían otro corte fijo. Ahora las formaciones tienen evidencia individual y las prácticas usan sus referencias. Veinte variantes se mantienen documentadas; Nuno Mendes y Sophia Wilson requieren contraste entre presentación estándar/holográfica. La migración 0022 conserva revisiones locales y recibos previos, sin modificar inventario. Las pruebas de flujo usan ventanas temporales explícitas y otras pruebas verifican los límites reales versionados. Memoria incluye vigencia de formaciones y una guía de aceptación con 20 cartas reales. [Fuentes](SOURCE_REVIEW_20261116.md), [resultados](TESTING.md).
+
+
 ## 16 de noviembre de 2026 · continuidad y objetivo competitivo
 
 Antes: el relevo apuntaba a una rama/corte antiguos y el estado estaba repartido entre documentos históricos. Ahora: PROJECT_STATE.json define hitos y criterios, PROJECT_STATUS.md es su vista generada, MASTER_PROMPT.md prioriza la plantilla competitiva y NEXT_SESSION.md conserva el siguiente incremento exacto.

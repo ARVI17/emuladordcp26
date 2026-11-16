@@ -1,9 +1,9 @@
 {
   "game_version": "FC27",
-  "verified_at": "2026-10-12T00:08:00+00:00",
+  "verified_at": "2026-11-16T22:10:56+00:00",
   "validation_status": "documented",
-  "observed_at": "2026-10-12T00:08:00+00:00",
-  "valid_until": "2026-11-10T00:00:00+00:00",
+  "observed_at": "2026-11-16T22:10:56+00:00",
+  "valid_until": "2026-12-16T22:10:56+00:00",
   "features": [
     {
       "id": "gallery",
@@ -40,23 +40,26 @@
     {
       "game_version": "FC27",
       "validation_status": "documented",
-      "observed_at": "2026-10-12T00:08:00+00:00",
-      "valid_until": "2026-11-10T00:00:00+00:00",
+      "observed_at": "2026-11-16T22:10:56+00:00",
+      "valid_until": "2026-12-16T22:10:56+00:00",
       "title": "FC27: Ultimate Team Deep Dive",
       "url": "https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive",
-      "published_at": "2026-08-02"
+      "published_at": "2026-08-02",
+      "review_id": "sources-20261116"
     },
     {
       "game_version": "FC27",
       "validation_status": "documented",
-      "observed_at": "2026-10-12T00:08:00+00:00",
-      "valid_until": "2026-11-10T00:00:00+00:00",
+      "observed_at": "2026-11-16T22:10:56+00:00",
+      "valid_until": "2026-12-16T22:10:56+00:00",
       "title": "FC27: actualización de lanzamiento de Ultimate Team",
       "url": "https://www.ea.com/games/ea-sports-fc/fc-27/news/fc-27-fut-developer-launch-update",
-      "published_at": "2026-10-01"
+      "published_at": "2026-10-01",
+      "review_id": "sources-20261116"
     }
   ],
   "scoring": null,
   "scoring_status": "pending_verification",
-  "scoring_notice": "Tabla de puntos pendiente de verificación FC27. No se calculan valores a partir de una tabla no acreditada."
+  "scoring_notice": "Tabla de puntos pendiente de verificación FC27. No se calculan valores a partir de una tabla no acreditada.",
+  "review_id": "sources-20261116"
 }

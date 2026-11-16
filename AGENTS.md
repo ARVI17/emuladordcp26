@@ -1,5 +1,8 @@
 # Guía de trabajo · Club Lab FC27
 
+Revalidación 16-nov-2026 en curso: fuentes contrastadas en [SOURCE_REVIEW_20261116](docs/SOURCE_REVIEW_20261116.md); migración controlada **0022**, 11 identificadores de formación y 20 variantes, R33/R49 pendientes. [Primera carga real](docs/REAL_CLUB_FIRST_LOAD.md). Consultar NEXT_SESSION/TESTING para resultados y versión efectivamente desplegada; los cortes inferiores son históricos.
+
+
 Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa afectada antes de cambiar datos, arquitectura o contratos. Las [invariantes detalladas](docs/IMPLEMENTATION_RULES.md) mantienen las protecciones de importación, ADB, OCR, consumos y restauración.
 
 ## Memoria y prioridad del producto

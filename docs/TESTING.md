@@ -1,5 +1,18 @@
 # Pruebas del planificador FC27
 
+## Revalidación de fuentes · 16-nov-2026
+
+Fuentes y alcance: [SOURCE_REVIEW_20261116](SOURCE_REVIEW_20261116.md). Migración nueva 0022, pruebas de fechas independientes del calendario de ejecución y conservación de revisiones locales.
+
+Primer integral **72f8130bf5**, base 0e56d9e con cambios locales: **322 Pytest pasan, 3 fallan** (412,39 s). Los tres fallos eran de test_practice.py: un reloj antiguo fijado al 20-oct hacía futura la nueva evidencia. Se retiró esa fixture; las pruebas explícitas de rechazo antes/después de la revisión permanecen. Build, arranque, salud, OpenAPI, Alembic y limpieza pasaron; instalación personal y volúmenes sin cambios. No se ejecutaron frontend/extensión tras ese fallo. Repetición **1f3fea614e**: **325 Pytest y 42 Vitest pasan**; Playwright **37 pasan, 2 fallan, 1 omitido**. Ambos fallos eran de práctica en móvil/escritorio: e2e_app.py conservaba otro reloj fijo de octubre. Se retiró también ese reloj; el arnés de navegador conserva la fecha real y la vigencia efectiva de la aplicación. Extensión no ejecutada tras el fallo. No contar este informe como pase integral. Instalación y volúmenes intactos.
+
+Pase corregido **1999b6a92d**, scope full con selección explícita de cuatro archivos backend: **22 Pytest, 42 Vitest, 39 Playwright y 14 extensión pasan**, con un caso canvas móvil omitido. Incluye build, arranque, HTTP, Alembic y limpieza; principal/volúmenes intactos. Es un pase focalizado, no un integral backend. Pendiente repetición integral desde commit limpio.
+
+Herramientas: **23 pruebas pasan**, incluida caducidad de las formaciones en el diagnóstico. Respaldo nuevo restaurado en base separada: **46 tablas idénticas, 132 jugadores**. Primer comando del ensayo de migración rechazado antes de conectar por URL de copia incompleta (DATABASE_URL vacío en la instalación); corregido usando POSTGRES_DB de la copia. Este error del arnés privado no modificó ninguna tabla. Ensayo corregido: migración 0022 aprobada, 44 tablas intactas y cambios exclusivos en catálogo/revisión; 20 variantes vigentes y 2 pendientes. Las imágenes anteriores se conservaron y su código lee la copia migrada en transacción READ ONLY. Resultado final de despliegue en NEXT_SESSION.
+
+Los resultados de continuidad que siguen son anteriores a esta corrección.
+
+
 ## Continuidad y auditoría actual · 16 de noviembre de 2026
 
 **La aplicación completa no pasa hoy.** Su revisión de formaciones, contenido y catálogo venció el 10-nov; la suite histórica esperaba esos datos vigentes. Se conserva la guarda de producción y se registra KNOW-1 como siguiente trabajo. No se cambió el reloj ni se alargaron fechas para ocultar estos fallos.

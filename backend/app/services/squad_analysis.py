@@ -5,7 +5,7 @@ Protection is derived here so a squad never overwrites a manual player flag.
 """
 
 from collections import Counter, defaultdict
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 import unicodedata
 
 from sqlalchemy import or_, select
@@ -15,19 +15,9 @@ from app.models.entities import Player, Squad, SquadPlayer
 from app.services.editions import current_version
 from app.services.rating import calculate_rating
 
-FORMATIONS = {
-    "4-2-1-3": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MCO", "ED", "DC", "EI"],
-    "4-2-3-1 abierta": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MD", "MCO", "MI", "DC"],
-    "4-4-1-1 mediocampo": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "MCO", "DC"],
-    "4-3-1-2": ["POR", "LD", "DFC", "DFC", "LI", "MC", "MC", "MC", "MCO", "DC", "DC"],
-    "4-1-2-1-2 estrecha": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "MCO", "DC", "DC"],
-    "4-3-3": ["POR", "LD", "DFC", "DFC", "LI", "MC", "MC", "MC", "ED", "DC", "EI"],
-    "4-3-3 Holding": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "ED", "DC", "EI"],
-    "4-4-2": ["POR", "LD", "DFC", "DFC", "LI", "MD", "MC", "MC", "MI", "DC", "DC"],
-    "4-2-3-1": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MCD", "MCO", "MCO", "MCO", "DC"],
-    "4-1-2-1-2": ["POR", "LD", "DFC", "DFC", "LI", "MCD", "MC", "MC", "MCO", "DC", "DC"],
-    "3-5-2": ["POR", "DFC", "DFC", "DFC", "MD", "MCD", "MCD", "MCO", "MI", "DC", "DC"],
-}
+from app.services.public_data import read_public_data, active_review
+
+FORMATIONS = {key: row['slots'] for key, row in read_public_data('fc27_formations.json')['items'].items()}
 POSITION_ALIASES = {"GK": "POR", "RB": "LD", "CB": "DFC", "LB": "LI", "RWB": "CAD", "LWB": "CAI", "CDM": "MCD", "CM": "MC", "CAM": "MCO", "RM": "MD", "LM": "MI", "RW": "ED", "LW": "EI", "CF": "SD", "ST": "DC"}
 ATTRIBUTE_WEIGHTS = {
     "POR": {"diving": 25, "handling": 20, "reflexes": 25, "positioning": 20, "kicking": 5, "speed": 5},
@@ -103,21 +93,25 @@ def formation_slots(formation: str) -> list[dict]:
 
 
 def formations_data() -> dict:
+    reviews = read_public_data('fc27_formations.json')['items']
     return {"game_version": "FC27", "items": [{"id": key, "name": key, "slots": formation_slots(key),
-        "source_url": formation_source(key), "reviewed_on": "2026-10-12", "valid_until": "2026-11-10",
+        "source_url": reviews[key]['source_url'], "reviewed_on": reviews[key]['observed_at'][:10],
+        "valid_until": reviews[key]['valid_until'],
         "validation_status": "documented", "tactic_status": "local_hypothesis", "import_code": None} for key in verified_formations()]}
 
 
 def verified_formations():
-    return FORMATIONS if date(2026, 10, 12) <= datetime.now(timezone.utc).date() <= date(2026, 11, 10) else {}
+    reviews = read_public_data('fc27_formations.json')
+    if reviews.get('game_version') != 'FC27':
+        return {}
+    return {key: slots for key, slots in FORMATIONS.items()
+            if (row := reviews.get('items', {}).get(key)) and row.get('slots') == slots
+            and row.get('source_url', '').startswith('https://')
+            and active_review(row, datetime.now(timezone.utc))}
 
 
 def formation_source(key):
-    if key in {'4-3-3', '4-3-3 Holding', '3-5-2'}:
-        return 'https://www.fut.gg/tactics/' + key.lower().replace(' ', '-') + '/'
-    if key == '4-3-1-2':
-        return 'https://note.com/yuyugamesyoutube/n/nf627565b75df'
-    return 'https://nealguides.com/best-fc-27-formations/'
+    return read_public_data('fc27_formations.json')['items'][key]['source_url']
 
 
 def normalized_position(position: str) -> str:

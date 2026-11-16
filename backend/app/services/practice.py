@@ -1,5 +1,6 @@
 """Own practice hypotheses; cited mechanics do not establish a universal meta."""
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
+from app.services.public_data import read_public_data, active_review
 
 SOURCES = {
     'R09': {'title': 'EA · Gameplay Deep Dive', 'url': 'https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-gameplay-deep-dive', 'published_on': '2026-07-29', 'kind': 'official'},
@@ -16,10 +17,14 @@ DRILLS = {
 
 
 def catalog():
-    due = datetime.now(timezone.utc).date() > date(2026, 10, 25)
-    return {'game_version': 'FC27', 'reviewed_on': '2026-10-11', 'patch_verified': False,
+    refs = {row['id']: row for row in read_public_data('fc27_references.json')}
+    rows = [refs.get(key, {}) for key in SOURCES]
+    due = not all(active_review(row, datetime.now(timezone.utc)) for row in rows)
+    reviewed = min((row.get('verified_at', '') for row in rows), default='')[:10] or None
+    return {'game_version': 'FC27', 'reviewed_on': reviewed, 'patch_verified': False,
             'review_due': due, 'sources': SOURCES if not due else {}, 'drills': DRILLS if not due else {},
-            'notice': 'Ejercicios propios e hipótesis contrastables. Revisión documental del 11-oct-2026; no acredita tu parche ni configuración. Comprueba los controles en el juego.'}
+            'notice': 'Ejercicios propios e hipótesis contrastables. La revisión documental no acredita tu parche ni configuración. Comprueba los controles en el juego.'}
+
 
 
 def build_agenda(focus, minutes, platform):

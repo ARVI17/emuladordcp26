@@ -165,7 +165,10 @@ def test_content_pack_validation_is_atomic(client):
 
 
 def test_failed_news_refresh_preserves_last_success(client, monkeypatch):
-    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':'2026-10-09','game_version':'FC27','validation_status':'documented','observed_at':'2026-10-10T00:00:00+00:00','valid_until':'2026-11-10T00:00:00+00:00'}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
+    from datetime import datetime, timedelta, timezone
+    observed = datetime.now(timezone.utc) - timedelta(days=1)
+    until = observed + timedelta(days=2)
+    monkeypatch.setattr('app.api.fc27.fetch_news', lambda version: {'articles':[{'title':'EA test','url':'https://www.ea.com/games/ea-sports-fc/fc-27/news/test','published_at':'2026-10-09','game_version':'FC27','validation_status':'documented','observed_at':observed.isoformat(),'valid_until':until.isoformat()}],'last_checked':'2026-10-09T12:00:00Z','refresh_error':None})
     assert client.post('/content/refresh').json()['articles'][0]['title'] == 'EA test'
     def failed(_): raise RuntimeError('sensitive internal value')
     monkeypatch.setattr('app.api.fc27.fetch_news', failed)
