@@ -79,7 +79,12 @@ test('one CTA reads 300/10 fragments; reviewed trust admits next shown page, wor
   expect((await send('status')).workflow.report.metrics.llm_calls).toBe(0)
   // A declared account change pauses before reading the new page.
   await page.locator('section').evaluate(el=>el.setAttribute('data-context-label','different-club'))
-  await expect.poll(async()=>(await send('status')).workflow.view.code).toBe('structure_changed')
+  // Worker recovery/serialized requests can outlast Playwright's default 5 s.
+  // Allow the existing 10 s transport deadline plus debounce, but first prove
+  // the watcher is stopped independently of the backend's diagnostic receipt.
+  await expect.poll(()=>panel.evaluate(async()=>Boolean((await chrome.storage.session.get('active')).active)),{timeout:15000}).toBe(false)
+  await page.locator('.rows').evaluate((el,html)=>el.innerHTML=html,cards(11,900))
+  await expect.poll(async()=>(await send('status')).workflow.view.code,{timeout:15000}).toBe('structure_changed')
   expect((await (await context.request.get(base+'/api/players',{headers})).json()).total).toBe(366)
   expect((await send('workflow-control',{action:'cancel'})).ok).toBe(true)
   await page.locator('.rows').evaluate((el,html)=>el.innerHTML=html,cards(11,999))
