@@ -1,5 +1,7 @@
 # Guía de trabajo · Club Lab FC27
 
+Cierre 17-nov-2026: **c9d7a78 / 0022 servido en 8090**, cinco servicios saludables. Veinte cartas reales revisadas desde texto visible de Chrome, seis atributos por carta y dos relecturas con los mismos IDs; 132 históricos intactos. Principal real y siete suplentes todavía pendientes de identificación/protección. Dos pases Docker corregidos (focalizado/integral). [Continuidad vigente](docs/NEXT_SESSION.md), [resultados y fallos](docs/TESTING.md). Los cortes inferiores son históricos.
+
 Cierre de revalidación 16-nov-2026: **96a8d21 / 0022 servido en 8090**, cinco servicios saludables, 132 históricos retirados y cero FC27 activos. Fuentes contrastadas en [SOURCE_REVIEW_20261116](docs/SOURCE_REVIEW_20261116.md): 11 identificadores de formación, 20 variantes y cinco pendientes; R33/R49 requieren contraste holográfico. Pases focalizado/integral y CI del código aprobados. [Resultados](docs/TESTING.md), [siguiente carga real](docs/REAL_CLUB_FIRST_LOAD.md), [recuperación y continuidad](docs/NEXT_SESSION.md). Los cortes inferiores son históricos.
 
 

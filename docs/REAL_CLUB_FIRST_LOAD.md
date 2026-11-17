@@ -1,6 +1,16 @@
 # Primera carga del club real
 
-Objetivo: revisar **20 cartas reales**, corregir dos lecturas, repetir dos vistas sin duplicar y proteger el once más siete suplentes. Chrome ya está conectado y la lista de veinte filas es legible por DOM. **Cero cartas admitidas**: dos lecturas OCR reales rechazaron la pantalla y terminaron la captura. Las pruebas automáticas aprobadas usan datos sintéticos; no completan este recorrido personal.
+**Corte 17-nov-2026: primera carga realizada.** Veinte cartas reales revisadas desde Chrome y dos lecturas nuevas con los mismos IDs, sin duplicados. Seis atributos por carta; posiciones EN/ES normalizadas. La UI muestra las 20 copias. El once y los siete suplentes reales todavía no se han identificado ni protegido. [Continuidad y recuperación](NEXT_SESSION.md).
+
+## Vía sencilla disponible
+
+En el contexto asistido existente, abre **Mi cuenta → Leer cartas desde texto visible**. El agente puede leer las filas visibles de Chrome conectado y trasladarlas como `MEDIA POSICIÓN NOMBRE | ATRIBUTOS`; también puedes transcribirlas. **Preparar revisión del texto** solo crea candidatas. Contrasta nombres, medias, posiciones y atributos; deja desconocido lo que no se vea. Confirma edición/propiedad/correspondencia y escribe `GUARDAR OBSERVACION` para guardar.
+
+Repetir la misma página reutiliza el recibo. Para una observación nueva, cambia su etiqueta de página y selecciona explícitamente cada copia local que corresponda. Una coincidencia de nombre no acredita por sí sola identidad. Las filas ambiguas o retiradas se bloquean, sin fusionarlas ni reactivarlas. Esta vía declara `user_reviewed_text`, nunca identidad EA verificada; su cobertura sigue siendo parcial. [Contrato y límites](ASSISTED_READING.md).
+
+**Siguiente paso:** observar la plantilla activa en EA, revisar los once puestos y siete suplentes y registrar su protección. El lector de texto actual solo admite inventario; una principal necesita ámbito plantilla y puestos explícitos. No inferirla del orden de las 20 cartas. No hace falta instalar otra extensión para conservar esta carga.
+
+Las rutas y los rechazos OCR descritos a continuación corresponden al **16-nov**, antes de esta carga. No representan el estado de inventario actual.
 
 ## Rutas gratuitas contrastadas (16-nov-2026)
 

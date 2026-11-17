@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "reviewed_on": "2026-11-16",
+  "reviewed_on": "2026-11-17",
   "mission": "Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.",
-  "sprint": "Chrome conectado, rutas gratuitas contrastadas y rechazo OCR real reproducido dos veces",
-  "next_action": "Simplificar la entrada al contexto asistido existente: contrastar el lector WXT instalado y una región visible con posiciones EN/ES antes de admitir veinte cartas. Chrome ya está conectado; el administrador de extensiones está bloqueado al agente y el OCR real rechazó dos lecturas. FUTWIZ gratuito sirve para consultar plantillas, sin exportación completa a Club Lab acreditada. Dos relecturas reales y protección del once más siete siguen pendientes. Seguir docs/REAL_CLUB_FIRST_LOAD.md.",
+  "sprint": "Lector bilingüe y veinte cartas reales revisadas con dos relecturas sin duplicados",
+  "next_action": "Conservar el contexto asistido actual y observar la plantilla activa en EA: identificar once y siete suplentes por sus puestos, vincular las copias ya cargadas y registrar su protección local. La entrada de texto actual solo admite inventario; la principal requiere una lectura de ámbito plantilla con puestos revisados. Después completar los metadatos necesarios y comparar tres alternativas. Ver docs/NEXT_SESSION.md.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,7 +54,7 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "Chrome conectado y veinte filas reales legibles por DOM; cero cartas admitidas. Dos capturas reales llegaron al OCR y fueron rechazadas, con captura detenida. WXT 0.5.1 pasa dos suites sintéticas, pero no se cargó en Chrome: administrador bloqueado al agente. Falta contraste del lector real, normalización EN/ES, revisión y admisión; no sustituirlas por CSV/catálogo.",
+      "gap": "20 cartas reales cargadas desde texto visible de Chrome, revisadas en la UI; dos lecturas nuevas conservan exactamente los mismos 20 IDs. Seis atributos por carta, posiciones EN/ES normalizadas y 132 históricos intactos. Cobertura parcial y propiedad declarada, sin identidad EA autenticada. La aceptación del OCR gráfico real y de otros grupos/copias legítimas sigue pendiente; no confundirla con esta entrada de texto ni con los ensayos sintéticos.",
       "acceptance": [
         "Login por el usuario y captura por gesto; pausa, cancelación y salida terminan el flujo sin persistir imágenes o credenciales.",
         "20 cartas reales revisadas, dos correcciones y reescaneo idempotente. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.",
@@ -67,7 +67,11 @@
         "backend/tests/test_visual_scan.py",
         "docs/REAL_CLUB_FIRST_LOAD.md",
         "extension/entrypoints/sidepanel/main.ts",
-        "extension/tests/first20.spec.ts"
+        "extension/tests/first20.spec.ts",
+        "backend/app/services/browser_text.py",
+        "backend/tests/test_browser_text.py",
+        "frontend/src/components/BrowserTextReader.tsx",
+        "frontend/e2e/browser-text.spec.ts"
       ]
     },
     {
@@ -78,7 +82,7 @@
       "depends_on": [
         "DATA-1"
       ],
-      "gap": "Dos relecturas sintéticas conservan veinte IDs y revisiones repetidas no multiplican copias. Falta contrastar variantes y correspondencia de copias reales; no hay identificadores EA canónicos acreditados.",
+      "gap": "Dos relecturas reales de las primeras veinte filas conservan sus IDs con correspondencia explícita, sin duplicados. No hay ID canónico EA ni contraste de variantes, cesiones, Evos o transferibilidad; los campos no visibles permanecen desconocidos. Filas indistinguibles se bloquean y requieren revisión individual, sin fusionar copias legítimas automáticamente.",
       "acceptance": [
         "Nombre, media o confianza OCR no certifican por sí solos identidad, posesión, transferibilidad ni versión.",
         "Distinguir oro base, especiales, holográficas y Evo; ambigüedades exigen revisión y no se admiten por defecto.",
@@ -101,7 +105,7 @@
         "DATA-1",
         "DATA-2"
       ],
-      "gap": "Formaciones vigentes y cinco perfiles locales. Regresión sintética de once más siete protegidos; principal real aún no observada/registrada. Falta comparar tres alternativas con las cartas personales y sus carencias.",
+      "gap": "Ya hay veinte cartas personales con posición y seis atributos visibles. La principal real todavía no se observó ni protegió; no se infiere del orden de la lista. Siguiente paso: puestos explícitos del once y siete suplentes, formación y correspondencia de copias; luego completar metadatos y comparar tres alternativas. Las protecciones de 18 copias pasan en pruebas sintéticas.",
       "acceptance": [
         "Selección explícita de principal, banquillo y reservas; proteger sus copias frente a consumo/venta.",
         "Comparar al menos tres alternativas con once y siete suplentes, posiciones legales, fijados/excluidos, fortalezas y carencias. Reutilizar protegidas para jugar.",

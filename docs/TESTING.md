@@ -1,5 +1,27 @@
 # Pruebas del planificador FC27
 
+## Texto bilingüe y carga personal · 17-nov-2026
+
+Código **c9d7a7859ca329e57df82ec02c0394439ee0eff7**, limpio, probado y servido en 8090/0022. Sin migración ni dependencias nuevas. Se normalizan las quince posiciones EN/ES en OCR y texto; `text-preview` prepara candidatas y la revisión exige propiedad/correspondencia explícitas. Se distingue `user_reviewed_text` de OCR, DOM autenticado y proveedor. También se corrige `PlayerCard`, que ocultaba las copias `visual_reviewed` aunque el backend las admitiera, y su edición conserva el formulario de preferencias.
+
+| Pase Docker aislado | Resultado y alcance |
+| --- | --- |
+| **6aac9ec7ef**, anterior a c9d7a78 | 68 Pytest y 42 Vitest pasan; fallan ambos casos nuevos de Playwright al localizar el selector por etiqueta. Corregido a selector por rol de combobox. No se ejecutó extensión tras el fallo. |
+| **021041e6c3**, anterior a c9d7a78 | 68 Pytest, 42 Vitest y 2 Playwright pasan; WXT 14 pasan/1 falla por timeout de recuperación (`workflow-poll`, refresco con 366 cartas). Se acotó la comprobación SQL adicional de texto a copias `browser_text`, evitando consultar el original grande para las demás procedencias. Los pases posteriores mantienen el límite de transporte y verifican recuperación completa. No se atribuye una medición aislada de rendimiento a esta hipótesis. |
+| **ce6a2e1f4d**, anterior a c9d7a78 | 69 Pytest, 43 Vitest y escritorio pasan; falla la navegación móvil final porque el test no abría el menú. Corregido el test para abrirlo y acotadas sus esperas. Extensión no ejecutada tras el fallo. |
+| **c0bcc46c8b**, c9d7a78 limpio | Pase focalizado: **69 Pytest, 43 Vitest, 2 Playwright y 15 WXT aprobados**. Los dos navegadores muestran las 20 cartas, corrigen un nombre y reutilizan los 20 IDs en dos lecturas nuevas. |
+| **5a5761c626**, c9d7a78 limpio | Pase integral: **366 Pytest, 43 Vitest, 41 Playwright y 15 WXT aprobados**. **Un canvas móvil omitido** conforme al arnés. |
+
+Ambos pases corregidos incluyen build/TypeScript, arranque, salud/OpenAPI, Alembic current/check 0022 y cierre por identidad. Todos los intentos conservaron instalación principal y volúmenes (`main_stack_unchanged=true`, `volumes_unchanged=true`). La advertencia de Starlette/httpx persiste; no fue un fallo. Herramientas: **23 pruebas aprobadas**. Capturas sintéticas de la lista revisadas; nombres de prueba, sin inventario personal. [CI del código aprobada](https://github.com/ARVI17/emuladordcp26/actions/runs/44081146919), comprobada después de la carga personal y separada de los pases locales.
+
+Cobertura backend nueva: las 15 posiciones de ambos idiomas, encabezados ingleses/españoles y rechazo de FC26, preview sin jugadores, correcciones de nombre/posición, dos lecturas nuevas con los mismos IDs, repetición semántica EN/ES, candado conservado y archivo protegido rechazado, propiedad/ordinal/contexto obligatorios, texto sensible/inválido/sobredimensionado sin borradores, filas indistinguibles bloqueadas y retirada sin resurrección. El conjunto sigue sin inferir principal por orden ni promover datos a verificación EA.
+
+**Despliegue personal:** imágenes exactas del integral limpio; cinco servicios saludables. Solo backend/frontend recreados; database/nginx/ollama mantienen ID y arranque. Nginx recargado; builds frontend/API coinciden y OpenAPI real contiene las dos rutas nuevas. Respaldo previo restaurado en `fc27_text_20261117`: **46 tablas idénticas, 132 históricos**, conservados también tras desplegar. Recuperación e imágenes anteriores preparadas; sin migración. Evidencia privada en `C:/Users/arvi_/emuladordcp26/state/browser-text-release-20261117/`.
+
+**Aceptación REAL realizada:** primera carga de 20 cartas desde filas visibles de Chrome, revisión en la UI y **dos lecturas nuevas**; cada revisión reutiliza exactamente los mismos 20 IDs. `Mi club` muestra 20 artículos y su procedencia de texto revisado. Las 20 medias/nombres/posiciones coinciden con la lista visible; seis atributos por carta. Una comprobación SQL posterior en transacción **READ ONLY** confirma conteo, IDs entre recibos, atributos y hash inalterado de los **132 históricos**. Sin inserciones SQL para cargar el club. Evidencia privada: `state/real-first20-20261117/acceptance.json`. Se guardó un dump adicional posterior a la carga; no se repitió su restauración. No se persistieron capturas reales ni credenciales.
+
+**Pendiente/no ejecutado:** observación/protección del once y siete suplentes personales; cobertura completa del club, variantes y copias indistinguibles reales, aceptación del OCR de fichas gráficas, navegación automática/paginación EA, acciones económicas, hardware ADB y Safari. Las correcciones de dos campos y la protección de 18 copias están verificadas con fixtures; no se presentaron como operaciones personales. Los dos rechazos OCR reales del 16-nov siguen siendo antecedentes válidos; la carga actual utiliza texto visible revisado. [Siguiente paso](NEXT_SESSION.md).
+
 ## WXT y primeras veinte copias · 16-nov-2026
 
 Extensión 0.5.1, base a8bd539 con cambios locales (`source_dirty=true`). Se corrige la referencia inexistente `resultú.groups` del panel: el informe pendiente y las propuestas calculadas deben renderizar sin excepciones. Sin cambios de backend, esquema o permisos de extensión. Instalación personal sin recrear: 96a8d21/0022 en 8090.
