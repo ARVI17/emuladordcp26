@@ -4,7 +4,7 @@
 
 El panel del lector podía lanzar una excepción por `resultú.groups` cuando existía un informe. Se corrige la clave y el acceso opcional a resultados pendientes. Nueva regresión compilada con Chromium/PostgreSQL aislados: veinte copias, dos relecturas sin multiplicarlas y protección explícita de once más siete, sin inferir principal del orden de una lista. No cambia API, migración, permisos ni selectores EA. [Resultados](TESTING.md).
 
-El diagnóstico de Chrome distingue dos extensiones: la conexión oficial del chat y WXT. Se observó la primera sin instalar; la aceptación del club real sigue abierta. Se actualiza el relevo con el bloqueo de verificación de URL y los pasos para contrastar el lector real sin eludir esa guarda. [Guía](REAL_CLUB_FIRST_LOAD.md), [continuidad](NEXT_SESSION.md).
+La extensión oficial del chat quedó instalada y Chrome conectado tras autorización expresa. Se leyeron veinte filas reales mediante DOM; no se admitieron cartas. La actualización WXT está empaquetada, pero el control del navegador bloquea su administrador. Dos lecturas con captura nativa activa reprodujeron el rechazo OCR de la pantalla real y terminaron la captura. Se contrastan alternativas gratuitas y se prioriza simplificar la entrada, sin añadir dependencias ni inventar evidencia de propiedad. La aceptación del club real sigue abierta. [Guía y fuentes](REAL_CLUB_FIRST_LOAD.md), [continuidad](NEXT_SESSION.md).
 
 ## 16 de noviembre de 2026 · formaciones y catálogo revalidados
 

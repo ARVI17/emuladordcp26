@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewed_on": "2026-11-16",
   "mission": "Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.",
-  "sprint": "WXT 0.5.1, regresión de veinte copias y conexión de Chrome para el club real",
-  "next_action": "Completar la conexión oficial de Chrome (observada sin instalar), cargar WXT 0.5.1 y contrastar un perfil EA en el contexto asistido existente. Revisar 20 cartas reales y dos nuevas lecturas sin duplicarlas; después registrar once y siete suplentes explícitos. Las pruebas sintéticas no cierran esa aceptación. Seguir docs/REAL_CLUB_FIRST_LOAD.md.",
+  "sprint": "Chrome conectado, rutas gratuitas contrastadas y rechazo OCR real reproducido dos veces",
+  "next_action": "Simplificar la entrada al contexto asistido existente: contrastar el lector WXT instalado y una región visible con posiciones EN/ES antes de admitir veinte cartas. Chrome ya está conectado; el administrador de extensiones está bloqueado al agente y el OCR real rechazó dos lecturas. FUTWIZ gratuito sirve para consultar plantillas, sin exportación completa a Club Lab acreditada. Dos relecturas reales y protección del once más siete siguen pendientes. Seguir docs/REAL_CLUB_FIRST_LOAD.md.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,7 +54,7 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "Cero cartas reales guardadas en este trabajo. WXT 0.5.1 corrige el panel y prueba veinte copias sintéticas; falta conectar Chrome, instalar/contrastar el lector EA y revisar veinte cartas personales. El bloqueo de URL no acredita un fallo OCR.",
+      "gap": "Chrome conectado y veinte filas reales legibles por DOM; cero cartas admitidas. Dos capturas reales llegaron al OCR y fueron rechazadas, con captura detenida. WXT 0.5.1 pasa dos suites sintéticas, pero no se cargó en Chrome: administrador bloqueado al agente. Falta contraste del lector real, normalización EN/ES, revisión y admisión; no sustituirlas por CSV/catálogo.",
       "acceptance": [
         "Login por el usuario y captura por gesto; pausa, cancelación y salida terminan el flujo sin persistir imágenes o credenciales.",
         "20 cartas reales revisadas, dos correcciones y reescaneo idempotente. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.",
