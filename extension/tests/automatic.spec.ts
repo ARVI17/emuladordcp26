@@ -103,6 +103,19 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
    stage('waiting_first_page')
    await refreshHeaders()
    await expect.poll(async()=>(await request('/browser-auto/status')).progress?.pages_read||0,{timeout:120000}).toBeGreaterThan(0)
+   // Suppress the content script's three immediate transport retries in this
+   // disposable fixture, so they cannot hide a missing alarm-based recovery.
+   const recoveryWorker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
+   await bounded(recoveryWorker.evaluate(async()=>{
+    const tabs=await chrome.tabs.query({url:'https://www.ea.com/*'})
+    if(tabs.length!==1||!tabs[0]?.id)throw Error('Missing isolated EA fixture tab')
+    await chrome.scripting.executeScript({target:{tabId:tabs[0].id},func:()=>{
+     const runtime=chrome.runtime as unknown as {sendMessage:(message:any)=>Promise<unknown>}
+     const original=runtime.sendMessage.bind(runtime),until=Date.now()+10000
+     runtime.sendMessage=message=>message?.kind==='browser-auto-step-result'&&Date.now()<until
+      ?Promise.reject(Error('Synthetic temporary transport loss')):original(message)
+    }})
+   }),'temporary_content_transport_loss')
    stage('stopping_worker')
    const cdp=await bounded(context.newCDPSession(page),'cdp_session'),targets=await bounded(cdp.send('Target.getTargets'),'worker_target')
    const target=targets.targetInfos.find((t:any)=>t.type==='service_worker'&&t.url.startsWith('chrome-extension://'))
