@@ -28,12 +28,21 @@ show('inventory');
 for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`automatic open ${spanish?'ES':'EN'}: ${total} copies twice again, XI and seven locked`,async()=>{
  test.setTimeout(420000)
  let base=''
+ let interruptedProgress=false
  const server=http.createServer(async(req,res)=>{
   const chunks:Buffer[]=[];for await(const chunk of req)chunks.push(Buffer.from(chunk))
   const headers=Object.fromEntries(Object.entries(req.headers).filter(([,v])=>typeof v==='string')) as Record<string,string>
   // Nginx forwards Host $host without the test proxy's ephemeral port.
   if(headers.origin===base)headers.origin='http://localhost'
-  const proxy=http.request((process.env.READER_TEST_UPSTREAM||'http://nginx')+req.url,{method:req.method,headers:{...headers,host:'localhost:8090'}},r=>{res.writeHead(r.statusCode||502,r.headers);r.pipe(res)})
+  const proxy=http.request((process.env.READER_TEST_UPSTREAM||'http://nginx')+req.url,{method:req.method,headers:{...headers,host:'localhost:8090'}},r=>{
+   // Kill the worker in the exact gap between durable progress and the next
+   // command: no content-script event remains to wake it. Only its alarm can.
+   if(total>20&&!interruptedProgress&&req.url==='/api/browser-auto/progress'&&JSON.parse(Buffer.concat(chunks).toString()).pages_read===1){
+    interruptedProgress=true;r.resume()
+    const timer=setTimeout(()=>res.destroy(),30000);timer.unref();res.on('close',()=>clearTimeout(timer));return
+   }
+   res.writeHead(r.statusCode||502,r.headers);r.pipe(res)
+  })
   proxy.on('error',()=>{res.statusCode=502;res.end()});proxy.end(Buffer.concat(chunks))
  })
  await new Promise<void>(resolve=>server.listen(0,'0.0.0.0',resolve))
@@ -102,6 +111,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   }
   stage('waiting_first_publication')
   await waitUpdated()
+  if(total>20)expect(interruptedProgress).toBe(true)
   await expect(panel).toContainText('principal y suplentes protegidos',{timeout:150000})
   // Refresh request headers after the SPA creates its entry; the extension never gets them.
   await refreshHeaders()

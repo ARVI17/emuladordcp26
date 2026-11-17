@@ -8,7 +8,12 @@ export function installBrowserAuto(){
  let serial=Promise.resolve()
  const enqueue=(fn:()=>Promise<unknown>)=>{const next=serial.then(fn);serial=next.then(()=>{},()=>{});return next}
  const load=async():Promise<Record<string,Job>>=>(await chrome.storage.session.get('autoJobs')).autoJobs||{}
- const save=(jobs:Record<string,Job>)=>chrome.storage.session.set({autoJobs:jobs})
+ const alarmName='club-lab-auto-resume'
+ const schedule=async(jobs:Record<string,Job>)=>{
+  if(Object.keys(jobs).length)await chrome.alarms.create(alarmName,{periodInMinutes:0.5})
+  else await chrome.alarms.clear(alarmName)
+ }
+ const save=async(jobs:Record<string,Job>)=>{await chrome.storage.session.set({autoJobs:jobs});await schedule(jobs)}
  const request=async(job:Job,path:string,body:unknown)=>{
   const r=await fetch(job.base+'/api/'+path,{method:'POST',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json','X-Reader-Extension':chrome.runtime.id,...(job.credential?{Authorization:'Bearer '+job.credential}:{})},body:JSON.stringify(body),signal:AbortSignal.timeout(25000)})
   if(!r.ok)throw Error('backend');return r.json()
@@ -35,6 +40,24 @@ export function installBrowserAuto(){
   const code=error instanceof Error?error.message:''
   await stop(job,['login_required','permission_required','page_changed','cancelled','timeout'].includes(code)?code:'page_changed')
  }
+ // A worker can stop after saving a step but before delivering its command.
+ // The alarm wakes it even when the content script has no result left to send.
+ chrome.alarms.onAlarm.addListener(alarm=>{
+  if(alarm.name!==alarmName)return
+  void enqueue(async()=>{
+   const jobs=await load()
+   if(!Object.keys(jobs).length){await schedule(jobs);return}
+   for(const job of Object.values(jobs))try{
+    if(Date.now()-job.started>30*60*1000)throw Error('timeout')
+    if(job.publication){
+     await request(job,'browser-auto/publish',job.publication)
+     const remaining=await load();delete remaining[job.base];await save(remaining)
+    }else await dispatch(job,job.phase,true)
+   }catch(error){await fail(job,error)}
+  }).catch(()=>{})
+ })
+ // An old alarm after a browser restart finds no session job and is removed.
+ void enqueue(async()=>schedule(await load())).catch(()=>{})
  chrome.permissions.onRemoved.addListener(()=>{void enqueue(async()=>{for(const job of Object.values(await load()))await stop(job,'permission_required')})})
  chrome.tabs.onRemoved.addListener(id=>{void enqueue(async()=>{for(const job of Object.values(await load()))if(job.tabId===id)await stop(job)})})
  chrome.runtime.onMessage.addListener((message,sender,reply)=>{
