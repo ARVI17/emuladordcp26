@@ -1,6 +1,12 @@
 # Estado verificable
 
-## Actualización automática exigida · 17-nov-2026
+## WXT automático implementado y desplegado · 17-nov-2026
+
+**988bbbd/0023 en 8090**, cinco servicios saludables. WXT 0.6.0 y el panel de cuenta añaden preferencia inicial, inicio por apertura, lector DOM EN/ES de primeras veinte/plantilla, publicación idempotente y candados por puestos. [Contrato y límites](AUTOMATIC_CLUB_SYNC.md). Dos pases WXT (17 cada uno) y el integral limpio (371 Pytest, 43 Vitest, 41 Playwright, 17 WXT; un móvil omitido) aprobados; CI del código aprobada. Migración ensayada en copia restaurada y datos previos conservados. [Resultados y fallos](TESTING.md).
+
+**Pendiente real:** Chrome no detectó 0.6.0; su instalación en el administrador protegido queda al propietario. El artefacto está preparado con hashes y guía. La app nueva se observó, pero no publicó recibos automáticos personales ni guardó la principal real. Veinte copias asistidas conservadas; once/siete suplentes/reservas observados puntualmente en EA, sin protección local acreditada. Mercado/DCP automáticos aún no implementados. [Continuidad exacta](NEXT_SESSION.md).
+
+## Antecedente: actualización automática exigida · 17-nov-2026
 
 El propietario rechaza la carga manual como recorrido habitual. Se incorpora **AUTO-1 pendiente** y se corrigen prompt maestro, criterios y relevo. [Fuentes y diseño por contrastar](AUTOMATIC_CLUB_SYNC.md). No se implementó ni desplegó un sincronizador durante esta revisión: los cambios son documentales. La aplicación conserva **c9d7a78/0022**, veinte cartas de texto revisado y principal personal sin proteger. Las dos relecturas anteriores no acreditan actualización automática.
 

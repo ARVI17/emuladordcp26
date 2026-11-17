@@ -1,5 +1,11 @@
 # Cambios detallados
 
+## 17 de noviembre de 2026 · WXT 0.6.0 y actualización al abrir
+
+La app **988bbbd/0023** despliega el puente local solicitado: consentimiento inicial por contexto, inicio por apertura, lectura DOM EN/ES parcial de veinte y plantilla, conciliación conservadora y protección por puestos. Credencial local temporal fuera de la página; sin cookies/credenciales EA, API privada ni operaciones económicas. El usuario ve estado, última lectura y cancelación. Identidad visual limitada y procedencia explícita, sin promoverla a proveedor oficial. [Contrato](AUTOMATIC_CLUB_SYNC.md).
+
+Dos pases WXT e integral limpio aprobados; ensayo de migración en copia restaurada y 46 tablas previas conservadas. La instalación personal WXT queda pendiente en el administrador de Chrome protegido: el panel desplegado no detectó 0.6.0. Veinte copias previas preservadas, sin aceptación automática ni candados personales acreditados. Artefacto y helper de aceptación preparados; fallos/correcciones y siguiente acción en [TESTING](TESTING.md) y [NEXT_SESSION](NEXT_SESSION.md).
+
 ## 17 de noviembre de 2026 · Prioridad automática y acceso contrastado
 
 Se establece AUTO-1 como requisito del recorrido personal: abrir la app, actualizar club/once/banquillo y calcular opciones de DCP, ventas y compras con datos actuales del juego. Se abandona la ampliación de formularios manuales como siguiente incremento. La carga bilingüe previa de veinte cartas se conserva como evidencia parcial. Revisión oficial de la API restringida, alternativas de socios y lectura puntual de lista/ficha en Chrome; identidad estable y puente WXT pendientes. [Decisión](AUTOMATIC_CLUB_SYNC.md), [verificación](TESTING.md). Solo memoria/documentación; sin cambios de aplicación, migración, permisos o despliegue.

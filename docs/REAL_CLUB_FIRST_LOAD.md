@@ -1,8 +1,10 @@
 # Primera carga del club real
 
+**Incremento vigente, 17-nov:** app **988bbbd/0023 desplegada** y WXT **0.6.0** probado dos veces con veinte copias EN/ES, reaperturas sin duplicados y dieciocho candados sintéticos. Instalación personal de esa extensión y aceptación automática todavía pendientes; la UI no la detectó. La principal real ya se observó por puestos, pero no se guardó/protegió en esta sesión. Continuar desde [NEXT_SESSION](NEXT_SESSION.md), con el artefacto `state/wxt-auto-release-20261117/chrome-mv3`; no usar las instrucciones antiguas de 0.5.1 como siguiente paso.
+
 **Prioridad posterior del propietario (17-nov):** este recorrido asistido no satisface el producto solicitado. Debe sustituirse como camino habitual por actualización y análisis automáticos al abrir la app. [AUTO-1: conexión, límites y prueba exigida](AUTOMATIC_CLUB_SYNC.md). Las instrucciones siguientes describen la alternativa manual existente, no la siguiente fase de desarrollo.
 
-**Corte 17-nov-2026: primera carga realizada.** Veinte cartas reales revisadas desde Chrome y dos lecturas nuevas con los mismos IDs, sin duplicados. Seis atributos por carta; posiciones EN/ES normalizadas. La UI muestra las 20 copias. El once y los siete suplentes reales todavía no se han identificado ni protegido. [Continuidad y recuperación](NEXT_SESSION.md).
+**Antecedente del 17-nov-2026: primera carga asistida realizada.** Veinte cartas reales revisadas desde Chrome y dos lecturas nuevas con los mismos IDs, sin duplicados. Seis atributos por carta; posiciones EN/ES normalizadas. La UI muestra las 20 copias. En ese corte anterior todavía no se habían observado el once y los siete suplentes; su protección sigue pendiente. [Continuidad y recuperación](NEXT_SESSION.md).
 
 ## Vía sencilla disponible
 

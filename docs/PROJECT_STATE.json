@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewed_on": "2026-11-17",
   "mission": "Abrir Club Lab y obtener el club real FC27/PS5 actualizado automáticamente, con once y siete suplentes protegidos, alternativas competitivas, DCP posibles y propuestas de venta/compra basadas en ofertas actuales del juego. Sin capturas, transcripciones ni revisión por carta como rutina. Ninguna recomendación garantiza victorias ni ejecuta por sí sola operaciones irreversibles en EA.",
-  "sprint": "WXT 0.6.0: apertura automática, primeras veinte y protección por puestos; aceptación personal pendiente",
-  "next_action": "Terminar dos pases del puente WXT y comprobar la versión instalada. Cargar 0.6.0 desde el artefacto probado mediante el administrador de extensiones del propietario, activar una vez y verificar dos aperturas reales. Contrastar IDs de las veinte copias y candados de once, siete suplentes y reservas observadas. No sustituir la aceptación por otra carga manual. Ver NEXT_SESSION y TESTING.",
+  "sprint": "WXT 0.6.0 probado dos veces; app 988bbbd/0023 desplegada; instalación y aceptación personal pendientes",
+  "next_action": "Retomar la instalación única de WXT 0.6.0 por el propietario desde state/wxt-auto-release-20261117/chrome-mv3; el administrador de Chrome está bloqueado al agente y la app aún no detectó esa versión. Conservar el contexto de las veinte copias, activar una vez y verificar dos reaperturas reales con el helper privado de solo lectura. Contrastar IDs y candados de once, siete suplentes y reservas observadas. No repetir suites sin cambios ni sustituir la aceptación por otra carga manual. Ver NEXT_SESSION y TESTING.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,7 +54,7 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "Puente WXT 0.6.0 y 0023 implementados: permiso inicial local, disparador al abrir, DOM EN/ES de veinte filas y plantilla, conciliación/idempotencia y estados de fallo. Inglés contrastado puntualmente en Chrome real; español controlado. Falta aceptación de dos aperturas personales y comprobar instalación. Sin ID estable de copia EA: variantes indistinguibles y cuentas con igual nombre siguen limitadas; no hay identidad oficial ni cobertura total. WXT no es socio aprobado por EA; las automatizaciones pueden contravenir sus reglas.",
+      "gap": "Puente WXT 0.6.0 implementado y app 988bbbd/0023 desplegada: permiso inicial, disparador al abrir, DOM EN/ES de veinte filas y plantilla, conciliación/idempotencia y estados de fallo. Dos pases WXT, integral limpio y CI del código aprobados. Inglés contrastado puntualmente en Chrome real; español controlado. La app no detectó 0.6.0; instalación por el propietario y dos reaperturas personales pendientes. Sin ID estable de copia EA: variantes indistinguibles y cuentas con igual nombre siguen limitadas; no hay identidad oficial ni cobertura total. WXT no es socio aprobado por EA; las automatizaciones pueden contravenir sus reglas.",
       "acceptance": [
         "Tras configuración inicial, abrir la app actualiza desde una fuente contrastada sin captura, copiar texto ni revisar cada carta; sesión caducada pide acceso al propietario y conserva fecha real de la lectura anterior.",
         "Dos aperturas reales concilian veinte copias con IDs conservados; distinguir variantes y copias legítimas, reordenación y páginas solapadas. No resolver ambigüedad por nombre/media/posición ni ordinal.",
