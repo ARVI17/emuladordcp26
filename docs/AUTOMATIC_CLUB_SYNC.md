@@ -2,7 +2,19 @@
 
 Revisión: **17-nov-2026**. Estado: **puente WXT 0.6.0 implementado; aceptación personal pendiente**. El código incorpora apertura automática, lectura DOM EN/ES, conciliación parcial y protección por puestos. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
 
-## Incremento WXT 0.6.0 / esquema 0023
+## Incremento en verificación: segundo plano y páginas · WXT 0.7
+
+El recorrido solicitado usa directamente la Web App oficial de EA. Se elimina el tope de veinte: plantilla por puestos primero, después las páginas de jugadores mediante Previous/Next o Anterior/Siguiente. Si falta pestaña, se abre inactiva; no cambia el foco. La interfaz informa fase, páginas y cartas sin pedir transcripciones. Terminar una búsqueda no prueba cobertura del almacén DCP, transferibles, Galería o del club completo.
+
+Cada etapa responde en un evento nuevo del worker; el avance y la concesión local se conservan en `chrome.storage.session`, accesible solo a contextos de extensión, y se eliminan al terminar/cancelar. Esto soporta suspensión del worker entre etapas, no cierre de Chrome ni recuperación después de perder el documento EA. [Chrome documenta los límites del worker](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle). No se usa Selenium ni Scrapy adicionalmente: ambos requerirían igual una sesión y un lector de la interfaz; [Scrapy remite a navegador para contenido dinámico](https://docs.scrapy.org/en/latest/topics/dynamic-content.html).
+
+Límites explícitos: 50 páginas, 1000 filas, 30 minutos por recorrido y dos minutos por etapa. Página repetida, cambio de club, interacción en EA, sesión caducada o error conservan la última publicación. Sin control Siguiente reconocido, se informa cobertura desconocida; no se inventa final. La publicación es una transacción: comprobar todas las ambigüedades entre páginas antes de admitir lotes internos de 30. Las copias ambiguas también bloquean su asignación a la principal. Las ausencias no retiran cartas. No se modifica ninguna ruta manual de OCR/CSV.
+
+La instalación WXT inicial sigue pendiente en el perfil personal. El administrador de Chrome continúa bloqueado al agente; no se elude mediante Selenium, CDP ni archivos de perfil. Login/MFA solo en EA por el propietario. WXT sigue siendo no oficial; los límites de identidad y las reglas EA de los apartados siguientes siguen aplicando.
+
+Mercado, DCP y Galería no quedan implementados por paginar jugadores: requieren sus propios datos, cobertura/fecha, variante exacta, transferibilidad y validadores. El siguiente recorrido útil será consultar DCP vigentes y ofertas del juego para calcular opciones, sin publicar ventas ni entregar cartas automáticamente.
+
+## Antecedente WXT 0.6.0 / esquema 0023
 
 `AutoClubSync` detecta la extensión al abrir una entrada asistida. Una activación inicial guarda la preferencia local por contexto; cada apertura obtiene un permiso temporal nuevo para esa extensión/sesión/generación. El worker mantiene la credencial de Club Lab fuera de la página, usa exclusivamente loopback y publica un recibo inmutable. No solicita ni transporta credenciales EA. La migración aditiva 0023 guarda preferencia, solicitud y último resultado.
 

@@ -6,7 +6,7 @@ import {observedDate} from '../lib/i18n'
 import type {EntryState} from '../lib/entry'
 
 type Bridge={id:string;version:string}
-type SyncStatus={enabled:boolean;extension_id:string|null;status:string;message:string;request_id?:string;result:{request_id?:string;observed_at?:string;inventory_ids?:number[];pending?:unknown[];main_complete?:boolean;protected_copy_ids?:number[]}}
+type SyncStatus={enabled:boolean;extension_id:string|null;status:string;message:string;request_id?:string;progress?:{pages_read:number;cards_read:number;phase:string};result:{request_id?:string;observed_at?:string;pages_read?:number;traversal_end?:string;inventory_ids?:number[];pending?:unknown[];main_complete?:boolean;protected_copy_ids?:number[]}}
 const channel='club-lab-auto-v1'
 
 export function AutoClubSync({entry,settings=false,children}:{entry:EntryState;settings?:boolean;children?:ReactNode}){
@@ -18,7 +18,7 @@ export function AutoClubSync({entry,settings=false,children}:{entry:EntryState;s
   const receive=(event:MessageEvent)=>{
    if(event.source!==window||event.origin!==location.origin||event.data?.channel!==channel||event.data.nonce!==nonce.current)return
    const d=event.data
-   if(d.kind==='hello'&&/^[a-p]{32}$/.test(d.extension_id)&&typeof d.version==='string')setBridge({id:d.extension_id,version:d.version})
+   if(d.kind==='hello'&&/^[a-p]{32}$/.test(d.extension_id)&&typeof d.version==='string'&&/^0\.(?:[7-9]|[1-9]\d)\./.test(d.version))setBridge({id:d.extension_id,version:d.version})
    if(d.kind==='finished'){void status.refetch();if(!d.ok)setError('La lectura no terminó. Consulta el estado y conserva la sesión de EA abierta.')}
   }
   window.addEventListener('message',receive)
@@ -60,10 +60,11 @@ export function AutoClubSync({entry,settings=false,children}:{entry:EntryState;s
  return <><section className="panel" aria-label="Actualización automática del club">
   <h3>Tu club se actualiza al abrir</h3>
   <p role="status">{status.data?.enabled&&!bridge?'Buscando la extensión local de Club Lab…':status.data?.message||'Comprobando el lector local…'}</p>
-  {status.data?.result.observed_at&&<p>Última lectura: {observedDate(status.data.result.observed_at)} · {status.data.result.inventory_ids?.length||0} cartas de la lista · {status.data.result.protected_copy_ids?.length||0} cartas protegidas · {status.data.result.main_complete?'principal protegida':'principal pendiente'}. Cobertura parcial.</p>}
-  {settings&&<><p>Lectura local de las primeras 20 cartas y de la plantilla activa. Chrome y tu sesión de EA deben estar disponibles. Los datos se guardan en este equipo; la extensión no solicita tu contraseña ni conecta tu cuenta a otros sitios.</p>
+  {status.data?.status==='reading'&&status.data.progress&&<p>En segundo plano: {status.data.progress.phase==='squad'?'comprobando once y suplentes':status.data.progress.phase==='publishing'?'guardando la lectura':`${status.data.progress.pages_read} páginas y ${status.data.progress.cards_read} cartas leídas`}. Puedes seguir usando Club Lab.</p>}
+  {status.data?.result.observed_at&&<p>Última lectura: {observedDate(status.data.result.observed_at)} · {status.data.result.inventory_ids?.length||0} cartas leídas · {status.data.result.protected_copy_ids?.length||0} cartas protegidas · {status.data.result.main_complete?'principal protegida':'principal pendiente'}. Cobertura parcial{status.data.result.pages_read?` · ${status.data.result.pages_read} páginas`:''}.</p>}
+  {settings&&<><p>Lectura por páginas de tus jugadores y de la plantilla activa, en la web oficial de EA. El lector avanza en una pestaña de segundo plano; no necesitas copiar cartas ni cambiar de página. Chrome debe permanecer abierto y EA puede pedirte iniciar sesión. Cada recorrido tiene un límite de 50 páginas, 1000 cartas o 30 minutos; no incluye todavía almacén DCP, mercado ni Galería. Los datos se guardan en este equipo; la extensión no solicita tu contraseña ni conecta tu cuenta a otros sitios.</p>
    <p>Lector no oficial. <a href="https://help.ea.com/en/articles/ea-sports-fc/fc-rules/" target="_blank" rel="noreferrer">EA restringe las automatizaciones</a>; no se garantiza ausencia de sanciones.</p>
-   {!bridge&&<p>Instala o actualiza la extensión Club Lab y vuelve a abrir esta página. La carga inicial de una extensión descomprimida se realiza una sola vez en Chrome.</p>}
+   {!bridge&&<p>Instala o actualiza la extensión Club Lab 0.7 y vuelve a abrir esta página. La carga inicial de una extensión descomprimida se realiza una sola vez en Chrome.</p>}
    {!status.data?.enabled?<button disabled={!bridge||busy} onClick={()=>void configure(true)}>Activar actualización automática y proteger mi equipo</button>:<button disabled={busy} onClick={()=>void configure(false)}>Desactivar actualización automática</button>}
   </>}
   {status.data?.enabled&&<><button disabled={!bridge||busy||status.data.status==='reading'} onClick={()=>void start()}>Actualizar ahora</button>{status.data.status==='reading'&&<button onClick={()=>void stop()}>Detener lectura</button>}</>}

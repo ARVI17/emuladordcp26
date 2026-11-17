@@ -1,5 +1,13 @@
 # Continuación exacta · Club Lab FC27
 
+## Incremento en curso: WXT 0.7, segundo plano y páginas
+
+El propietario exige lectura por páginas directamente en EA, sin terceros ni trabajo manual rutinario. Código 0.7 implementado, primer pase focalizado aprobado; falta el integral del código final y despliegue. Se preparó respaldo restaurado en `C:/Users/arvi_/emuladordcp26/state/background-release-20261117/`, 47 tablas idénticas. No reutilizar el artefacto 0.6 como si soportara paginación.
+
+Chrome abre la Web App oficial, pero muestra Login. Se solicitó al propietario entrar; no se recibió respuesta todavía. Instalación WXT personal sigue sin acreditación. Contrastar controles reales de paginación después del acceso: solo la lista y biografías/plantilla se contrastaron en el sprint anterior; páginas múltiples son pruebas controladas. No declarar conexión, club completo, mercado, DCP ni Galería automáticos.
+
+La instalación previa 988bbbd/0023 presentó un 502 por IP interna obsoleta de Nginx. Recarga por ID efectuada, HTTP saludable; corrección permanente de DNS incluida en el código nuevo. El relevo de 0.6 siguiente queda como antecedente hasta cerrar las pruebas/despliegue de 0.7.
+
 Corte **17-nov-2026 · WXT 0.6.0**. Aplicación desplegada **988bbbd / 0023 en 8090**, cinco servicios saludables. Actualización al abrir implementada: extensión local, navegación DOM EN/ES, primera lista de veinte, plantilla por puestos, conciliación idempotente y candados. Dos pases WXT y el integral limpio aprobados; **instalación WXT y aceptación automática personal pendientes**. No volver a proponer capturas/transcripciones como recorrido habitual. [Contrato y límites](AUTOMATIC_CLUB_SYNC.md), [pruebas](TESTING.md).
 
 ## Siguiente acción concreta

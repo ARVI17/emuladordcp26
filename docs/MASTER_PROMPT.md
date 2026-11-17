@@ -1,6 +1,6 @@
 # Prompt maestro · Club Lab FC27
 
-Versión 4.1 · 17 de noviembre de 2026. Corrección expresa del propietario: **abrir la aplicación y recibir el club actualizado y análisis automáticos, orientados a una plantilla competitiva**. DCP, mercado PS5 y Galería ayudan a mejorarla. La carga asistida de veinte cartas no satisface esa experiencia. Es una especificación de trabajo, no una afirmación de que esas funciones estén terminadas. [Viabilidad, fuentes y aceptación](AUTOMATIC_CLUB_SYNC.md).
+Versión 4.2 · 17 de noviembre de 2026. Corrección expresa del propietario: **abrir la aplicación y recibir el club actualizado y análisis automáticos, orientados a una plantilla competitiva**. DCP, mercado PS5 y Galería ayudan a mejorarla. La carga asistida de veinte cartas no satisface esa experiencia. Es una especificación de trabajo, no una afirmación de que esas funciones estén terminadas. [Viabilidad, fuentes y aceptación](AUTOMATIC_CLUB_SYNC.md).
 
 ## Misión y resultado esperado
 
@@ -22,6 +22,8 @@ Para cada decisión mostrar: **qué propone el cálculo, por qué, cuánto cuest
 ## Recorrido de producto
 
 ### 1. Abrir y actualizar el club automáticamente
+
+Aclaración del propietario, 17-nov: lectura paginada en segundo plano directamente en la plataforma oficial, sin conexión a terceros. Veinte cartas es una prueba inicial, no cobertura del producto. Distinguir jugadores, plantilla, DCP, mercado y Galería; cada dominio necesita lector y aceptación propios.
 
 La app enlaza a la Web App oficial. El usuario inicia sesión y completa MFA allí. Club Lab no pide ni maneja contraseña, cookies, tokens o códigos de EA; abrir un enlace no conecta la cuenta. No fabricar OAuth ni usar protocolos privados.
 

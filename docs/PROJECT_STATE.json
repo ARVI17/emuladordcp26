@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewed_on": "2026-11-17",
   "mission": "Abrir Club Lab y obtener el club real FC27/PS5 actualizado automáticamente, con once y siete suplentes protegidos, alternativas competitivas, DCP posibles y propuestas de venta/compra basadas en ofertas actuales del juego. Sin capturas, transcripciones ni revisión por carta como rutina. Ninguna recomendación garantiza victorias ni ejecuta por sí sola operaciones irreversibles en EA.",
-  "sprint": "WXT 0.6.0 probado dos veces; app 988bbbd/0023 desplegada; instalación y aceptación personal pendientes",
-  "next_action": "Retomar la instalación única de WXT 0.6.0 por el propietario desde state/wxt-auto-release-20261117/chrome-mv3; el administrador de Chrome está bloqueado al agente y la app aún no detectó esa versión. Conservar el contexto de las veinte copias, activar una vez y verificar dos reaperturas reales con el helper privado de solo lectura. Contrastar IDs y candados de once, siete suplentes y reservas observadas. No repetir suites sin cambios ni sustituir la aceptación por otra carga manual. Ver NEXT_SESSION y TESTING.",
+  "sprint": "WXT 0.7: lectura paginada en segundo plano y recuperación del acceso local; validación en curso",
+  "next_action": "Terminar validación aislada de WXT 0.7 (20 y 65 cartas, dos reaperturas y suspensión del worker), desplegar solo imágenes probadas y comprobar la instalación personal. La lectura debe recorrer páginas de EA sin capturas ni transcripción. No sustituir el recorrido por otro formulario. Mercado, DCP y Galería requieren lectores contrastados propios después del inventario y la principal.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,10 +54,10 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "Puente WXT 0.6.0 implementado y app 988bbbd/0023 desplegada: permiso inicial, disparador al abrir, DOM EN/ES de veinte filas y plantilla, conciliación/idempotencia y estados de fallo. Dos pases WXT, integral limpio y CI del código aprobados. Inglés contrastado puntualmente en Chrome real; español controlado. La app no detectó 0.6.0; instalación por el propietario y dos reaperturas personales pendientes. Sin ID estable de copia EA: variantes indistinguibles y cuentas con igual nombre siguen limitadas; no hay identidad oficial ni cobertura total. WXT no es socio aprobado por EA; las automatizaciones pueden contravenir sus reglas.",
+      "gap": "WXT 0.7 implementa etapas de plantilla e inventario paginado, progreso local, estado privado de sesión entre eventos y apertura inactiva de EA si falta pestaña. Límite 50 páginas/1000 cartas/30 minutos, sin renovación de sesión EA. Validación y despliegue en curso; aceptación personal pendiente. No cubre almacén DCP, mercado ni Galería y no acredita IDs EA. Requiere instalación inicial y acceso del propietario en EA; no otra plataforma.",
       "acceptance": [
         "Tras configuración inicial, abrir la app actualiza desde una fuente contrastada sin captura, copiar texto ni revisar cada carta; sesión caducada pide acceso al propietario y conserva fecha real de la lectura anterior.",
-        "Dos aperturas reales concilian veinte copias con IDs conservados; distinguir variantes y copias legítimas, reordenación y páginas solapadas. No resolver ambigüedad por nombre/media/posición ni ordinal.",
+        "Dos aperturas reales recorren varias páginas sin intervención y conservan IDs; veinte es la muestra inicial, no el límite de producto. Detectar repeticiones y variantes/copias ambiguas sin fusionarlas. Estado y cobertura por dominio, sin declarar inventario completo por terminar una búsqueda.",
         "Contexto/plataforma/edición, permisos, cancelación, reinicio y cobertura se validan antes de publicar. No retirar por ausencia parcial ni revivir consumidas.",
         "Los análisis se recalculan tras datos nuevos; mostrar qué falta por dominio sin aparentar actualización EA al refrescar datos locales antiguos. Proteger principal y siete suplentes antes de propuestas consumptivas.",
         "La implementación distingue puente de navegador y conexión oficial; no promete servicio de fondo con Chrome cerrado ni reutiliza permisos de socios."
@@ -86,7 +86,7 @@
       "depends_on": [
         "AUTO-1"
       ],
-      "gap": "20 cartas reales cargadas desde texto visible de Chrome, revisadas en la UI; dos lecturas nuevas conservan exactamente los mismos 20 IDs. Seis atributos por carta, posiciones EN/ES normalizadas y 132 históricos intactos. Cobertura parcial y propiedad declarada, sin identidad EA autenticada. Falta actualización automática de esas copias y contraste de otros grupos/copias legítimas. OCR real permanece sin aceptación, pero es una alternativa optativa, no la prioridad del producto.",
+      "gap": "Veinte cartas reales asistidas previas conservadas. Backend paginado en implementación: hasta 1000 filas publicadas atómicamente, ambigüedades entre lotes excluidas también de plantilla y sin borrar ausentes. No acredita aún lectura personal automática ni club completo.",
       "acceptance": [
         "Login/MFA por el usuario; lectura automática contrastada sin revisión por carta. Captura/texto siguen siendo alternativas optativas con sus revisiones, no aceptación del recorrido automático.",
         "20 cartas reales sincronizadas en dos aperturas sin intervención rutinaria; correcciones se detectan y concilian. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.",

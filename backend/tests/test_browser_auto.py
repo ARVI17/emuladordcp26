@@ -164,3 +164,58 @@ def test_partial_does_not_refresh_main_or_remove_absent_copies_and_preserves_res
     assert client.get('/players').json()['total']==22
     for identifier in result['result']['protected_copy_ids']:
         assert client.delete(f'/players/{identifier}').status_code==409
+
+
+def paged(ticket):
+    data = snapshot(ticket)
+    data.update(reader_version='ea-visible-2', pages_read=4, traversal_end='end')
+    data['inventory'] += [{**deepcopy(data['inventory'][i % 20]), 'ordinal':i, 'name':f'Paged synthetic {i}'} for i in range(20,65)]
+    return data
+
+
+def test_paged_sixty_five_atomic_reopens_and_progress(client, monkeypatch):
+    setup(client, monkeypatch)
+    original = None
+    for iteration in range(3):
+        ticket, headers = start(client)
+        progress = dict(request_id=ticket['request_id'],pages_read=2,cards_read=40,phase='inventory')
+        assert client.post('/browser-auto/progress',headers=headers,json=progress).status_code == 200
+        assert client.get('/players').json()['total'] == (0 if iteration == 0 else 65)
+        assert client.post('/browser-auto/progress',headers=headers,json={**progress,'pages_read':1}).status_code == 409
+        data = paged(ticket)
+        if iteration: data['inventory'].reverse()
+        state = post(client,headers,data)
+        assert state['status']=='updated' and state['result']['pages_read']==4
+        ids=set(state['result']['inventory_ids'])
+        assert len(ids)==65 and len(state['result']['protected_copy_ids'])==18
+        if original is None: original=ids
+        assert ids==original
+        assert post(client,headers,data)['result']==state['result']
+        assert client.get('/players').json()['total']==65
+        assert client.post('/browser-auto/progress',headers=headers,json=progress).status_code==409
+
+
+def test_duplicate_across_batches_blocks_both_copies_and_squad(client,monkeypatch):
+    setup(client,monkeypatch)
+    ticket,headers=start(client);data=paged(ticket)
+    data['inventory'][40]={**data['inventory'][0], 'ordinal':40}
+    state=post(client,headers,data)
+    pending=state['result']['pending']
+    assert state['status']=='partial' and not state['result']['main_complete']
+    assert {(r['scope'],r['ordinal']) for r in pending}=={('inventory',0),('inventory',40),('squad',0)}
+    assert len(state['result']['inventory_ids'])==63
+    assert client.get('/players').json()['total']==63
+
+
+def test_page_limits_and_cancel_keep_previous_complete_result(client,monkeypatch):
+    setup(client,monkeypatch)
+    ticket,headers=start(client);data=paged(ticket)
+    assert client.post('/browser-auto/publish',headers=headers,json={**data,'reader_version':'ea-visible-1'}).status_code==422
+    assert client.post('/browser-auto/publish',headers=headers,json={**data,'pages_read':1}).status_code==422
+    data['traversal_end']='limit'
+    state=post(client,headers,data)
+    assert state['status']=='partial' and state['result']['inventory_complete'] is False
+    ticket,headers=start(client)
+    assert client.post('/browser-auto/cancel',json={}).status_code==200
+    assert client.post('/browser-auto/progress',headers=headers,json=dict(request_id=ticket['request_id'],pages_read=3,cards_read=60,phase='inventory')).status_code==401
+    assert client.get('/players').json()['total']==65

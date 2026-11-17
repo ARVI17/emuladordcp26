@@ -1,62 +1,104 @@
 import {z} from 'zod'
 import {eaDiagnostic,endpoint} from './contracts'
-
 const ticketSchema=z.object({request_id:z.uuid(),pairing_id:z.uuid(),code:z.string().regex(/^\d{6}$/),extension_id:z.string().regex(/^[a-p]{32}$/),context_id:z.number().int().positive()}).strict()
-type Job={tabId?:number;ownerTabId:number;cancelled:boolean}
-
+const official='https://www.ea.com/ea-sports-fc/ultimate-team/web-app/'
+type Job={base:string;credential:string;requestId:string;tabId:number;started:number;step:string;phase:string;inventory:any[];squad:any[];pages:number;signatures:string[];identity?:{club_fingerprint:string;club_name:string};formation?:string;publication?:Record<string,unknown>}
 export function installBrowserAuto(){
- const jobs=new Map<string,Job>()
- const stop=(job:Job)=>{job.cancelled=true;if(job.tabId)void chrome.tabs.sendMessage(job.tabId,{kind:'ea-auto-stop'}).catch(()=>{})}
- chrome.permissions.onRemoved.addListener(()=>{for(const job of jobs.values())stop(job)})
- chrome.tabs.onRemoved.addListener(id=>{for(const job of jobs.values())if(job.ownerTabId===id||job.tabId===id)stop(job)})
+ // Each page returns as a new event. Private session state survives worker suspension.
+ let serial=Promise.resolve()
+ const enqueue=(fn:()=>Promise<unknown>)=>{const next=serial.then(fn);serial=next.then(()=>{},()=>{});return next}
+ const load=async():Promise<Record<string,Job>>=>(await chrome.storage.session.get('autoJobs')).autoJobs||{}
+ const save=(jobs:Record<string,Job>)=>chrome.storage.session.set({autoJobs:jobs})
+ const request=async(job:Job,path:string,body:unknown)=>{
+  const r=await fetch(job.base+'/api/'+path,{method:'POST',credentials:'omit',redirect:'error',headers:{'Content-Type':'application/json','X-Reader-Extension':chrome.runtime.id,...(job.credential?{Authorization:'Bearer '+job.credential}:{})},body:JSON.stringify(body),signal:AbortSignal.timeout(25000)})
+  if(!r.ok)throw Error('backend');return r.json()
+ }
+ const stop=async(job:Job,reason='cancelled')=>{
+  if(job.tabId)await chrome.tabs.sendMessage(job.tabId,{kind:'ea-auto-stop'}).catch(()=>{})
+  if(job.credential)await request(job,'browser-auto/failure',{request_id:job.requestId,reason}).catch(()=>{})
+  const jobs=await load();if(jobs[job.base]?.requestId===job.requestId){delete jobs[job.base];await save(jobs)}
+ }
+ const dispatch=async(job:Job,phase:string,resume=false)=>{
+  job.phase=phase;if(!resume)job.step=crypto.randomUUID()
+  await save({...await load(),[job.base]:job})
+  await request(job,'browser-auto/progress',{request_id:job.requestId,pages_read:job.pages,cards_read:job.inventory.length,phase:phase==='squad'?'squad':'inventory'})
+  await chrome.scripting.executeScript({target:{tabId:job.tabId},files:['ea-auto.js']})
+  for(let attempt=0;attempt<5;attempt++){
+   const ack=await chrome.tabs.sendMessage(job.tabId,{kind:'ea-auto-step',request_id:job.requestId,step:job.step,phase,offset:job.inventory.length})
+   if(ack?.ok)return
+   if(ack?.reason!=='busy')throw Error(ack?.reason||'page_changed')
+   await new Promise(r=>setTimeout(r,300))
+  }
+  throw Error('page_changed')
+ }
+ const fail=async(job:Job,error:unknown)=>{
+  const code=error instanceof Error?error.message:''
+  await stop(job,['login_required','permission_required','page_changed','cancelled','timeout'].includes(code)?code:'page_changed')
+ }
+ chrome.permissions.onRemoved.addListener(()=>{void enqueue(async()=>{for(const job of Object.values(await load()))await stop(job,'permission_required')})})
+ chrome.tabs.onRemoved.addListener(id=>{void enqueue(async()=>{for(const job of Object.values(await load()))if(job.tabId===id)await stop(job)})})
  chrome.runtime.onMessage.addListener((message,sender,reply)=>{
-  if(!['browser-auto-start','browser-auto-cancel'].includes(message?.kind))return
-  const run=async()=>{
-   if(sender.id!==chrome.runtime.id||!sender.tab||sender.frameId!==0||!sender.url)throw Error('Origen no autorizado')
+  if(!['browser-auto-start','browser-auto-cancel','browser-auto-step-result'].includes(message?.kind))return
+  void enqueue(async()=>{
+   if(sender.id!==chrome.runtime.id||!sender.tab?.id||sender.frameId!==0||!sender.url)throw Error('origin')
+   const jobs=await load()
+   if(message.kind==='browser-auto-step-result'){
+    if(!eaDiagnostic(sender.url))throw Error('origin')
+    const job=Object.values(jobs).find(j=>j.tabId===sender.tab!.id&&j.requestId===message.request_id)
+    if(!job)return {ok:false}
+    try{
+     if(job.publication){await request(job,'browser-auto/publish',job.publication);delete jobs[job.base];await save(jobs);return {ok:true}}
+     if(message.step!==job.step){await dispatch(job,job.phase,true);return {ok:true}}
+     if(Date.now()-job.started>30*60*1000)throw Error('timeout')
+     if(!message.ok)throw Error(message.reason)
+     const data=message.data
+     if(!data?.identity||!Array.isArray(data.cards)||data.cards.length>30)throw Error('page_changed')
+     if(job.identity&&JSON.stringify(job.identity)!==JSON.stringify(data.identity))throw Error('page_changed')
+     job.identity=data.identity
+     if(job.phase==='squad'){
+      job.squad=data.cards;job.formation=data.formation
+      await dispatch(job,'inventory-start');return {ok:true}
+     }
+     if(typeof data.signature!=='string'||job.signatures.includes(data.signature))throw Error('page_changed')
+     job.signatures.push(data.signature);job.pages++;job.inventory.push(...data.cards)
+     if(job.inventory.length>1000)throw Error('page_changed')
+     const end=job.pages>=50||job.inventory.length+30>1000?'limit':data.end
+     if(end==='next'){await dispatch(job,'inventory-next');return {ok:true}}
+     if(!['end','unknown','limit'].includes(end))throw Error('page_changed')
+     await request(job,'browser-auto/progress',{request_id:job.requestId,pages_read:job.pages,cards_read:job.inventory.length,phase:'publishing'})
+     const payload={...job.identity,request_id:job.requestId,reader_version:'ea-visible-2',edition:'FC27',edition_basis:'owner_selected',observed_at:new Date().toISOString(),inventory:job.inventory,squad:job.squad,formation:job.formation,active_squad_observed:true,inventory_complete:false,pages_read:job.pages,traversal_end:end}
+     job.publication=payload;await save({...await load(),[job.base]:job})
+     try{await request(job,'browser-auto/publish',payload)}catch{await request(job,'browser-auto/publish',payload)}
+     delete jobs[job.base];await save(jobs)
+     return {ok:true}
+    }catch(error){await fail(job,error);return {ok:false}}
+   }
    const url=new URL(sender.url),base=endpoint(url.origin)
-   if(url.pathname!=='/'||url.search)throw Error('Origen no autorizado')
-   const prior=jobs.get(base)
-   if(prior){prior.cancelled=true;if(prior.tabId)await chrome.tabs.sendMessage(prior.tabId,{kind:'ea-auto-stop'}).catch(()=>{})}
+   if(url.pathname!=='/'||url.search)throw Error('origin')
+   if(jobs[base])await stop(jobs[base])
    if(message.kind==='browser-auto-cancel')return {ok:true}
    const ticket=ticketSchema.parse(message.ticket)
-   if(ticket.extension_id!==chrome.runtime.id)throw Error('Extensión distinta')
-   const job:Job={cancelled:false,ownerTabId:sender.tab.id!};jobs.set(base,job)
-   let credential=''
-   const request=async(path:string,body:unknown)=>{
-    const response=await fetch(base+'/api/'+path,{method:'POST',credentials:'omit',redirect:'error',
-     headers:{'Content-Type':'application/json','X-Reader-Extension':chrome.runtime.id,...(credential?{Authorization:'Bearer '+credential}:{})},
-     body:JSON.stringify(body),signal:AbortSignal.timeout(15000)})
-    if(!response.ok)throw Error('backend')
-    return response.json()
-   }
+   if(ticket.extension_id!==chrome.runtime.id)throw Error('extension')
+   const job:Job={base,credential:'',requestId:ticket.request_id,tabId:0,started:Date.now(),step:'',phase:'squad',inventory:[],squad:[],pages:0,signatures:[]}
    try{
-    const grant=await request('reader/claim',{pairing_id:ticket.pairing_id,code:ticket.code});credential=grant.credential
+    const grant=await request(job,'reader/claim',{pairing_id:ticket.pairing_id,code:ticket.code});job.credential=grant.credential
     const tabs=(await chrome.tabs.query({url:'https://www.ea.com/*'})).filter(t=>t.url&&eaDiagnostic(t.url))
     const {officialTab}=await chrome.storage.session.get('officialTab')
-    const selected=tabs.find(t=>t.id===officialTab)||(tabs.length===1?tabs[0]:undefined)
-    if(!selected?.id)throw Error(tabs.length?'page_changed':'login_required')
+    let selected=tabs.find(t=>t.id===officialTab)||(tabs.length===1?tabs[0]:undefined)
+    if(tabs.length&&!selected)throw Error('page_changed')
+    if(!selected)selected=await chrome.tabs.create({url:official,active:false})
+    if(!selected.id)throw Error('reader_unavailable')
     job.tabId=selected.id
-    await chrome.scripting.executeScript({target:{tabId:selected.id},files:['ea-auto.js']})
-    if(job.cancelled)throw Error('cancelled')
-    const answer=await chrome.tabs.sendMessage(selected.id,{kind:'ea-auto-read',request_id:ticket.request_id})
-    if(job.cancelled)throw Error('cancelled')
-    if(!answer?.ok)throw Error(answer?.reason||'page_changed')
-    const payload={...answer.snapshot,request_id:ticket.request_id}
-    // Retry the same immutable observation, never a newly dated substitute.
-    let result
-    for(let attempt=0;attempt<2;attempt++){
-     if(job.cancelled)throw Error('cancelled')
-     try{result=await request('browser-auto/publish',payload);break}catch(error){if(attempt===1)throw error}
+    if(Object.values(await load()).some(j=>j.tabId===job.tabId)){job.tabId=0;throw Error('page_changed')}
+    const until=Date.now()+20000
+    while((await chrome.tabs.get(job.tabId)).status!=='complete'){
+     if(Date.now()>until)throw Error('timeout')
+     await new Promise(r=>setTimeout(r,300))
     }
-    return {ok:true,status:result?.status}
-   }catch(error){
-    const code=error instanceof Error?error.message:''
-    const reason=['login_required','permission_required','page_changed','cancelled','timeout'].includes(code)?code:'page_changed'
-    if(credential&&!job.cancelled)await request('browser-auto/failure',{request_id:ticket.request_id,reason}).catch(()=>{})
-    return {ok:false,reason}
-   }finally{if(jobs.get(base)===job)jobs.delete(base)}
-  }
-  void run().then(reply).catch(()=>reply({ok:false,reason:'reader_unavailable'}))
+    await dispatch(job,'squad')
+    return {ok:true}
+   }catch(error){await fail(job,error);return {ok:false}}
+  }).then(reply).catch(()=>reply({ok:false,reason:'reader_unavailable'}))
   return true
  })
 }

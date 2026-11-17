@@ -34,18 +34,18 @@ def status(row):
     if not row:
         return dict(enabled=False, status='disabled', message=MESSAGES['disabled'], result={}, extension_id=None)
     current = row.status
-    if current == 'reading' and now()-utc(row.requested_at) > timedelta(minutes=5):
+    if current == 'reading' and now()-utc(row.requested_at) > timedelta(minutes=30):
         current = 'timeout'
     return dict(enabled=row.enabled, status=current, message=MESSAGES[current], result=row.result,
         extension_id=row.extension_id, request_id=row.request_id, provider_verified=False,
-        inventory_complete=False, protect_main=row.protect_main)
+        inventory_complete=False, protect_main=row.protect_main, progress=row.result.get('progress') if current == 'reading' else None)
 
 
 def require_run(db, grant, request_id):
     row = link_row(db)
     if (not row or not row.enabled or row.grant_id != grant.id or row.extension_id != grant.extension_id
             or row.request_id != str(request_id) or not row.requested_at
-            or now()-utc(row.requested_at) > timedelta(minutes=5)):
+            or now()-utc(row.requested_at) > timedelta(minutes=30)):
         raise HTTPException(409, 'Lectura detenida, sustituida o caducada; abre la aplicación de nuevo.')
     return row
 
@@ -71,14 +71,16 @@ def publish(db, link, payload):
     db.add(session)
     db.flush()
     readings, ids_by_scope, pending = [], {}, []
-    for scope, records in [('inventory', payload.inventory), ('squad', payload.squad)]:
-        counts = Counter(ambiguity_key(c.model_dump()) for c in records)
+    batches = [('inventory', payload.inventory[i:i+30]) for i in range(0, max(1, len(payload.inventory)), 30)] + [('squad', payload.squad)]
+    global_counts = {scope: Counter(ambiguity_key(c.model_dump()) for c in rows) for scope, rows in [('inventory', payload.inventory), ('squad', payload.squad)]}
+    for batch_index, (scope, records) in enumerate(batches):
+        counts = global_counts[scope]
         accepted = []
         for card in records:
             facts = card.model_dump()
             key, matches = ambiguity_key(facts), existing[ambiguity_key(facts)]
             reason = None
-            if counts[key] != 1 or len(matches) > 1:
+            if counts[key] != 1 or global_counts['inventory'][key] > 1 or len(matches) > 1:
                 reason = 'indistinguishable_copies'
             elif not all(facts.get(f) for f in ('card_type','league','club','nationality','attributes')):
                 reason = 'identity_fields_missing'
@@ -100,11 +102,12 @@ def publish(db, link, payload):
             if reason:
                 pending.append(dict(scope=scope, ordinal=card.ordinal, reason=reason))
                 continue
+            facts['ordinal'] = len(accepted)
             accepted.append(ReviewedCard.model_validate(facts))
-        reading = VisualReading(session_id=session.id, frame_hash=fingerprint([str(payload.request_id),scope]),
-            scope=scope, page='browser-auto-'+scope, filters='Primeras veinte; cobertura parcial',
+        reading = VisualReading(session_id=session.id, frame_hash=fingerprint([str(payload.request_id),scope,batch_index]),
+            scope=scope, page=f'browser-auto-{scope}-{batch_index}', filters='Lectura paginada; cobertura parcial',
             original=dict(cards=[c.model_dump() for c in accepted], source_kind='browser_auto',
-                reader_version='ea-visible-1', request_id=str(payload.request_id), automatic_consent=True),
+                reader_version=payload.reader_version, request_id=str(payload.request_id), automatic_consent=True),
             observed_at=payload.observed_at)
         db.add(reading)
         db.flush()
@@ -112,7 +115,7 @@ def publish(db, link, payload):
             club_name=payload.club_name, formation=payload.formation if scope == 'squad' else None))
         reading.reviewed = {**reading.reviewed, 'source':'user_authorized_browser', 'ownership_confirmed':True}
         readings.append(reading.id)
-        ids_by_scope[scope] = reading.reviewed['copy_ids']
+        ids_by_scope.setdefault(scope, []).extend(reading.reviewed['copy_ids'])
         for identifier, card in zip(reading.reviewed['copy_ids'], accepted):
             player = db.get(Player, identifier)
             player.validation_evidence = {**player.validation_evidence, 'source_kind':'browser_auto',
@@ -142,11 +145,13 @@ def publish(db, link, payload):
         main = main_status(db)
         main_current = main['complete']
     link.club_fingerprint = payload.club_fingerprint
-    link.status = 'updated' if len(ids_by_scope['inventory'])==20 and main_current and not pending else 'partial'
+    traversed = payload.traversal_end == 'end' if payload.reader_version == 'ea-visible-2' else len(ids_by_scope['inventory']) == 20
+    link.status = 'updated' if traversed and main_current and not pending else 'partial'
     link.updated_at = now()
     link.result = dict(request_id=str(payload.request_id), payload_hash=digest,
         observed_at=payload.observed_at.isoformat(), received_at=now().isoformat(), reading_ids=readings,
         inventory_ids=ids_by_scope['inventory'], squad_ids=ids_by_scope['squad'], pending=pending,
         main_complete=main_current, protected_copy_ids=main['protected_copy_ids'],
-        source='user_authorized_browser', provider_verified=False, inventory_complete=False)
+        source='user_authorized_browser', provider_verified=False, inventory_complete=False,
+        pages_read=payload.pages_read, traversal_end=payload.traversal_end)
     return status(link)

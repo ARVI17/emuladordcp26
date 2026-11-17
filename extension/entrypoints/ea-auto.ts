@@ -5,7 +5,11 @@ export default defineUnlistedScript(()=>{
  const world=globalThis as typeof globalThis&{clubLabAutoInstalled?:boolean}
  if(world.clubLabAutoInstalled)return
  world.clubLabAutoInstalled=true
- let cancelled=false,running=false,deadline=0,phase='idle'
+ let cancelled=false,running=false,deadline=0,phase='idle',activeStep=''
+ let lastResult:Record<string,unknown>|undefined
+ const deliver=async(result:Record<string,unknown>)=>{
+  for(let i=0;i<3;i++){try{await chrome.runtime.sendMessage(result);return}catch{await new Promise(r=>setTimeout(r,1000))}}
+ }
  const positions:Record<string,string>={GK:'POR',RB:'LD',CB:'DFC',LB:'LI',RWB:'CAD',LWB:'CAI',CDM:'MCD',CM:'MC',CAM:'MCO',RM:'MD',LM:'MI',RW:'ED',LW:'EI',CF:'SD',ST:'DC'}
  const validPositions=new Set(['POR','LD','DFC','LI','CAD','CAI','MCD','MC','MCO','MD','MI','ED','EI','SD','DC'])
  const stats:Record<string,string>={PAC:'pace',RIT:'pace',SHO:'shooting',TIR:'shooting',PAS:'passing',DRI:'dribbling',REG:'dribbling',DEF:'defending',PHY:'physical',FIS:'physical',DIV:'diving',EST:'diving',HAN:'handling',PAR:'handling',KIC:'kicking',SAQ:'kicking',REF:'reflexes',SPD:'speed',VEL:'speed',POS:'positioning',COL:'positioning'}
@@ -86,21 +90,43 @@ export default defineUnlistedScript(()=>{
   return record
  }
  const inventoryRows=()=>all('li.listFUTItem')
- const readInventory=async()=>{
+ const disabled=(e:HTMLElement)=>e.hasAttribute('disabled')||e.getAttribute('aria-disabled')==='true'||e.classList.contains('disabled')
+ const pager=(direction:'next'|'previous')=>{
+  const labels=direction==='next'?['Next','Siguiente']:['Previous','Anterior']
+  const found=buttons().filter(e=>labels.some(label=>norm(e.textContent||'')===norm(label)||norm(e.getAttribute('aria-label')||'')===norm(label)||norm(e.getAttribute('title')||'')===norm(label)))
+  if(found.length>1)throw Error('page_changed')
+  return found[0]
+ }
+ const pageSignature=()=>JSON.stringify(inventoryRows().map(e=>basic(e)).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))))
+ const move=async(direction:'next'|'previous')=>{
+  const control=pager(direction);if(!control||disabled(control))throw Error('page_changed')
+  const before=pageSignature();await click(control)
+  await wait(()=>inventoryRows().length>0&&pageSignature()!==before?true:undefined,20000)
+ }
+ const readInventory=async(first:boolean,offset:number)=>{
   phase='inventory.navigation'
-  await labelled('nav button',['Club'])
-  await labelled('h1,h2,button',['Players','Jugadores'])
-  if(byLabel('button',['Reset','Restablecer','Reiniciar']).length===1)await labelled('button',['Reset','Restablecer','Reiniciar'])
-  if(byLabel('button',['Search','Buscar']).length===1&&inventoryRows().length===0)await labelled('button',['Search','Buscar'])
-  await wait(()=>inventoryRows().length>0?true:undefined)
-  const count=Math.min(20,inventoryRows().length),result:Card[]=[]
-  const expected=inventoryRows().slice(0,count).map(e=>basic(e))
+  if(first){
+   await labelled('nav button',['Club'])
+   await labelled('h1,h2,button',['Players','Jugadores'])
+   if(byLabel('button',['Reset','Restablecer','Reiniciar']).length===1)await labelled('button',['Reset','Restablecer','Reiniciar'])
+   if(byLabel('button',['Search','Buscar']).length===1)await labelled('button',['Search','Buscar'])
+   await wait(()=>inventoryRows().length>0?true:undefined)
+   // Do not silently start in the middle of a previous search.
+   for(let n=0;n<50;n++){
+    const previous=pager('previous');if(!previous||disabled(previous))break
+    await move('previous');if(n===49)throw Error('page_changed')
+   }
+  }else await move('next')
+  const count=inventoryRows().length,result:Card[]=[]
+  if(!count||count>30||offset+count>1000)throw Error('page_changed')
+  const signature=pageSignature(),expected=inventoryRows().map(e=>basic(e))
   for(let i=0;i<count;i++){
    const root=inventoryRows()[i]
    if(!root||JSON.stringify(basic(root))!==JSON.stringify(expected[i]))throw Error('page_changed')
-   result.push(await detailed(root,i,'club',null))
+   result.push(await detailed(root,offset+i,'club',null))
   }
-  return result
+  const next=pager('next')
+  return {cards:result,signature,end:next?(disabled(next)?'end':'next'):'unknown'}
  }
  const squadSlots=()=>all('.ut-squad-slot-view').filter(e=>all('div.rating',e).length>0)
  const readSquad=async()=>{
@@ -129,26 +155,30 @@ export default defineUnlistedScript(()=>{
   }
   return {cards:result,formation:formations[0]}
  }
- // User interaction cancels our read before the next click; never fight the owner.
+ // User interaction cancels the current stage. No private page objects or network hooks.
  const interrupted=(event:Event)=>{if(event.isTrusted)cancelled=true}
  chrome.runtime.onMessage.addListener((message,sender,reply)=>{
   if(sender.id!==chrome.runtime.id)return
   if(message?.kind==='ea-auto-stop'){cancelled=true;reply({ok:true});return}
-  if(message?.kind!=='ea-auto-read')return
-  if(running){reply({ok:false,reason:'page_changed'});return}
-  running=true;cancelled=false;deadline=Date.now()+240000
+  if(message?.kind!=='ea-auto-step')return
+  if(running){reply({ok:activeStep===message.step,reason:'busy'});return}
+  if(lastResult?.step===message.step){reply({ok:true});void deliver(lastResult);return}
+  if(!['squad','inventory-start','inventory-next'].includes(message.phase)||!Number.isInteger(message.offset)||message.offset<0||message.offset>999){reply({ok:false});return}
+  running=true;cancelled=false;activeStep=message.step;deadline=Date.now()+120000
   addEventListener('pointerdown',interrupted,true);addEventListener('keydown',interrupted,true)
+  reply({ok:true})
   void (async()=>{
+   let result:object
    try{
     check();const name=clubName()
     const club_fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(norm(name))))).map(n=>n.toString(16).padStart(2,'0')).join('')
-    const inventory=await readInventory(),squad=await readSquad()
+    const data=message.phase==='squad'?await readSquad():await readInventory(message.phase==='inventory-start',message.offset)
     check();if(clubName()!==name)throw Error('page_changed')
-    reply({ok:true,snapshot:{reader_version:'ea-visible-1',edition:'FC27',edition_basis:'owner_selected',club_fingerprint,club_name:name,
-     observed_at:new Date().toISOString(),inventory,squad:squad.cards,formation:squad.formation,active_squad_observed:true,inventory_complete:false}})
-   }catch(error){const code=error instanceof Error?error.message:'';console.warn('Club Lab reader stopped: '+phase);reply({ok:false,reason:['cancelled','timeout','login_required'].includes(code)?code:'page_changed'})}
+    result={ok:true,data:{...data,identity:{club_fingerprint,club_name:name}}}
+   }catch(error){const code=error instanceof Error?error.message:'';console.warn('Club Lab reader stopped: '+phase);result={ok:false,reason:['cancelled','timeout','login_required'].includes(code)?code:'page_changed'}}
    finally{running=false;removeEventListener('pointerdown',interrupted,true);removeEventListener('keydown',interrupted,true)}
+   lastResult={kind:'browser-auto-step-result',request_id:message.request_id,step:message.step,...result}
+   await deliver(lastResult)
   })()
-  return true
  })
 })

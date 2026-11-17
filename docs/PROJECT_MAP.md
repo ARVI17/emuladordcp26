@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Paginación 0.7 (17-nov): `ea-auto.ts` separa plantilla y páginas; `browser-auto-worker.ts` conserva etapas privadas en session storage y recibe eventos por etapa. `/browser-auto/progress` informa avance sin admitir cartas; `AutoSnapshot` v2 admite hasta 1000 con conciliación global y lotes internos de 30 en una transacción. Esquema 0023 sin cambios. `nginx.conf` resuelve cambios de IP internos. [Contrato](AUTOMATIC_CLUB_SYNC.md), [pruebas](TESTING.md).
+
 Puente automático (17-nov): **WXT 0.6.0 / 0023**, `entrypoints/club-app.content.ts`, `ea-auto.ts`, `lib/browser-auto-worker.ts`, `api/schemas/services/browser_auto.py`, `BrowserAutoLink` y `AutoClubSync`. Preferencia explícita, apertura por entrada, permiso local renovado, DOM EN/ES parcial, publicación idempotente y candados por puestos. Pruebas `test_browser_auto.py` y `extension/tests/automatic.spec.ts`. **AUTO-1 parcial, aceptación personal pendiente**; [contrato y límites](AUTOMATIC_CLUB_SYNC.md), [versión efectivamente instalada](NEXT_SESSION.md).
 
 Texto visible bilingüe (17-nov): `services/browser_text.py`, rutas/contratos `assisted`, `BrowserTextReader` y `VisualReview` añaden vista previa y revisión explícita de transcripciones EN/ES, sin migración. Procedencia `user_reviewed_text`, correspondencia de copias y bloqueo de retiradas/ambiguas. `import_export.py` normaliza las quince posiciones inglesas también para OCR. Pruebas `test_browser_text.py` y `e2e/browser-text.spec.ts`. [Contrato y límites](ASSISTED_READING.md), [resultados](TESTING.md).

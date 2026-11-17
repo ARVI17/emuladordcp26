@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.entities import now
 from app.models.reader import BrowserAutoLink, ReaderGrant
-from app.schemas.browser_auto import AutoEnable, AutoSnapshot, AutoFailure
+from app.schemas.browser_auto import AutoEnable, AutoSnapshot, AutoFailure, AutoProgress
 from app.api.reader import authenticated, binding
 from app.services.assisted import require_assisted
 from app.services.audit import record
@@ -65,6 +65,7 @@ def start(db: Session = Depends(get_db)):
         db.flush()
         row.request_id, row.grant_id = str(uuid4()), grant.id
         row.requested_at, row.updated_at, row.status = now(), now(), 'reading'
+        row.result = {**row.result, 'progress':dict(pages_read=0, cards_read=0, phase='squad')}
         record(db, 'start_browser_auto', 'reader', 0, {'request_id':row.request_id})
         db.commit()
         return dict(request_id=row.request_id, pairing_id=grant.id, code=code,
@@ -113,4 +114,23 @@ def failure(payload: AutoFailure, auth=Depends(authenticated)):
             row.status, row.updated_at = payload.reason, now()
             record(db, 'fail_browser_auto', 'reader', 0, {'reason':payload.reason})
             db.commit()
+        return service.status(row)
+
+
+@router.post('/progress')
+def progress(payload: AutoProgress, auth=Depends(authenticated)):
+    db, grant = auth
+    with resource_locks(db, 'browser-auto'):
+        db.expire_all()
+        if grant.status != 'active': raise HTTPException(401, 'Lector revocado.')
+        binding(db, grant)
+        row = service.require_run(db, grant, payload.request_id)
+        if row.status != 'reading': raise HTTPException(409, 'La lectura ya termino.')
+        old = row.result.get('progress', {})
+        if payload.pages_read < old.get('pages_read', 0) or payload.cards_read < old.get('cards_read', 0):
+            raise HTTPException(409, 'El progreso no puede retroceder.')
+        row.result = {**row.result, 'progress':payload.model_dump(mode='json', exclude={'request_id'})}
+        row.updated_at = now()
+        record(db, 'progress_browser_auto', 'reader', 0, {'pages':payload.pages_read, 'cards':payload.cards_read})
+        db.commit()
         return service.status(row)
