@@ -2,11 +2,11 @@
 
 <!-- Generado por scripts/project_status.py --render-plan; editar PROJECT_STATE.json. -->
 
-Revisión humana: **2026-11-16**. Sprint: Revalidación documental, caducidad por fuente y preparación del club real.
+Revisión humana: **2026-11-16**. Sprint: WXT 0.5.1, regresión de veinte copias y conexión de Chrome para el club real.
 
 Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.
 
-**Siguiente paso:** Aceptar 20 cartas reales mediante captura voluntaria en localhost:8090, corregir dos lecturas y reescanear sin duplicar; proteger once y siete suplentes y comparar al menos tres alternativas. Seguir docs/REAL_CLUB_FIRST_LOAD.md. La revisión pública vence el 16-dic-2026 a las 22:10:56 UTC; no renovarla sin contraste.
+**Siguiente paso:** Completar la conexión oficial de Chrome (observada sin instalar), cargar WXT 0.5.1 y contrastar un perfil EA en el contexto asistido existente. Revisar 20 cartas reales y dos nuevas lecturas sin duplicarlas; después registrar once y siete suplentes explícitos. Las pruebas sintéticas no cierran esa aceptación. Seguir docs/REAL_CLUB_FIRST_LOAD.md.
 
 Disponible significa código existente; la validación con el club real se registra por separado. Estos estados no se convierten en completos por pasar pruebas sintéticas.
 
@@ -14,9 +14,9 @@ Disponible significa código existente; la validación con el club real se regis
 | --- | --- | --- | --- |
 | MEM-1 · Memoria y continuidad | Disponible | No aplica | Revisar criterios y siguiente acción en cada sprint; el diagnóstico no decide que el producto esté terminado. |
 | KNOW-1 · Vigencia de formaciones y contenido | Disponible | Contrastado | Fuentes contrastadas el 16-nov y desplegadas en 96a8d21/0022: 11 identificadores de formación, 20 variantes y 27 referencias documentadas. Cinco variantes pendientes, incluidas R33/R49 por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC; sin renovación automática. Pases corregidos focalizado/integral y CI aprobados; no acreditan el club real. |
-| DATA-1 · Club real revisado | Parcial | Pendiente | Cero cartas FC27 activas al auditar. OCR con filas sintéticas; falta contrastar fichas reales. |
-| DATA-2 · Identidad de variantes y copias | Parcial | Pendiente | Agrupación provisional entre páginas; falta correspondencia canónica robusta para fichas gráficas y resolución de copias. |
-| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Formaciones revalidadas y cinco perfiles locales disponibles. Falta contrastar el club real, seleccionar/proteger explícitamente la principal y comparar al menos tres alternativas con sus carencias. |
+| DATA-1 · Club real revisado | Parcial | Pendiente | Cero cartas reales guardadas en este trabajo. WXT 0.5.1 corrige el panel y prueba veinte copias sintéticas; falta conectar Chrome, instalar/contrastar el lector EA y revisar veinte cartas personales. El bloqueo de URL no acredita un fallo OCR. |
+| DATA-2 · Identidad de variantes y copias | Parcial | Pendiente | Dos relecturas sintéticas conservan veinte IDs y revisiones repetidas no multiplican copias. Falta contrastar variantes y correspondencia de copias reales; no hay identificadores EA canónicos acreditados. |
+| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Formaciones vigentes y cinco perfiles locales. Regresión sintética de once más siete protegidos; principal real aún no observada/registrada. Falta comparar tres alternativas con las cartas personales y sus carencias. |
 | DCP-1 · DCP activos útiles para el equipo | Parcial | Pendiente | Solver local y lectura manual existen; faltan un tradicional y un simplificado reales, vigencia y compras integradas. |
 | PRICE-1 · Precios y presupuesto trazables | Parcial | Pendiente | Cotizaciones manuales existen; importación/conciliación pendientes. Mercado y fichajes están bloqueados en contexto visual por require_module. |
 | TRADE-1 · Excedentes y compras para mejorar | Parcial | Pendiente | Comparador por puesto, planes y reservas existen; falta selección transversal de ventas y compras con impacto en el once completo. |
@@ -53,7 +53,7 @@ Dependencias: ninguna.
 - 20 cartas reales revisadas, dos correcciones y reescaneo idempotente. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.
 - Cobertura parcial no elimina cartas ausentes ni revive consumidas; cuenta/contexto y procedencia se conservan.
 
-Código/evidencia: [backend/app/services/visual_scan.py](../backend/app/services/visual_scan.py), [backend/app/services/scan_ocr.py](../backend/app/services/scan_ocr.py), [frontend/src/components/VisualScanner.tsx](../frontend/src/components/VisualScanner.tsx), [backend/tests/test_visual_scan.py](../backend/tests/test_visual_scan.py), [docs/REAL_CLUB_FIRST_LOAD.md](../docs/REAL_CLUB_FIRST_LOAD.md).
+Código/evidencia: [backend/app/services/visual_scan.py](../backend/app/services/visual_scan.py), [backend/app/services/scan_ocr.py](../backend/app/services/scan_ocr.py), [frontend/src/components/VisualScanner.tsx](../frontend/src/components/VisualScanner.tsx), [backend/tests/test_visual_scan.py](../backend/tests/test_visual_scan.py), [docs/REAL_CLUB_FIRST_LOAD.md](../docs/REAL_CLUB_FIRST_LOAD.md), [extension/entrypoints/sidepanel/main.ts](../extension/entrypoints/sidepanel/main.ts), [extension/tests/first20.spec.ts](../extension/tests/first20.spec.ts).
 
 ### DATA-2 · Identidad de variantes y copias
 
@@ -63,7 +63,7 @@ Dependencias: DATA-1.
 - Distinguir oro base, especiales, holográficas y Evo; ambigüedades exigen revisión y no se admiten por defecto.
 - Cada copia conserva su procedencia/contexto; catálogo público y posesión permanecen separados.
 
-Código/evidencia: [backend/app/services/catalog_validation.py](../backend/app/services/catalog_validation.py), [backend/app/services/visual_scan.py](../backend/app/services/visual_scan.py), [docs/OCR_DATA_MODEL.md](../docs/OCR_DATA_MODEL.md).
+Código/evidencia: [backend/app/services/catalog_validation.py](../backend/app/services/catalog_validation.py), [backend/app/services/visual_scan.py](../backend/app/services/visual_scan.py), [docs/OCR_DATA_MODEL.md](../docs/OCR_DATA_MODEL.md), [extension/tests/first20.spec.ts](../extension/tests/first20.spec.ts).
 
 ### TEAM-1 · Principal competitiva y alternativas
 

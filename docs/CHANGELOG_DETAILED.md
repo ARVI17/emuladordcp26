@@ -1,5 +1,11 @@
 # Cambios detallados
 
+## 16 de noviembre de 2026 · WXT 0.5.1 y primeras veinte copias
+
+El panel del lector podía lanzar una excepción por `resultú.groups` cuando existía un informe. Se corrige la clave y el acceso opcional a resultados pendientes. Nueva regresión compilada con Chromium/PostgreSQL aislados: veinte copias, dos relecturas sin multiplicarlas y protección explícita de once más siete, sin inferir principal del orden de una lista. No cambia API, migración, permisos ni selectores EA. [Resultados](TESTING.md).
+
+El diagnóstico de Chrome distingue dos extensiones: la conexión oficial del chat y WXT. Se observó la primera sin instalar; la aceptación del club real sigue abierta. Se actualiza el relevo con el bloqueo de verificación de URL y los pasos para contrastar el lector real sin eludir esa guarda. [Guía](REAL_CLUB_FIRST_LOAD.md), [continuidad](NEXT_SESSION.md).
+
 ## 16 de noviembre de 2026 · formaciones y catálogo revalidados
 
 Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).

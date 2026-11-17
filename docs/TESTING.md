@@ -1,5 +1,13 @@
 # Pruebas del planificador FC27
 
+## WXT y primeras veinte copias · 16-nov-2026
+
+Extensión 0.5.1, base a8bd539 con cambios locales (`source_dirty=true`). Se corrige la referencia inexistente `resultú.groups` del panel: el informe pendiente y las propuestas calculadas deben renderizar sin excepciones. Sin cambios de backend, esquema o permisos de extensión. Instalación personal sin recrear: 96a8d21/0022 en 8090.
+
+Pases aislados **c4424a006a** y **390af9b380**, `--scope extension`: **15 pruebas aprobadas en cada uno**. Build/TypeScript, arranque, salud/OpenAPI, Alembic current/check y limpieza aprobados en ambos. `main_stack_unchanged=true`, `volumes_unchanged=true`. Nueva regresión `first20.spec.ts`: 20 cartas sintéticas admitidas; dos lecturas nuevas reutilizan 20 IDs cada una, revisión repetida idempotente, principal no inferida; una lectura distinta de plantilla registra once y siete suplentes explícitos y sus 18 intentos de archivo se rechazan con 409. Otra lectura de inventario conserva IDs/protección. El panel muestra datos pendientes y calculados sin errores. No hubo fallos en estos dos pases.
+
+Chrome personal: conexión del navegador no instalada, observada en Ajustes; el acceso directo devuelve `Browser is not available: chrome`. Turnos anteriores pararon por URL no verificable. **NO_EJECUTADA**: carga de 20 cartas reales, correcciones/relecturas reales, protección real, navegación automática EA. Las pruebas anteriores de 65/300 cartas, recuperación de worker, cambios de contexto y privacidad también pasan en este arnés. No se repitieron Pytest/Vitest/Playwright de la SPA: la modificación afecta solo a extensión y memoria.
+
 ## Revalidación de fuentes · 16-nov-2026
 
 Fuentes y alcance: [SOURCE_REVIEW_20261116](SOURCE_REVIEW_20261116.md). Migración nueva 0022, pruebas de fechas independientes del calendario de ejecución y conservación de revisiones locales.

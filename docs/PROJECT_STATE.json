@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewed_on": "2026-11-16",
   "mission": "Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.",
-  "sprint": "Revalidación documental, caducidad por fuente y preparación del club real",
-  "next_action": "Aceptar 20 cartas reales mediante captura voluntaria en localhost:8090, corregir dos lecturas y reescanear sin duplicar; proteger once y siete suplentes y comparar al menos tres alternativas. Seguir docs/REAL_CLUB_FIRST_LOAD.md. La revisión pública vence el 16-dic-2026 a las 22:10:56 UTC; no renovarla sin contraste.",
+  "sprint": "WXT 0.5.1, regresión de veinte copias y conexión de Chrome para el club real",
+  "next_action": "Completar la conexión oficial de Chrome (observada sin instalar), cargar WXT 0.5.1 y contrastar un perfil EA en el contexto asistido existente. Revisar 20 cartas reales y dos nuevas lecturas sin duplicarlas; después registrar once y siete suplentes explícitos. Las pruebas sintéticas no cierran esa aceptación. Seguir docs/REAL_CLUB_FIRST_LOAD.md.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,7 +54,7 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "Cero cartas FC27 activas al auditar. OCR con filas sintéticas; falta contrastar fichas reales.",
+      "gap": "Cero cartas reales guardadas en este trabajo. WXT 0.5.1 corrige el panel y prueba veinte copias sintéticas; falta conectar Chrome, instalar/contrastar el lector EA y revisar veinte cartas personales. El bloqueo de URL no acredita un fallo OCR.",
       "acceptance": [
         "Login por el usuario y captura por gesto; pausa, cancelación y salida terminan el flujo sin persistir imágenes o credenciales.",
         "20 cartas reales revisadas, dos correcciones y reescaneo idempotente. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.",
@@ -65,7 +65,9 @@
         "backend/app/services/scan_ocr.py",
         "frontend/src/components/VisualScanner.tsx",
         "backend/tests/test_visual_scan.py",
-        "docs/REAL_CLUB_FIRST_LOAD.md"
+        "docs/REAL_CLUB_FIRST_LOAD.md",
+        "extension/entrypoints/sidepanel/main.ts",
+        "extension/tests/first20.spec.ts"
       ]
     },
     {
@@ -76,7 +78,7 @@
       "depends_on": [
         "DATA-1"
       ],
-      "gap": "Agrupación provisional entre páginas; falta correspondencia canónica robusta para fichas gráficas y resolución de copias.",
+      "gap": "Dos relecturas sintéticas conservan veinte IDs y revisiones repetidas no multiplican copias. Falta contrastar variantes y correspondencia de copias reales; no hay identificadores EA canónicos acreditados.",
       "acceptance": [
         "Nombre, media o confianza OCR no certifican por sí solos identidad, posesión, transferibilidad ni versión.",
         "Distinguir oro base, especiales, holográficas y Evo; ambigüedades exigen revisión y no se admiten por defecto.",
@@ -85,7 +87,8 @@
       "evidence": [
         "backend/app/services/catalog_validation.py",
         "backend/app/services/visual_scan.py",
-        "docs/OCR_DATA_MODEL.md"
+        "docs/OCR_DATA_MODEL.md",
+        "extension/tests/first20.spec.ts"
       ]
     },
     {
@@ -98,7 +101,7 @@
         "DATA-1",
         "DATA-2"
       ],
-      "gap": "Formaciones revalidadas y cinco perfiles locales disponibles. Falta contrastar el club real, seleccionar/proteger explícitamente la principal y comparar al menos tres alternativas con sus carencias.",
+      "gap": "Formaciones vigentes y cinco perfiles locales. Regresión sintética de once más siete protegidos; principal real aún no observada/registrada. Falta comparar tres alternativas con las cartas personales y sus carencias.",
       "acceptance": [
         "Selección explícita de principal, banquillo y reservas; proteger sus copias frente a consumo/venta.",
         "Comparar al menos tres alternativas con once y siete suplentes, posiciones legales, fijados/excluidos, fortalezas y carencias. Reutilizar protegidas para jugar.",

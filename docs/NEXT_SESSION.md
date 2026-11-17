@@ -1,6 +1,18 @@
 # Continuación exacta · Club Lab FC27
 
-Corte 16-nov-2026. Prioridad: plantilla competitiva con las cartas reales del propietario. Este incremento corrige la caducidad documental; la aceptación del club real sigue pendiente.
+Corte 16-nov-2026. Prioridad: plantilla competitiva con las cartas reales del propietario. WXT 0.5.1 corrige el panel y añade la regresión de veinte copias; la aceptación del club real sigue pendiente. La instalación personal sigue en 96a8d21/0022.
+
+## Relevo de Chrome y WXT
+
+Trabajo actual en `C:/Users/arvi_/.codex/worktrees/fc27-source-review-verification/emuladordcp26`, rama `codex/wxt-first20-20261116`, base a8bd539. La rama anterior y PR #10 permanecen sin merge. Conservar la eliminación ajena de `.vscode/settings.json` en el checkout original.
+
+El propietario inició sesión en EA por su cuenta, abrió sus cartas y autorizó al agente a hacer la lectura y selección de pestaña. La captura anterior solo llegó a solicitar el inicio: resultado no confirmado. Computer Use detuvo dos turnos por no poder verificar la URL de Chrome; no fue un fallo observado de OCR o de la API. No reintentar mediante CDP, cookies, un perfil copiado o una extensión para eludir esa guarda.
+
+Diagnóstico posterior: el inventario de navegadores solo expone el interno y MCP Apps; `createBrowserTab('chrome', ...)` devuelve `Browser is not available: chrome`. En Ajustes → Uso del ordenador, Google Chrome muestra **Extensión del navegador no instalada / Instalar**. Esta conexión de ChatGPT es distinta de WXT. La instalación y conexión aún no están verificadas. Guía oficial: https://learn.chatgpt.com/docs/chrome-extension.
+
+WXT 0.5.1 corrige `resultú.groups` por `result?.groups`: antes podía interrumpirse la actualización del panel al existir un informe, tanto pendiente como calculado. La nueva prueba usa Chromium temporal y PostgreSQL tmpfs: veinte cartas sintéticas, dos nuevas lecturas que reutilizan los mismos veinte IDs, repetición de revisión, principal explícita de once más siete y rechazo de archivo de sus dieciocho copias. No se infiere principal por orden de inventario. Pases **c4424a006a / 390af9b380: 15 pruebas aprobadas en cada uno**, instalación y volúmenes intactos. Resultados en TESTING.md.
+
+Aceptación personal al corte: **0 cartas guardadas por este trabajo; dos relecturas reales y protección real pendientes**. No guardar nombres, inventarios, imágenes o credenciales en esta memoria. Una vez conectado Chrome, instalar la carpeta compilada WXT, emparejar el contexto asistido existente, observar y contrastar un perfil de región EA antes de admitir cartas. `Analizar mi club` solo extrae automáticamente el contrato local de muestras; EA sigue requiriendo perfil revisado. No anunciar scraping o clics automáticos EA como terminados.
 
 ## Al retomar
 
