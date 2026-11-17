@@ -171,7 +171,10 @@ export default defineUnlistedScript(()=>{
   void (async()=>{
    let result:object
    try{
-    check();const name=clubName()
+    check()
+    // EA can finish loading the document before rendering its signed-in club.
+    // Keep checking for Login while waiting; never read credentials or page state.
+    const name=await wait(()=>text('.view-navbar-clubinfo-name',document)?clubName():undefined,20000)
     const club_fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(norm(name))))).map(n=>n.toString(16).padStart(2,'0')).join('')
     const data=message.phase==='squad'?await readSquad():await readInventory(message.phase==='inventory-start',message.offset)
     check();if(clubName()!==name)throw Error('page_changed')

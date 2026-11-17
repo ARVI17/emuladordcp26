@@ -5,11 +5,12 @@ import fs from 'node:fs'
 
 // Synthetic UI only, intercepted in a disposable browser; no real EA request.
 function fixture(spanish:boolean,total=20){return `<!doctype html><html><head><meta charset="utf-8"><title>FC Ultimate Team</title><style>.ut-squad-slot-view .name{display:none}</style></head><body>
-<span class="view-navbar-clubinfo-name">Club automático SINTÉTICO</span><main id="view"></main><div id="detail"></div>
+<span class="view-navbar-clubinfo-name">${total>20?'':'Club automático SINTÉTICO'}</span><main id="view"></main><div id="detail"></div>
 <nav><button onclick="show('club')">Club</button><button onclick="show('squads')">${spanish?'Plantillas':'Squads'}</button></nav>
 <script>
 const es=${spanish},positions=es?['POR','LD','DFC','DFC','LI','MC','MC','MC','ED','DC','EI']:['GK','RB','CB','CB','LB','CM','CM','CM','RW','ST','LW'];
 const total=${total};let selected=0,kind='inventory',reverse=false,pageIndex=0;
+if(total>20)setTimeout(()=>document.querySelector('.view-navbar-clubinfo-name').textContent='Club automático SINTÉTICO',1000);
 const stats=()=>'<ul class="player-stats-data-component">'+(es?['RIT','TIR','PAS','REG','DEF','FIS']:['PAC','SHO','PAS','DRI','DEF','PHY']).map(s=>'<li>'+s+' 80</li>').join('')+'</ul>';
 const card=i=>'<div class="name">Auto visible '+i+'</div><div class="rating">88</div><div class="position">'+positions[i%11]+'</div>'+stats();
 function choose(i){selected=i;document.getElementById('detail').innerHTML=(kind==='squad'?'<h1>'+(es?'Detalles del jugador':'Player Details')+'</h1><button onclick="closeDetails()">\uE09B</button>':'')+'<button onclick="bio()">'+(es?'Datos del jugador':'Player Bio')+'</button>'}
