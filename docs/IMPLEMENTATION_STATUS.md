@@ -1,5 +1,9 @@
 # Estado verificable
 
+## Correcciones tras instalar el lector · 17-nov-2026
+
+Lector detectado y actualización activada. 0.7.0 falló en navegación; 0.7.1 avanzó a la plantilla y falló en la selección interna. Ambos intentos reales conservaron los veinte IDs, sin publicación. **0.7.2 / 9c93268** añade selección del elemento visible, gestos y final de lista sin Next; **18 WXT aprobados en 88e09c4eea**. Las 32 fuentes dentro de la imagen probada coinciden con el commit; nueve archivos actualizados en la carpeta instalada, con copia anterior. Recarga del lector y aceptación real pendientes; la app permanece abb7e6e/0023. Diagnóstico visible: veinte páginas/398 cartas, sin importarlas. [Fallos y pruebas](TESTING.md), [siguiente acción](NEXT_SESSION.md).
+
 ## Segundo plano y páginas · WXT 0.7 · 17-nov-2026
 
 **abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.

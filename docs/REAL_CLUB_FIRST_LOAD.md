@@ -1,6 +1,6 @@
 # Primera carga del club real
 
-**Incremento vigente, 17-nov:** app **abb7e6e/0023 desplegada**, WXT **0.7.0** con páginas y segundo plano. Dos pases corregidos, veinte EN/ES y 65 en cuatro páginas, dos reaperturas sin duplicados y dieciocho candados sintéticos. **Instalación personal y aceptación pendientes**. Artefacto: `C:/Users/arvi_/ClubLab-Lector-0.7/chrome-mv3`; continuar desde [NEXT_SESSION](NEXT_SESSION.md). Las vías manuales inferiores son alternativas históricas y no acreditan AUTO-1.
+**Incremento vigente, 17-nov:** app **abb7e6e/0023 desplegada**, lector instalado/detectado y actualización activada. Los intentos 0.7.0/0.7.1 se detuvieron antes de publicar. **0.7.2 / 9c93268** corrige gestos, selección interna y final de página, con 18 WXT aprobados en 88e09c4eea. Paquete actualizado en `C:/Users/arvi_/ClubLab-Lector-0.7/chrome-mv3`; **recarga de extensión y aceptación personal pendientes**. Diagnóstico visible de 20 páginas/398 cartas no es importación automática. Continuar desde [NEXT_SESSION](NEXT_SESSION.md). Las vías manuales inferiores son alternativas históricas y no acreditan AUTO-1.
 
 **Prioridad posterior del propietario (17-nov):** este recorrido asistido no satisface el producto solicitado. Debe sustituirse como camino habitual por actualización y análisis automáticos al abrir la app. [AUTO-1: conexión, límites y prueba exigida](AUTOMATIC_CLUB_SYNC.md). Las instrucciones siguientes describen la alternativa manual existente, no la siguiente fase de desarrollo.
 

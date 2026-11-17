@@ -1,5 +1,9 @@
 # Cambios detallados
 
+## 17 de noviembre de 2026 · gestos y elementos reales de EA
+
+Tras instalar/activar el lector se contrastaron dos fallos reales: navegación con clic simple y selección sobre el contenedor del puesto. 0.7.1 corrigió el primero; **0.7.2 / 9c93268** dirige el gesto al elemento visible dentro del control y reconoce el final de lista sin Next. **88e09c4eea: 18 WXT aprobados**, incluidas carga/dos reaperturas EN/ES de veinte y 65 con cuatro páginas. Paquete probado actualizado en la misma carpeta tras comparar las 32 fuentes de imagen y commit; copia anterior conservada. Recarga y aceptación personal pendientes. App abb7e6e/0023 intacta; veinte IDs personales conservados tras los fallos. Diagnóstico de veinte páginas/398 filas no equivale a importación. [Continuidad](NEXT_SESSION.md), [resultados](TESTING.md).
+
 ## 17 de noviembre de 2026 · WXT 0.7, páginas y segundo plano
 
 **abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.

@@ -1,6 +1,6 @@
 # Actualización automática del club · decisión de producto
 
-Revisión: **17-nov-2026**. Estado: **puente WXT 0.7.0 implementado y app desplegada; instalación/aceptación personal pendientes**. El código incorpora apertura automática, lectura DOM EN/ES, conciliación parcial y protección por puestos. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
+Revisión: **17-nov-2026**. Estado: **WXT instalado/detectado y activado; corrección 0.7.2 preparada, recarga/aceptación personal pendientes**. La app sigue desplegada en abb7e6e/0023. Los intentos reales previos fallaron antes de publicar, conservando las veinte copias. 0.7.2 corrige los gestos, el elemento interno que recibe la selección y el final de lista sin Next. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
 
 ## Segundo plano y páginas · WXT 0.7
 
