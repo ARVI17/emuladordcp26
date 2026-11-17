@@ -112,8 +112,16 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
     await chrome.scripting.executeScript({target:{tabId:tabs[0].id},func:()=>{
      const runtime=chrome.runtime as unknown as {sendMessage:(message:any)=>Promise<unknown>}
      const original=runtime.sendMessage.bind(runtime),until=Date.now()+10000
-     runtime.sendMessage=message=>message?.kind==='browser-auto-step-result'&&Date.now()<until
-      ?Promise.reject(Error('Synthetic temporary transport loss')):original(message)
+     let dropped=0
+     const replacement=(message:any)=>{
+      if(message?.kind==='browser-auto-step-result'&&Date.now()<until){
+       document.documentElement.setAttribute('data-test-reader-drops',String(++dropped))
+       return Promise.reject(Error('Synthetic temporary transport loss'))
+      }
+      return original(message)
+     }
+     runtime.sendMessage=replacement
+     if(runtime.sendMessage!==replacement)throw Error('Fixture transport fault was not installed')
     }})
    }),'temporary_content_transport_loss')
    stage('stopping_worker')
@@ -124,7 +132,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   }
   stage('waiting_first_publication')
   await waitUpdated()
-  if(total>20)expect(interruptedProgress).toBe(true)
+  if(total>20){expect(interruptedProgress).toBe(true);expect(Number(await ea.locator('html').getAttribute('data-test-reader-drops'))).toBeGreaterThanOrEqual(2)}
   await expect(panel).toContainText('principal y suplentes protegidos',{timeout:150000})
   // Refresh request headers after the SPA creates its entry; the extension never gets them.
   await refreshHeaders()
