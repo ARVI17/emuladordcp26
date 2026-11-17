@@ -22,7 +22,12 @@ if(next==='squads')html='<h1 onclick="show(&quot;squad&quot;)">'+(es?'Plantilla 
 if(next==='inventory'){let order=Array.from({length:total},(_,i)=>i);if(reverse)order.reverse();order=order.slice(pageIndex*20,(pageIndex+1)*20);html='<h1>'+(es?'Jugadores de mi club':'My Club Players')+'</h1><button onclick="show(&quot;club&quot;)">'+(es?'Buscar':'Search')+'</button><ul>'+order.map(i=>'<li class="listFUTItem" onclick="choose('+i+')">'+card(i)+'</li>').join('')+'</ul><button '+(pageIndex===0?'disabled':'')+' onclick="pageIndex--;show(&quot;inventory&quot;)">'+(es?'Anterior':'Previous')+'</button><button '+((pageIndex+1)*20>=total?'disabled':'')+' onclick="pageIndex++;show(&quot;inventory&quot;)">'+(es?'Siguiente':'Next')+'</button>'}
 if(next==='squad')html='<div>4-3-3</div><div class="ut-squad-pitch-view">'+Array.from({length:11},(_,i)=>'<div class="ut-squad-slot-view" onclick="choose('+i+')"><div class="ut-squad-slot-pedestal-view"><span class="label">'+positions[i]+'</span><span>++</span></div>'+card(i)+'</div>').join('')+'</div><div class="ut-squad-slot-dock-view">'+Array.from({length:7},(_,n)=>'<div class="ut-squad-slot-view" onclick="choose('+(n+11)+')">'+card(n+11)+'</div>').join('')+'<p>'+(es?'Arrastra jugadores para cambiar suplentes':'Drag any player to and from the pitch to swap subs')+'</p></div>';
 document.getElementById('view').innerHTML=html}
+// English requires a press/release gesture. Ordinary click alone has no effect;
+// this models the real navigation failure that click-only fixtures concealed.
+function wireGestures(){if(es)return;document.querySelectorAll('[onclick]').forEach(e=>{const action=e.onclick;e.removeAttribute('onclick');let pressed=false;e.onmousedown=()=>{pressed=true};e.onmouseup=event=>{if(!pressed)return;pressed=false;action.call(e,event)}})}
+new MutationObserver(wireGestures).observe(document.body,{childList:true,subtree:true});
 show('inventory');
+wireGestures();
 </script></body></html>`}
 
 for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`automatic open ${spanish?'ES':'EN'}: ${total} copies twice again, XI and seven locked`,async()=>{
@@ -65,6 +70,10 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   ea.on('console',message=>{if(message.text().startsWith('Club Lab reader stopped:'))console.log(message.text())})
   await ea.goto('https://www.ea.com/ea-sports-fc/ultimate-team/web-app/')
   await expect(ea.locator('li.listFUTItem')).toHaveCount(20)
+  if(!spanish){
+   await ea.getByRole('button',{name:'Squads',exact:true}).evaluate((e:HTMLElement)=>e.click())
+   await expect(ea.getByRole('heading',{name:'My Club Players',exact:true})).toBeVisible()
+  }
   const session=await (await context.request.post(base+'/api/app/session')).json()
   const headers={'X-CSRF-Token':session.csrf_token,'X-App-Entry':''}
   const request=async(route:string,data?:unknown)=>{

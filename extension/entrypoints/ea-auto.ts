@@ -32,7 +32,19 @@ export default defineUnlistedScript(()=>{
   while(Date.now()<until){check();const value=read();if(value!==undefined)return value;await new Promise(r=>setTimeout(r,150))}
   throw Error('page_changed')
  }
- const click=async(e:HTMLElement)=>{check();if(!visible(e))throw Error('page_changed');e.click();await new Promise(r=>setTimeout(r,180));check()}
+ const click=async(e:HTMLElement)=>{
+  check();if(!visible(e))throw Error('page_changed')
+  // EA navigation uses a press/release gesture; HTMLElement.click() alone left
+  // the real Squads button unchanged. Use DOM input events, never page internals.
+  const rect=e.getBoundingClientRect(),point={clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2,button:0,bubbles:true,cancelable:true,composed:true,view:window}
+  e.dispatchEvent(new PointerEvent('pointerdown',{...point,buttons:1,pointerId:1,pointerType:'mouse',isPrimary:true}))
+  e.dispatchEvent(new MouseEvent('mousedown',{...point,buttons:1}))
+  await new Promise(r=>setTimeout(r,40));check()
+  e.dispatchEvent(new PointerEvent('pointerup',{...point,buttons:0,pointerId:1,pointerType:'mouse',isPrimary:true}))
+  e.dispatchEvent(new MouseEvent('mouseup',{...point,buttons:0}))
+  if(e.isConnected&&visible(e))e.dispatchEvent(new MouseEvent('click',{...point,buttons:0,detail:1}))
+  await new Promise(r=>setTimeout(r,180));check()
+ }
  const labelled=async(selector:string,labels:string[])=>{
   const e=await wait(()=>{const found=byLabel(selector,labels);return found.length===1?found[0]:undefined})
   await click(e)
@@ -131,9 +143,11 @@ export default defineUnlistedScript(()=>{
  }
  const squadSlots=()=>all('.ut-squad-slot-view').filter(e=>all('div.rating',e).length>0)
  const readSquad=async()=>{
-  phase='squad.navigation'
+  phase='squad.navigation.squads'
   await labelled('nav button',['Squads','Plantillas'])
+  phase='squad.navigation.active'
   await labelled('h1,h2,button',['Active Squad','Plantilla activa'])
+  phase='squad.navigation.slots'
   await wait(()=>squadSlots().length>=18?true:undefined)
   const formations=Array.from(new Set(all('button,option,span,div').filter(e=>e.children.length===0).map(e=>clean(e.textContent)).filter(v=>/^\d(?:-\d){2,4}(?:\s*\(\d\))?$/.test(v))))
   if(formations.length!==1)throw Error('page_changed')
