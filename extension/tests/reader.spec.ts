@@ -41,7 +41,7 @@ test('compiled MV3 → loopback → Nginx → PostgreSQL → review → proposal
   const id=new URL(worker.url()).hostname
   const panel=await context.newPage();await panel.goto(`chrome-extension://${id}/sidepanel.html`);await panel.locator("#technical > summary").click();await panel.locator("#pairing-settings > summary").click();await panel.locator("#legacy-tools > summary").click()
   const manifest=JSON.parse(await readFile(path.join(extension,'manifest.json'),'utf8'))
-  expect(manifest.permissions).not.toContain('cookies');expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*'])
+  expect(manifest.permissions).not.toContain('cookies');expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*','https://www.ea.com/*'])
   const s=await context.request.post(base+'/api/app/session');expect(s.ok()).toBeTruthy()
   const session=await s.json()
   let headers={'X-CSRF-Token':session.csrf_token,'X-App-Entry':''}

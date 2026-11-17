@@ -54,6 +54,8 @@ def serialize_player(player: Player, protected_ids: set[int] | None = None) -> d
         result.update(evidence.get('additional_facts',{}))
     if evidence.get('source_kind') == 'browser_text':
         result.update(ownership_source='user_reviewed_text', source_kind='browser_text')
+    if evidence.get('source_kind') == 'browser_auto':
+        result.update(ownership_source='user_authorized_browser', source_kind='browser_auto')
     result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') in {'observed_copy', 'visual_copy'} else None
     result['metadata_pending'] = [key for key in ('league', 'club', 'nationality', 'card_type', 'rare', 'special', 'chemistry', 'alternate_positions', 'attributes', 'playstyles', 'roles', 'is_loan', 'is_evolution', 'tradable', 'is_holographic') if not field_known(player, key)]
     for key in ('rare', 'special', 'chemistry', 'is_holographic', 'tradable', 'is_loan', 'is_evolution'):

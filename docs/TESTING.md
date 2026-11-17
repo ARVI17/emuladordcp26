@@ -1,5 +1,27 @@
 # Pruebas del planificador FC27
 
+## WXT automático 0.6.0 / 0023 · 17-nov-2026
+
+Incremento de aplicación, backend y extensión; no es solo documentación. Preferencia local por contexto, arranque por entrada, concesión temporal, navegación por DOM visible EN/ES, publicación atómica/idempotente, correspondencia conservadora y protección de principal/banquillo/reservas. Procedencia `user_authorized_browser`, nunca proveedor EA verificado. Resultados de aceptación personal e instalación en NEXT_SESSION; no contarlos a partir de fixtures.
+
+Fallos y correcciones durante desarrollo, sobre f0aa7e8 con cambios (`source_dirty=true`):
+
+| Pase | Resultado / corrección |
+| --- | --- |
+| 587edf5cd6 | Backend focal: 60 Pytest aprobados; build/salud/OpenAPI/Alembic current/check 0023 aprobados. |
+| d40b610cc9 | Falla TypeScript por accesos potencialmente indefinidos al parsear atributos/puestos; corregidos. No ejecutó WXT. |
+| c102fda115 | WXT 14 pasan / 3 fallan: el proxy de pruebas reenviaba un Origin distinto al Host de Nginx y la aserción del manifiesto esperaba los permisos antiguos. Corregidos sin ampliar CORS de producción. |
+| 423223e235 | WXT 15 pasan / 2 fallan: comillas de los manejadores del fixture impedían mostrar sus cartas. Corregido el HTML de pruebas y añadida comprobación inicial de veinte filas. |
+| f4bc0e404e / 5427113711 | WXT 15 pasan / 2 fallan en cada uno: codificación del fixture alteraba el icono Atrás. Diagnóstico por fase sin datos personales y charset UTF-8 explícito. En paralelo se contrastó el DOM real de plantilla y se adaptaron nombres ocultos, leyendas de bancos y dos regresos. |
+| 74de072509 | 61 Pytest y 43 Vitest pasan; 2 Playwright fallan por `crypto.randomUUID` indisponible en el origen HTTP del arnés. Reutilizado el generador seguro existente con `getRandomValues`; no se relajó seguridad. WXT no ejecutado tras ese fallo. |
+| 7403fc77f6 | 61 Pytest, 43 Vitest y 2 Playwright pasan; WXT 15 pasan / 2 fallan al consultar con la entrada anterior después de recargar. La carga automática inicial EN/ES sí publica; el test ahora espera la nueva entrada antes de refrescar sus cabeceras. No contar este pase como dos reaperturas aprobadas. |
+
+**Pase corregido 4b21ce6bfa:** 17 WXT aprobados, build/TypeScript, salud/OpenAPI, Alembic current/check 0023 y limpieza aprobados. Cada idioma ejecuta carga inicial y dos reaperturas desde la SPA real contra Nginx/PostgreSQL: veinte IDs conservados incluso reordenando, dieciocho candados, archivo protegido rechazado y cancelación sin pérdida. EA está interceptada por fixture; `real_club=false`. Mismo código de backend que los 61 Pytest anteriores. Falta el pase integral limpio antes del despliegue.
+
+Todos esos intentos cerraron sus recursos por identidad y conservaron instalación personal/volúmenes (`main_stack_unchanged=true`, `volumes_unchanged=true`). Las 23 pruebas de herramientas/memoria también pasan. Respaldo personal previo a 0023 restaurado en `fc27_auto_20261117`: **46 tablas idénticas y 152 registros**, sin modificar la base original. Evidencia privada en `C:/Users/arvi_/emuladordcp26/state/browser-auto-release-20261117/`.
+
+**Contraste real acotado:** lista, Player Bio y Active Squad accesibles; once, siete suplentes y cuatro reservas observados. El inglés real informó los cambios del lector. EA mostró primero `Cannot Authenticate` y después permitió acceder; no se operaron credenciales. Español, cargas automáticas, deduplicación automática y candados de esta versión requieren separar fixture de aceptación personal. No se capturaron imágenes privadas ni se consultaron cookies/objetos internos/API privada; no hubo compras, ventas ni entrega DCP.
+
 ## Corrección de objetivo automático · 17-nov-2026
 
 Cambios exclusivamente de memoria/documentación sobre **fee28c0**; aplicación servida **c9d7a78/0022**, cinco servicios saludables. El objetivo de producto automático **NO ESTÁ VALIDADO**. Las veinte cartas y sus dos relecturas anteriores conservan su alcance asistido. No hubo una nueva carga, consulta de precios, automatización instalada, migración ni despliegue.

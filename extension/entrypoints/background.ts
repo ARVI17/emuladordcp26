@@ -7,10 +7,12 @@ import {draftForMap,bindDefinition,extractProfile,saveDefinition,recordSample,re
 import {observationEvents} from '../lib/observation'
 import {diagnoseVisible} from '../lib/diagnostic'
 import {automaticProfile} from '../lib/automatic-profile'
+import {installBrowserAuto} from '../lib/browser-auto-worker'
 import type {ExtractorProfile,Proof} from '../lib/profile-extraction'
 type State={base:string;credential?:string;binding?:string;pending:Record<string,unknown>[];sequence:number;stream:string;message?:string;lastReceipt?:unknown;proposal?:unknown;compatibility?:unknown;workflow?:any;diagnostic?:ReturnType<typeof diagnoseVisible>;automaticProfiles?:ExtractorProfile[];seenViews?:string[];handledRequest?:string;observedContext?:string;readerMetrics?:{reads:number;repeated:number;last_ms:number};checkpoint?:{status:string;reason:string;observation_id?:string;observed_at?:string;profile_id?:string}}
 const initial=():State=>({base:'http://localhost:8090',pending:[],sequence:0,stream:crypto.randomUUID()})
 export default defineBackground(()=>{
+  installBrowserAuto()
   // Private to extension contexts. No credentials ever go to the content script.
   const ready=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})])
   let serial=Promise.resolve()
@@ -113,6 +115,7 @@ export default defineBackground(()=>{
   chrome.tabs.onUpdated.addListener((id,change)=>{if(change.status==='loading')void chrome.storage.session.get('active').then(({active})=>{if(active?.tabId===id){if(active.workflow)void chrome.storage.session.set({resumeTab:id});return chrome.storage.session.remove('active')}})})
   chrome.permissions.onRemoved.addListener(()=>{void pause()})
   chrome.runtime.onMessage.addListener((message,sender,reply)=>{
+    if(typeof message?.kind==='string'&&message.kind.startsWith('browser-auto-'))return
     if((message?.kind==='pause'||(message?.kind==='workflow-control'&&['pause','cancel'].includes(message.action)))&&sender.id===chrome.runtime.id&&sender.url===chrome.runtime.getURL('sidepanel.html')){stopRequested=true;void pause()}
     serial=serial.then(async()=>{
       await ready

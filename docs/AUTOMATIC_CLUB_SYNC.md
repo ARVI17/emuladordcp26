@@ -1,6 +1,22 @@
 # Actualización automática del club · decisión de producto
 
-Revisión: **17-nov-2026**. Estado: **requisito pendiente; no hay sincronización automática EA en Club Lab**. Este documento sustituye el recorrido manual como objetivo de producto, sin atribuir al código funciones que todavía no existen.
+Revisión: **17-nov-2026**. Estado: **puente WXT 0.6.0 implementado; aceptación personal pendiente**. El código incorpora apertura automática, lectura DOM EN/ES, conciliación parcial y protección por puestos. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
+
+## Incremento WXT 0.6.0 / esquema 0023
+
+`AutoClubSync` detecta la extensión al abrir una entrada asistida. Una activación inicial guarda la preferencia local por contexto; cada apertura obtiene un permiso temporal nuevo para esa extensión/sesión/generación. El worker mantiene la credencial de Club Lab fuera de la página, usa exclusivamente loopback y publica un recibo inmutable. No solicita ni transporta credenciales EA. La migración aditiva 0023 guarda preferencia, solicitud y último resultado.
+
+El lector navega por controles visibles de Club y Plantillas, abre biografías y vuelve atrás. Lee como máximo veinte filas y la principal con siete suplentes y reservas visibles. En Chrome real se contrastaron lista, biografía y plantilla: los nombres del campo están ocultos; ambos bancos comparten clase y se distinguen por su leyenda; la biografía de plantilla necesita dos regresos. Solo inglés contrastado personalmente; español tiene pruebas controladas. Nada pulsa comprar, vender, modificar plantilla o entregar DCP.
+
+El backend compara nombre/media/posición, variante, liga, club, nacionalidad y atributos conocidos, exige correspondencia única y rechaza conflictos, retiradas, fuentes sintéticas y observaciones antiguas. Los IDs locales se reutilizan, nunca se borran ausentes por cobertura parcial. La principal se registra únicamente con puestos completos y legales; sus candados conservan los anteriores. Una lectura sin principal nueva no anuncia que la principal antigua se haya actualizado.
+
+**Límite de identidad:** no se encontró un ID estable de copia EA; una coincidencia visual única no prueba identidad universal. Variantes indistinguibles, holografía no representada o dos cuentas con el mismo nombre de club no quedan resueltas por ese método. `provider_verified=false`, `ea_copy_id=null`, cobertura parcial y campos desconocidos se mantienen. Esta versión no acredita inventario completo, mercado PS5, DCP activos ni sincronización oficial. No habilitar consumo/venta eludiendo esas limitaciones.
+
+Permisos: hosts locales y `https://www.ea.com/*`; Chrome concede el host, mientras el código restringe la ruta a la Web App oficial. Sin permisos cookies, debugger, historial ni dominio de acceso EA. El sitio local solo recibe los campos del club. Detener, desactivar, cerrar pestaña o revocar permiso detiene el trabajo; cambiar contexto invalida la publicación. Si falla o caduca la sesión, conserva datos y fecha anteriores. Chrome y EA deben estar disponibles; no hay servicio con Chrome cerrado ni checkpoint de navegación tras perder el worker.
+
+**Seguridad de cuenta:** según [EA Community API](https://help.ea.com/en/articles/ea-sports-fc/community-api/), FUT.GG/FUTBIN/FUTWIZ no reciben la contraseña en su conexión oficial, pero sí datos autorizados y aplican sus políticas de privacidad. Eso no convierte el perfil automáticamente en público ni acredita privacidad total. WXT no es un socio aprobado: las [reglas EA](https://help.ea.com/en/articles/ea-sports-fc/fc-rules/) prohíben automatizaciones no autorizadas, por lo que no se promete ausencia de sanción. No habilitar otras conexiones en nombre del propietario.
+
+Los apartados de decisión siguientes conservan el razonamiento previo. Donde describen ausencia de código o permisos se refieren al estado anterior a 0.6.0; los límites de acceso oficial y aceptación siguen vigentes.
 
 ## Resultado que pide el propietario
 
@@ -23,7 +39,7 @@ Las propuestas se recalculan al publicar datos nuevos, no en cada render. Fecha 
 | FUT.GG | [GG Club vigente](https://www.fut.gg/gg-club/) anuncia sincronización de jugadores, plantillas, Evos, tácticas y estadísticas mediante la conexión oficial. | Es una alternativa para usar el servicio externo. La página consultada no acredita exportación/API para Club Lab, coste de todas las funciones ni frecuencia exacta. No presentar su autorización como nuestra. |
 | FUTWIZ | [Squad Sync](https://www.futwiz.com/futwiz-sync) documenta importación gratuita de plantillas y actualización mediante re-sync. | Gratuidad comprobada para esas funciones; no demuestra inventario completo, entrega de DCP, ventas automáticas ni actualización de Club Lab en cada apertura. |
 | Conector instalado | Búsqueda de plugins EA SPORTS FC/FUTBIN/FUTWIZ sin coincidencias en el directorio consultado. | No se encontró un conector utilizable en esta sesión; no afirma que todos los directorios posibles carezcan de él. |
-| WXT en Chrome | [WXT](https://wxt.dev/) es una herramienta MIT para extensiones. El repositorio ya la usa; el manifiesto actual solo concede hosts locales y el lector automático admite muestras/exportaciones propias. | Candidato para el puente local solicitado. Aún faltan extractor EA, navegación, identidad de copias, permisos de sitio y disparador al abrir Club Lab. No constituye una conexión oficial. |
+| WXT en Chrome | [WXT](https://wxt.dev/) es una herramienta MIT para extensiones. El repositorio ya la usa; 0.6.0 añade host EA, navegación por controles visibles, apertura y transporte local. | Puente implementado con identidad visual parcial; faltan instalación acreditada y dos aperturas personales. No acredita clave estable de copia ni toda la cuenta. No constituye una conexión oficial. |
 | Playwright / Selenium | Automatizan interfaces de navegador; [Playwright](https://playwright.dev/docs/intro) ya se emplea en las pruebas del proyecto. | Playwright sirve para verificar el recorrido. Añadir además Selenium duplicaría infraestructura sin resolver acceso, identidad ni cobertura. |
 | Requests + BeautifulSoup / Scrapy | Clientes HTTP y extracción; la [documentación de Scrapy](https://docs.scrapy.org/en/latest/topics/dynamic-content.html) distingue contenido generado dinámicamente y navegación. | No aportan por sí solos sesión autorizada, navegación JavaScript ni un protocolo EA. No añadir las cuatro tecnologías para resolver el mismo acceso. |
 
@@ -39,17 +55,17 @@ No se consultaron cookies, tokens, objetos internos de EA ni endpoints privados.
 
 ## Decisión de implementación
 
-Conservar **WXT como candidato al puente de lectura local**, React/FastAPI/PostgreSQL/OR-Tools como aplicación y Playwright como verificador. No desarrollar más formularios de importación como siguiente incremento. Primero resolver el acceso y la identidad que hacen posible la automatización. Si una exportación/integración documentada de un socio oficial permite alimentar Club Lab, evaluarla antes de mantener otro extractor. Su disponibilidad sigue sin comprobarse.
+Conservar **WXT como puente de lectura local parcial**, React/FastAPI/PostgreSQL/OR-Tools como aplicación y Playwright como verificador. No desarrollar más formularios de importación como siguiente incremento. Primero resolver el acceso y la identidad que hacen posible la automatización. Si una exportación/integración documentada de un socio oficial permite alimentar Club Lab, evaluarla antes de mantener otro extractor. Su disponibilidad sigue sin comprobarse.
 
-El primer prototipo debe producir una evidencia acotada de viabilidad, sin promoverla a inventario verificado:
+La aceptación del puente implementado debe producir evidencia acotada de viabilidad, sin promoverla a inventario de proveedor verificado:
 
 1. Desde una única configuración autorizada, detectar la apertura de Club Lab y la sesión del sitio permitido. No pedir selección de pestaña en cada uso. Identificar plataforma, edición y contexto antes de publicar; cambio de club o sesión detiene la publicación.
 2. Leer listas y detalles mediante controles visibles contrastados EN/ES. Distinguir atleta, variante y copia; una imagen o resource ID de variante no identifica la copia poseída. Si falta clave estable, contrastar una reconciliación conservadora y dejar las discrepancias fuera de consumo/venta. No usar posición en la lista como identidad.
 3. Recorrer páginas con límites, cancelación, detección de carga/repetición y recuperación desde checkpoint. Un filtro, una página o una lista virtualizada no acreditan todo el club. La ausencia parcial no retira cartas ni revive consumidas.
 
-Solo después de ese contraste se implementará el transporte automático: canal restringido al origen local autorizado, credencial privada de la extensión, lotes con ID/hash/secuencia/contexto/fecha, publicación atómica e idempotente y estado visible. Revocar el permiso debe detener lecturas y publicación. No habilitar una ruta pública que acepte snapshots como prueba de propiedad.
+El transporte automático implementado conserva: canal restringido al origen local autorizado, credencial privada de la extensión, lotes con ID/hash/secuencia/contexto/fecha, publicación atómica e idempotente y estado visible. Revocar el permiso debe detener lecturas y publicación. No habilitar una ruta pública que acepte snapshots como prueba de propiedad.
 
-Después: principal y banquillo por puestos reales, lectura de DCP vigentes, consulta limitada de ofertas en el mercado del juego y análisis automático. Cada dominio conserva cobertura y fecha independientes; el acceso al inventario no acredita acceso a precios o reglas. No quitar `require_module` ni promover textos revisados a proveedor autenticado para hacer funcionar la pantalla.
+La principal por puestos se implementa en 0.6.0 y requiere aceptación personal. Después: lectura de DCP vigentes, consulta limitada de ofertas en el mercado del juego y análisis automático. Cada dominio conserva cobertura y fecha independientes; el acceso al inventario no acredita acceso a precios o reglas. No quitar `require_module` ni promover textos revisados a proveedor autenticado para hacer funcionar la pantalla.
 
 ## Prueba de aceptación que falta
 

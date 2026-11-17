@@ -1,4 +1,5 @@
 import {AssistedDcp} from './components/AssistedDcp'
+import {AutoClubSync} from './components/AutoClubSync'
 import {AssistedWorkspace} from './components/AssistedWorkspace'
 import {ObjectiveSquadsPage} from './pages/ObjectiveSquadsPage'
 import {ContextHelpScope} from './components/ContextHelp'
@@ -64,7 +65,7 @@ export default function App(){
   return <SeasonContext.Provider value={season}><div className="app-shell single-app">
     <a className="skip-link" href="#contenido" onClick={e=>{e.preventDefault();document.getElementById('contenido')?.focus()}}>Saltar al contenido</a>
     <AccountHeader page={page} account={dashboard.data?.account}/><AppNavigation page={page}/>
-    <main id="contenido" className="content" tabIndex={-1}>{entry?.mode==='assisted'&&<AssistedWorkspace key={entry.club_context_id} visible={page==='conexiones'}/>} {entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>navigate('conexiones')}>Ver conexión</button></div>}
+    <main id="contenido" className="content" tabIndex={-1}>{entry?.mode==='assisted'&&<AutoClubSync key={entry.entry_id} entry={entry} settings={page==='conexiones'}><AssistedWorkspace key={entry.club_context_id} visible={page==='conexiones'}/></AutoClubSync>} {entry?.mode==='local'&&<div className="season-banner">Registro local sin vincular · Simulaciones limitadas a los datos revisados. <button onClick={()=>navigate('conexiones')}>Ver conexión</button></div>}
       {squadSection&&<nav className="section-tabs" aria-label="Secciones de Plantillas">{(['plantillas','recomendadas','plantillas-objetivos'] as Page[]).map(id=><button key={id} aria-current={page===id?'page':undefined} onClick={()=>navigate(id)}>{id==='plantillas'?'Principal':sections[id].label}</button>)}</nav>}
       {entering?<Loading/>:!entry?<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')}/>:blocked?<><SectionTitle title={sections[page].label}/><section className="panel"><h3>Lectura pendiente</h3><p>{effectiveEntry?.modules[dependencies[page]!]?.reason||'Esta sección requiere datos revisados de tu club.'}</p><button onClick={()=>navigate('conexiones')}>Revisar Mi cuenta</button></section></>:<div className="page-content" key={`${page}-${season}`}><ContextHelpScope page={page} entry={effectiveEntry} account={dashboard.data?.account}>{pages[page]}</ContextHelpScope></div>}</main>
     <footer className="app-footer"><BuildStatus entry={effectiveEntry}/></footer>

@@ -1,6 +1,6 @@
 # Mapa técnico · Club Lab FC27
 
-Prioridad de producto corregida (17-nov): [AUTOMATIC_CLUB_SYNC](AUTOMATIC_CLUB_SYNC.md) documenta la conexión oficial restringida, lectura real comprobada, limitación de identidad y aceptación exigida al abrir la app sin pasos manuales rutinarios. **AUTO-1 pendiente**; no se ha implementado ese puente. Las veinte cartas por texto son un resultado parcial.
+Puente automático (17-nov): **WXT 0.6.0 / 0023**, `entrypoints/club-app.content.ts`, `ea-auto.ts`, `lib/browser-auto-worker.ts`, `api/schemas/services/browser_auto.py`, `BrowserAutoLink` y `AutoClubSync`. Preferencia explícita, apertura por entrada, permiso local renovado, DOM EN/ES parcial, publicación idempotente y candados por puestos. Pruebas `test_browser_auto.py` y `extension/tests/automatic.spec.ts`. **AUTO-1 parcial, aceptación personal pendiente**; [contrato y límites](AUTOMATIC_CLUB_SYNC.md), [versión efectivamente instalada](NEXT_SESSION.md).
 
 Texto visible bilingüe (17-nov): `services/browser_text.py`, rutas/contratos `assisted`, `BrowserTextReader` y `VisualReview` añaden vista previa y revisión explícita de transcripciones EN/ES, sin migración. Procedencia `user_reviewed_text`, correspondencia de copias y bloqueo de retiradas/ambiguas. `import_export.py` normaliza las quince posiciones inglesas también para OCR. Pruebas `test_browser_text.py` y `e2e/browser-text.spec.ts`. [Contrato y límites](ASSISTED_READING.md), [resultados](TESTING.md).
 

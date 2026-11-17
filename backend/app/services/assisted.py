@@ -41,10 +41,16 @@ def visual_copy_clause():
             VisualCopy.id == evidence['visual_copy_id'].as_integer(), VisualCopy.player_id == Player.id,
             VisualCopy.club_context_id == Player.club_context_id, VisualReading.club_context_id == Player.club_context_id,
             VisualReading.status == 'reviewed', VisualReading.reviewed['edition'].as_string() == 'FC27',
-            or_(evidence['source_kind'].as_string().is_distinct_from('browser_text'),
+            or_(and_(evidence['source_kind'].as_string().is_distinct_from('browser_text'),
+                     evidence['source_kind'].as_string().is_distinct_from('browser_auto')),
                 and_(VisualReading.original['source_kind'].as_string() == 'browser_text',
                      VisualReading.reviewed['ownership_confirmed'].as_boolean().is_(True),
-                     VisualReading.reviewed['source'].as_string() == 'user_reviewed_text')),
+                     VisualReading.reviewed['source'].as_string() == 'user_reviewed_text'),
+                and_(evidence['source_kind'].as_string() == 'browser_auto',
+                     VisualReading.original['source_kind'].as_string() == 'browser_auto',
+                     VisualReading.original['automatic_consent'].as_boolean().is_(True),
+                     VisualReading.reviewed['ownership_confirmed'].as_boolean().is_(True),
+                     VisualReading.reviewed['source'].as_string() == 'user_authorized_browser')),
             VisualCopy.state.in_(['reviewed', 'ambiguous']),
             *(getattr(Player, key) == (VisualCopy.facts[key].as_integer() if key == 'rating' else VisualCopy.facts[key].as_string()) for key in IDENTITY))))
 
