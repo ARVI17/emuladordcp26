@@ -4,6 +4,8 @@
 
 Primer pase focalizado **21432d9f70**, base bc41732 con cambios: **61 Pytest, 43 Vitest, 2 Playwright y 18 WXT aprobados**. EN/ES: veinte cartas y dos reaperturas; caso adicional EN: 65 cartas, cuatro páginas y dos reaperturas, mismos IDs y dieciocho candados. Salud/OpenAPI, Alembic 0023 y limpieza aprobados; principal/volúmenes intactos. Datos sintéticos, sin aceptación personal.
 
+**Intento integral 518a3bd3be, dc198bf:** build rechazado por dos accesos TypeScript potencialmente indefinidos (recibo cacheado y target del worker de prueba). Se añaden guardas explícitas; no ejecutó suites ni desplegó.
+
 Después de ese build se añadieron tres casos backend de lotes/ambigüedades/progreso, apertura inactiva y cierre real del worker durante el caso de 65. También se reforzó repetición de etapas y conservación del recibo final ante pérdida de respuesta. El pase integral del código final queda pendiente; no atribuirle estas pruebas todavía.
 
 Se recuperó un 502 personal: Nginx conservaba 172.19.0.3, pero backend estaba en 172.19.0.6. Se recargó el Nginx existente por ID y `/api/health` volvió a healthy, sin recrear servicios. El código nuevo configura resolución DNS dinámica de Docker (Nginx observado 1.27.5). Respaldo nuevo restaurado/comparado en base separada: **47 tablas, 152 jugadores idénticos**. Sin nueva migración. EA oficial abierta: Login; no se operaron credenciales ni cartas reales.

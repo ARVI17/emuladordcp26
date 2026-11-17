@@ -86,7 +86,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
    await expect.poll(async()=>(await request('/browser-auto/status')).progress?.pages_read||0,{timeout:120000}).toBeGreaterThan(0)
    const cdp=await context.newCDPSession(page),targets=await cdp.send('Target.getTargets')
    const target=targets.targetInfos.find((t:any)=>t.type==='service_worker'&&t.url.startsWith('chrome-extension://'))
-   expect(target).toBeTruthy()
+   if(!target)throw Error('The isolated extension worker was not found')
    await cdp.send('Target.closeTarget',{targetId:target.targetId});await cdp.detach()
   }
   await waitUpdated()

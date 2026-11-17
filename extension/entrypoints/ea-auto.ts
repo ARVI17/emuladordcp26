@@ -162,7 +162,7 @@ export default defineUnlistedScript(()=>{
   if(message?.kind==='ea-auto-stop'){cancelled=true;reply({ok:true});return}
   if(message?.kind!=='ea-auto-step')return
   if(running){reply({ok:activeStep===message.step,reason:'busy'});return}
-  if(lastResult?.step===message.step){reply({ok:true});void deliver(lastResult);return}
+  if(lastResult&&lastResult.step===message.step){reply({ok:true});void deliver(lastResult);return}
   if(!['squad','inventory-start','inventory-next'].includes(message.phase)||!Number.isInteger(message.offset)||message.offset<0||message.offset>999){reply({ok:false});return}
   running=true;cancelled=false;activeStep=message.step;deadline=Date.now()+120000
   addEventListener('pointerdown',interrupted,true);addEventListener('keydown',interrupted,true)
