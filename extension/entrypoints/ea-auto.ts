@@ -5,6 +5,7 @@ export default defineUnlistedScript(()=>{
  const world=globalThis as typeof globalThis&{clubLabAutoInstalled?:boolean}
  if(world.clubLabAutoInstalled)return
  world.clubLabAutoInstalled=true
+ console.info('Club Lab visible reader: 0.7.2')
  let cancelled=false,running=false,deadline=0,phase='idle',activeStep=''
  let lastResult:Record<string,unknown>|undefined
  const deliver=async(result:Record<string,unknown>)=>{
@@ -36,13 +37,19 @@ export default defineUnlistedScript(()=>{
   check();if(!visible(e))throw Error('page_changed')
   // EA navigation uses a press/release gesture; HTMLElement.click() alone left
   // the real Squads button unchanged. Use DOM input events, never page internals.
+  e.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})
   const rect=e.getBoundingClientRect(),point={clientX:rect.left+rect.width/2,clientY:rect.top+rect.height/2,button:0,bubbles:true,cancelable:true,composed:true,view:window}
-  e.dispatchEvent(new PointerEvent('pointerdown',{...point,buttons:1,pointerId:1,pointerType:'mouse',isPrimary:true}))
-  e.dispatchEvent(new MouseEvent('mousedown',{...point,buttons:1}))
+  // On a real squad the handler belongs to the card inside the slot. Events
+  // sent to the outer slot never reach that child. Hit-test the rendered card,
+  // rejecting overlays or unrelated controls instead of clicking through them.
+  const target=document.elementFromPoint(point.clientX,point.clientY)
+  if(!target||!e.contains(target))throw Error('page_changed')
+  target.dispatchEvent(new PointerEvent('pointerdown',{...point,buttons:1,pointerId:1,pointerType:'mouse',isPrimary:true}))
+  target.dispatchEvent(new MouseEvent('mousedown',{...point,buttons:1}))
   await new Promise(r=>setTimeout(r,40));check()
-  e.dispatchEvent(new PointerEvent('pointerup',{...point,buttons:0,pointerId:1,pointerType:'mouse',isPrimary:true}))
-  e.dispatchEvent(new MouseEvent('mouseup',{...point,buttons:0}))
-  if(e.isConnected&&visible(e))e.dispatchEvent(new MouseEvent('click',{...point,buttons:0,detail:1}))
+  target.dispatchEvent(new PointerEvent('pointerup',{...point,buttons:0,pointerId:1,pointerType:'mouse',isPrimary:true}))
+  target.dispatchEvent(new MouseEvent('mouseup',{...point,buttons:0}))
+  if(target.isConnected&&visible(target))target.dispatchEvent(new MouseEvent('click',{...point,buttons:0,detail:1}))
   await new Promise(r=>setTimeout(r,180));check()
  }
  const labelled=async(selector:string,labels:string[])=>{
@@ -139,7 +146,10 @@ export default defineUnlistedScript(()=>{
    result.push(await detailed(root,offset+i,'club',null))
   }
   const next=pager('next')
-  return {cards:result,signature,end:next?(disabled(next)?'end':'next'):'unknown'}
+  // The observed final EA page removes Next rather than disabling it. Require
+  // the recognized list plus Previous (or a short first page), not absence alone.
+  const terminalList=byLabel('h1',['My Club Players','Jugadores de mi club']).length===1&&(!!pager('previous')||count<20)
+  return {cards:result,signature,end:next?(disabled(next)?'end':'next'):terminalList?'end':'unknown'}
  }
  const squadSlots=()=>all('.ut-squad-slot-view').filter(e=>all('div.rating',e).length>0)
  const readSquad=async()=>{

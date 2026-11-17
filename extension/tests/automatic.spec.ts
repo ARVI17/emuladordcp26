@@ -24,7 +24,7 @@ if(next==='squad')html='<div>4-3-3</div><div class="ut-squad-pitch-view">'+Array
 document.getElementById('view').innerHTML=html}
 // English requires a press/release gesture. Ordinary click alone has no effect;
 // this models the real navigation failure that click-only fixtures concealed.
-function wireGestures(){if(es)return;document.querySelectorAll('[onclick]').forEach(e=>{const action=e.onclick;e.removeAttribute('onclick');let pressed=false;e.onmousedown=()=>{pressed=true};e.onmouseup=event=>{if(!pressed)return;pressed=false;action.call(e,event)}})}
+function wireGestures(){if(es)return;document.querySelectorAll('[onclick]').forEach(e=>{if(total>20&&e.disabled&&e.textContent==='Next'){e.remove();return}const action=e.onclick;e.removeAttribute('onclick');let target=e;if(e.matches('.ut-squad-slot-view,.listFUTItem')){target=document.createElement('div');target.className='test-card-face';while(e.firstChild)target.append(e.firstChild);e.append(target)}let pressed=false;target.onmousedown=()=>{pressed=true};target.onmouseup=event=>{if(!pressed)return;pressed=false;action.call(e,event)}})}
 new MutationObserver(wireGestures).observe(document.body,{childList:true,subtree:true});
 show('inventory');
 wireGestures();
@@ -73,6 +73,8 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   if(!spanish){
    await ea.getByRole('button',{name:'Squads',exact:true}).evaluate((e:HTMLElement)=>e.click())
    await expect(ea.getByRole('heading',{name:'My Club Players',exact:true})).toBeVisible()
+   await ea.locator('li.listFUTItem').first().evaluate(e=>{e.dispatchEvent(new MouseEvent('mousedown',{bubbles:true}));e.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}))})
+   await expect(ea.getByRole('button',{name:'Player Bio',exact:true})).toHaveCount(0)
   }
   const session=await (await context.request.post(base+'/api/app/session')).json()
   const headers={'X-CSRF-Token':session.csrf_token,'X-App-Entry':''}
@@ -141,6 +143,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   }
   stage('waiting_first_publication')
   await waitUpdated()
+  if(total>20)await expect(ea.getByRole('button',{name:'Next',exact:true})).toHaveCount(0)
   if(total>20){expect(interruptedProgress).toBe(true);expect(Number(await ea.locator('html').getAttribute('data-test-reader-drops'))).toBeGreaterThanOrEqual(2)}
   await expect(panel).toContainText('principal y suplentes protegidos',{timeout:150000})
   // Refresh request headers after the SPA creates its entry; the extension never gets them.
