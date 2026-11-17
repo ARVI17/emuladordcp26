@@ -42,6 +42,13 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
  expect(manifest.permissions).not.toContain('cookies');expect(manifest.permissions).not.toContain('debugger')
  expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*','https://www.ea.com/*'])
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--host-resolver-rules=MAP www.ea.com ~NOTFOUND']})
+ context.setDefaultTimeout(15000)
+ const bounded=async<T>(task:Promise<T>,label:string):Promise<T>=>{
+  let timer:ReturnType<typeof setTimeout>|undefined
+  try{return await Promise.race([task,new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('Timed out at '+label)),15000)})])}
+  finally{if(timer)clearTimeout(timer)}
+ }
+ const stage=(name:string)=>console.log('AUTO_SYNTHETIC_STAGE '+JSON.stringify({language:spanish?'es':'en',cards:total,stage:name,real_club:false}))
  try{
   await context.route('https://www.ea.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:fixture(spanish,total)}))
   let ea=await context.newPage()
@@ -74,22 +81,26 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   const activate=page.getByRole('button',{name:'Activar actualización automática y proteger mi equipo'})
   await expect(activate).toBeEnabled({timeout:15000})
   if(total>20){
+   stage('creating_inactive_tab')
    await ea.close()
    const opened=context.waitForEvent('page')
    await activate.click();ea=await opened
    await expect(ea.locator('nav')).toBeVisible()
    const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
-   expect(await worker.evaluate(async()=>{const tabs=await chrome.tabs.query({url:'https://www.ea.com/*'});return tabs.length===1&&tabs[0]?.active===false})).toBe(true)
+   expect(await bounded(worker.evaluate(async()=>{const tabs=await chrome.tabs.query({url:'https://www.ea.com/*'});return tabs.length===1&&tabs[0]?.active===false}),'inactive_tab')).toBe(true)
   }else await activate.click()
   const panel=page.getByRole('region',{name:'Actualización automática del club'})
   if(total>20){
+   stage('waiting_first_page')
    await refreshHeaders()
    await expect.poll(async()=>(await request('/browser-auto/status')).progress?.pages_read||0,{timeout:120000}).toBeGreaterThan(0)
-   const cdp=await context.newCDPSession(page),targets=await cdp.send('Target.getTargets')
+   stage('stopping_worker')
+   const cdp=await bounded(context.newCDPSession(page),'cdp_session'),targets=await bounded(cdp.send('Target.getTargets'),'worker_target')
    const target=targets.targetInfos.find((t:any)=>t.type==='service_worker'&&t.url.startsWith('chrome-extension://'))
    if(!target)throw Error('The isolated extension worker was not found')
-   await cdp.send('Target.closeTarget',{targetId:target.targetId});await cdp.detach()
+   await bounded(cdp.send('Target.closeTarget',{targetId:target.targetId}),'worker_stop');await bounded(cdp.detach(),'cdp_detach')
   }
+  stage('waiting_first_publication')
   await waitUpdated()
   await expect(panel).toContainText('principal y suplentes protegidos',{timeout:150000})
   // Refresh request headers after the SPA creates its entry; the extension never gets them.
@@ -99,6 +110,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   const main=await request('/squads/main');expect(main.complete).toBe(true);expect(main.protected_copy_ids).toHaveLength(18)
   let receipt=(await request('/browser-auto/status')).result.request_id
   for(let pass=0;pass<2;pass++){
+   stage('reopen_'+(pass+1))
    await ea.evaluate('reverse = !reverse')
    await page.reload()
    await waitUpdated(receipt)
@@ -122,6 +134,6 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   expect((await request('/players')).total).toBe(total)
   expect((await request('/squads/main')).protected_copy_ids).toEqual(main.protected_copy_ids)
   console.log('AUTO_SYNTHETIC '+JSON.stringify({language:spanish?'es':'en',cards:total,reopens:2,protected:18,real_club:false}))
- }catch(error){for(const tab of context.pages())if(tab.url().startsWith('https://www.ea.com/'))console.log('AUTO_SYNTHETIC_LAST_VIEW '+(await tab.locator('body').innerText()).slice(0,600));throw error}
+ }catch(error){for(const tab of context.pages())if(tab.url().startsWith('https://www.ea.com/'))console.log('AUTO_SYNTHETIC_LAST_VIEW '+(await tab.locator('body').innerText({timeout:1000}).catch(()=>'(unavailable)')).slice(0,600));throw error}
  finally{await context.close();await new Promise<void>(resolve=>server.close(()=>resolve()))}
 })

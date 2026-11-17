@@ -2,6 +2,8 @@
 
 ## Segundo plano y paginación WXT 0.7 · 17-nov-2026
 
+CI de abb7e6e, ejecución 44174470478: backend/frontend/continuidad aprueban; extensión 17 pasan y el caso de 65 agota 420 segundos sin diagnóstico de etapa. Ese caso sí pasó localmente en d9c02129fd. Se acotan esperas del arnés y se añaden etapas sintéticas para identificar el bloqueo; no aumentar el tiempo ni debilitar aserciones. Verificación corregida pendiente.
+
 Primer pase focalizado **21432d9f70**, base bc41732 con cambios: **61 Pytest, 43 Vitest, 2 Playwright y 18 WXT aprobados**. EN/ES: veinte cartas y dos reaperturas; caso adicional EN: 65 cartas, cuatro páginas y dos reaperturas, mismos IDs y dieciocho candados. Salud/OpenAPI, Alembic 0023 y limpieza aprobados; principal/volúmenes intactos. Datos sintéticos, sin aceptación personal.
 
 **Intento integral 518a3bd3be, dc198bf:** build rechazado por dos accesos TypeScript potencialmente indefinidos (recibo cacheado y target del worker de prueba). Se añaden guardas explícitas; no ejecutó suites ni desplegó.
