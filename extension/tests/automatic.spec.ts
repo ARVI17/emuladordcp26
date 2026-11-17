@@ -40,7 +40,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
  const extension=path.resolve('.output/chrome-mv3'),manifest=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json'),'utf8'))
  expect(manifest.permissions).not.toContain('cookies');expect(manifest.permissions).not.toContain('debugger')
  expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*','https://www.ea.com/*'])
- const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`]})
+ const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--host-resolver-rules=MAP www.ea.com ~NOTFOUND']})
  try{
   await context.route('https://www.ea.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:fixture(spanish,total)}))
   let ea=await context.newPage()

@@ -86,12 +86,18 @@ export function installBrowserAuto(){
     const {officialTab}=await chrome.storage.session.get('officialTab')
     let selected=tabs.find(t=>t.id===officialTab)||(tabs.length===1?tabs[0]:undefined)
     if(tabs.length&&!selected)throw Error('page_changed')
-    if(!selected)selected=await chrome.tabs.create({url:official,active:false})
+    const created=!selected
+    // Keep the tab identity before navigating: failures/closure can now be attributed
+    // to this job even while the official page is still loading.
+    if(!selected)selected=await chrome.tabs.create({url:'about:blank',active:false})
     if(!selected.id)throw Error('reader_unavailable')
     job.tabId=selected.id
     if(Object.values(await load()).some(j=>j.tabId===job.tabId)){job.tabId=0;throw Error('page_changed')}
+    if(created)await chrome.tabs.update(job.tabId,{url:official})
     const until=Date.now()+20000
-    while((await chrome.tabs.get(job.tabId)).status!=='complete'){
+    while(true){
+     const tab=await chrome.tabs.get(job.tabId)
+     if(tab.status==='complete'&&tab.url&&eaDiagnostic(tab.url))break
      if(Date.now()>until)throw Error('timeout')
      await new Promise(r=>setTimeout(r,300))
     }

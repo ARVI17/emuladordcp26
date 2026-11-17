@@ -6,7 +6,9 @@ Primer pase focalizado **21432d9f70**, base bc41732 con cambios: **61 Pytest, 43
 
 **Intento integral 518a3bd3be, dc198bf:** build rechazado por dos accesos TypeScript potencialmente indefinidos (recibo cacheado y target del worker de prueba). Se añaden guardas explícitas; no ejecutó suites ni desplegó.
 
-Después de ese build se añadieron tres casos backend de lotes/ambigüedades/progreso, apertura inactiva y cierre real del worker durante el caso de 65. También se reforzó repetición de etapas y conservación del recibo final ante pérdida de respuesta. El pase integral del código final queda pendiente; no atribuirle estas pruebas todavía.
+**Intento integral 59f8d02790, 05a35e8:** 374 Pytest, 43 Vitest, 41 Playwright aprobados (un canvas móvil omitido); 17 WXT pasan y el caso de 65 falla al preparar la pestaña nueva. El arnés no interceptaba su primera navegación creada por `tabs.create`, confirmado en diagnóstico aislado sin red. Se separan creación inactiva e inicio de navegación, conservando antes la identidad de pestaña y esperando URL oficial/carga completa. El fixture bloquea además la resolución DNS de EA: una intercepción ausente nunca usa la web real. Los casos de veinte EN/ES y dos reaperturas sí pasaron. Principal y volúmenes intactos tras limpieza.
+
+Se añadieron tres casos backend de lotes/ambigüedades/progreso, apertura inactiva y cierre real del worker durante el caso de 65. También se reforzó repetición de etapas y conservación del recibo final ante pérdida de respuesta. El pase integral del código final queda pendiente; no atribuirle estas pruebas todavía.
 
 Se recuperó un 502 personal: Nginx conservaba 172.19.0.3, pero backend estaba en 172.19.0.6. Se recargó el Nginx existente por ID y `/api/health` volvió a healthy, sin recrear servicios. El código nuevo configura resolución DNS dinámica de Docker (Nginx observado 1.27.5). Respaldo nuevo restaurado/comparado en base separada: **47 tablas, 152 jugadores idénticos**. Sin nueva migración. EA oficial abierta: Login; no se operaron credenciales ni cartas reales.
 
