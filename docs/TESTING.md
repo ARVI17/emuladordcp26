@@ -1,8 +1,22 @@
 # Pruebas del planificador FC27
 
+## Cierre WXT 0.7 · 17-nov-2026
+
+Pase corregido **d9c02129fd**, f6b77b9 limpio: **18 WXT aprobados**, salud/OpenAPI, Alembic 0023 y limpieza aprobados. Después se añadió espera del nombre del club mientras EA termina de renderizar; el integral siguiente prueba también ese estado demorado.
+
+Integral limpio **9aab1129ae**, **abb7e6e8b46c3ca7328856076ff472efee078e56**, entorno local: **374 Pytest, 43 Vitest, 41 Playwright y 18 WXT aprobados**; un canvas móvil omitido. Build/TypeScript, salud/OpenAPI, Alembic current/check y cierre aprobados. Principal/volúmenes intactos. EN/ES veinte y EN 65: carga inicial más dos reaperturas, IDs conservados y dieciocho candados. El caso de 65 acredita pestaña creada inactiva y terminación/reanudación del worker en Chromium desechable; EA interceptada, DNS del host bloqueado en el arnés, `real_club=false`. Herramientas: 23 pruebas aprobadas.
+
+Despliegue personal con imágenes exactas de ese integral: **abb7e6e/0023**, cinco servicios saludables en 8090. Respaldo restaurado/comparado (47 tablas y 152 registros), Alembic ensayado en copia sin cambios de esquema y datos originales conservados. Se recrearon backend/frontend/Nginx; database/Ollama y volúmenes intactos. Nginx monta configuración privada con resolución dinámica Docker. Contrato público incluye `/browser-auto/progress`. CI intermedia: [ejecución 44177795552](https://github.com/ARVI17/emuladordcp26/actions/runs/44177795552), pase a6c4d1115d sobre merge 7728783 del head 819f8bc, 18 WXT aprobados. Lector final **6fbee4dd8d1e6558506d869d1898d7ca114c1023**, pase local de extensión **7675740d85**: 18 aprobados, con interrupción deliberada antes de enviar la siguiente orden y reanudación por alarma. **CI final [44181922329](https://github.com/ARVI17/emuladordcp26/actions/runs/44181922329): backend, frontend, extensión y continuidad aprobados**, incluida la prueba reforzada de recuperación. La aplicación no cambió desde el integral. Artefacto 0.7 exportado de esta imagen probada y copiado con hashes iguales a `C:/Users/arvi_/ClubLab-Lector-0.7/chrome-mv3`.
+
+**No ejecutado:** aceptación personal WXT, paginación real EN/ES, protección del once/siete personales ni extracción de mercado/DCP/Galería. La última vista leída en EA mostró Login; no llegó confirmación de acceso. Después, dos intentos de control de la pestaña oficial agotaron el tiempo de conexión. No se eludió el administrador protegido. Estos bloqueos no convierten fixtures en prueba de cuenta real.
+
+El pase intermedio **c9485a152c**, 819f8bc limpio, aprobó 18 WXT. El pase final **7675740d85**, 6fbee4d limpio, añade una pérdida temporal del transporte en el navegador desechable y comprueba que se rechazaron al menos dos reintentos: así la recuperación depende del temporizador y no de esos reintentos. No cambió el código distribuido entre ambos pases, solo la prueba.
+
+El primer intento de empaquetar falló porque la imagen de extensión no declara una etiqueta OCI de revisión. Se corrigió el helper privado: exige proyecto/servicio de Compose y el digest exacto registrado en el paso correspondiente del build probado. Se exportaron nueve archivos, se verificaron permisos, ausencia del fallo sintético en los JavaScript distribuidos y hashes iguales en la carpeta corta. No se reconstruyó ni se inventó una etiqueta de procedencia.
+
 ## Segundo plano y paginación WXT 0.7 · 17-nov-2026
 
-CI de abb7e6e, ejecución 44174470478: backend/frontend/continuidad aprueban; extensión 17 pasan y el caso de 65 agota 420 segundos sin diagnóstico de etapa. Ese caso sí pasó localmente en d9c02129fd. Se acotan esperas del arnés y se añaden etapas sintéticas para identificar el bloqueo; no aumentar el tiempo ni debilitar aserciones. Verificación corregida pendiente.
+CI de abb7e6e, ejecución 44174470478: backend/frontend/continuidad aprueban; extensión 17 pasan y el caso de 65 agota 420 segundos sin diagnóstico de etapa. Ese caso sí pasó localmente en d9c02129fd. Se acotan esperas del arnés y se añaden etapas sintéticas para identificar el bloqueo; no aumentar el tiempo ni debilitar aserciones. Posteriormente, CI a6c4d1115d y local 7675740d85 aprueban el lector reforzado. El timeout original no tenía traza suficiente para atribuirle una causa única.
 
 Primer pase focalizado **21432d9f70**, base bc41732 con cambios: **61 Pytest, 43 Vitest, 2 Playwright y 18 WXT aprobados**. EN/ES: veinte cartas y dos reaperturas; caso adicional EN: 65 cartas, cuatro páginas y dos reaperturas, mismos IDs y dieciocho candados. Salud/OpenAPI, Alembic 0023 y limpieza aprobados; principal/volúmenes intactos. Datos sintéticos, sin aceptación personal.
 
@@ -10,7 +24,7 @@ Primer pase focalizado **21432d9f70**, base bc41732 con cambios: **61 Pytest, 43
 
 **Intento integral 59f8d02790, 05a35e8:** 374 Pytest, 43 Vitest, 41 Playwright aprobados (un canvas móvil omitido); 17 WXT pasan y el caso de 65 falla al preparar la pestaña nueva. El arnés no interceptaba su primera navegación creada por `tabs.create`, confirmado en diagnóstico aislado sin red. Se separan creación inactiva e inicio de navegación, conservando antes la identidad de pestaña y esperando URL oficial/carga completa. El fixture bloquea además la resolución DNS de EA: una intercepción ausente nunca usa la web real. Los casos de veinte EN/ES y dos reaperturas sí pasaron. Principal y volúmenes intactos tras limpieza.
 
-Se añadieron tres casos backend de lotes/ambigüedades/progreso, apertura inactiva y cierre real del worker durante el caso de 65. También se reforzó repetición de etapas y conservación del recibo final ante pérdida de respuesta. El pase integral del código final queda pendiente; no atribuirle estas pruebas todavía.
+Se añadieron tres casos backend de lotes/ambigüedades/progreso, apertura inactiva y cierre real del worker durante el caso de 65. También se reforzó repetición de etapas y conservación del recibo final ante pérdida de respuesta. En ese corte aún faltaba el integral; el cierre superior registra los pases posteriores y distingue la aplicación del lector final.
 
 Se recuperó un 502 personal: Nginx conservaba 172.19.0.3, pero backend estaba en 172.19.0.6. Se recargó el Nginx existente por ID y `/api/health` volvió a healthy, sin recrear servicios. El código nuevo configura resolución DNS dinámica de Docker (Nginx observado 1.27.5). Respaldo nuevo restaurado/comparado en base separada: **47 tablas, 152 jugadores idénticos**. Sin nueva migración. EA oficial abierta: Login; no se operaron credenciales ni cartas reales.
 

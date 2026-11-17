@@ -1,5 +1,15 @@
 # Estado verificable
 
+## Segundo plano y páginas · WXT 0.7 · 17-nov-2026
+
+**abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.
+
+Integral de aplicación **9aab1129ae** / abb7e6e: 374 Pytest, 43 Vitest, 41 Playwright y 18 WXT; un canvas móvil omitido. Lector final **6fbee4d** probado aparte en **7675740d85**, 18 WXT aprobados, con temporizador de recuperación entre órdenes. El pase anterior d9c02129fd aprobó 18 antes de ese refuerzo. [CI del lector](https://github.com/ARVI17/emuladordcp26/actions/runs/44177795552): a6c4d1115d sobre merge 7728783 de 819f8bc, 18 aprobados. Cada caso EN/ES de veinte ejecuta carga y dos reaperturas; el caso de 65 recorre cuatro páginas y prueba suspensión del worker. IDs y dieciocho candados conservados. Son datos sintéticos, no aceptación personal. [Fallos y resultados](TESTING.md).
+
+[CI final de 6fbee4d](https://github.com/ARVI17/emuladordcp26/actions/runs/44181922329): backend, frontend, extensión y continuidad aprobados, con la prueba reforzada que aísla la recuperación por alarma.
+
+Respaldo restaurado y comprobado con **47 tablas/152 registros**, esquema 0023 sin nueva migración. Se desplegaron imágenes exactas probadas y configuración Nginx con DNS dinámico; database/Ollama y volúmenes intactos. Extensión final **6fbee4d**, aplicación **abb7e6e**: los cambios posteriores al integral solo afectan lector/pruebas/memoria; backend/frontend/Nginx idénticos. **Instalación WXT y aceptación personal pendientes**: no hay recibos automáticos ni principal personal protegida acreditados. [Continuación](NEXT_SESSION.md).
+
 ## WXT automático implementado y desplegado · 17-nov-2026
 
 **988bbbd/0023 en 8090**, cinco servicios saludables. WXT 0.6.0 y el panel de cuenta añaden preferencia inicial, inicio por apertura, lector DOM EN/ES de primeras veinte/plantilla, publicación idempotente y candados por puestos. [Contrato y límites](AUTOMATIC_CLUB_SYNC.md). Dos pases WXT (17 cada uno) y el integral limpio (371 Pytest, 43 Vitest, 41 Playwright, 17 WXT; un móvil omitido) aprobados; CI del código aprobada. Migración ensayada en copia restaurada y datos previos conservados. [Resultados y fallos](TESTING.md).

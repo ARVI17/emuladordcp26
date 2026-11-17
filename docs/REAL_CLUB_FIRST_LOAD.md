@@ -1,6 +1,6 @@
 # Primera carga del club real
 
-**Incremento vigente, 17-nov:** app **988bbbd/0023 desplegada** y WXT **0.6.0** probado dos veces con veinte copias EN/ES, reaperturas sin duplicados y dieciocho candados sintéticos. Instalación personal de esa extensión y aceptación automática todavía pendientes; la UI no la detectó. La principal real ya se observó por puestos, pero no se guardó/protegió en esta sesión. Continuar desde [NEXT_SESSION](NEXT_SESSION.md), con el artefacto `state/wxt-auto-release-20261117/chrome-mv3`; no usar las instrucciones antiguas de 0.5.1 como siguiente paso.
+**Incremento vigente, 17-nov:** app **abb7e6e/0023 desplegada**, WXT **0.7.0** con páginas y segundo plano. Dos pases corregidos, veinte EN/ES y 65 en cuatro páginas, dos reaperturas sin duplicados y dieciocho candados sintéticos. **Instalación personal y aceptación pendientes**. Artefacto: `C:/Users/arvi_/ClubLab-Lector-0.7/chrome-mv3`; continuar desde [NEXT_SESSION](NEXT_SESSION.md). Las vías manuales inferiores son alternativas históricas y no acreditan AUTO-1.
 
 **Prioridad posterior del propietario (17-nov):** este recorrido asistido no satisface el producto solicitado. Debe sustituirse como camino habitual por actualización y análisis automáticos al abrir la app. [AUTO-1: conexión, límites y prueba exigida](AUTOMATIC_CLUB_SYNC.md). Las instrucciones siguientes describen la alternativa manual existente, no la siguiente fase de desarrollo.
 

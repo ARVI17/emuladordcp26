@@ -2,8 +2,8 @@
   "schema_version": 1,
   "reviewed_on": "2026-11-17",
   "mission": "Abrir Club Lab y obtener el club real FC27/PS5 actualizado automáticamente, con once y siete suplentes protegidos, alternativas competitivas, DCP posibles y propuestas de venta/compra basadas en ofertas actuales del juego. Sin capturas, transcripciones ni revisión por carta como rutina. Ninguna recomendación garantiza victorias ni ejecuta por sí sola operaciones irreversibles en EA.",
-  "sprint": "WXT 0.7: lectura paginada en segundo plano y recuperación del acceso local; validación en curso",
-  "next_action": "Terminar validación aislada de WXT 0.7 (20 y 65 cartas, dos reaperturas y suspensión del worker), desplegar solo imágenes probadas y comprobar la instalación personal. La lectura debe recorrer páginas de EA sin capturas ni transcripción. No sustituir el recorrido por otro formulario. Mercado, DCP y Galería requieren lectores contrastados propios después del inventario y la principal.",
+  "sprint": "App actualizada y WXT 0.7 empaquetado: páginas y segundo plano; instalación y aceptación personales pendientes",
+  "next_action": "Cargar una sola vez WXT 0.7 en el Chrome personal, acceder en EA y activar en el contexto existente. Dos aperturas deben recorrer páginas reales y conservar IDs/protecciones. No repetir pruebas o despliegue sin cambios; no sustituir por capturas/transcripción. Después, integrar el informe de recomendaciones con cada recibo WXT y contrastar lectores de DCP vigentes y ofertas PS5.",
   "items": [
     {
       "id": "MEM-1",
@@ -54,7 +54,7 @@
       "implementation": "partial",
       "real_validation": "pending",
       "depends_on": [],
-      "gap": "WXT 0.7 implementa etapas de plantilla e inventario paginado, progreso local, estado privado de sesión entre eventos y apertura inactiva de EA si falta pestaña. Límite 50 páginas/1000 cartas/30 minutos, sin renovación de sesión EA. Validación y despliegue en curso; aceptación personal pendiente. No cubre almacén DCP, mercado ni Galería y no acredita IDs EA. Requiere instalación inicial y acceso del propietario en EA; no otra plataforma.",
+      "gap": "WXT 0.7 6fbee4d probado en 7675740d85 y app abb7e6e/0023 desplegada; aplicación idéntica desde el integral. Plantilla e inventario paginado en pestaña inactiva, progreso y estado entre eventos; 50 páginas/1000 cartas/30 minutos. Dos pases sintéticos aprobados; instalación inicial, sesión EA y dos aperturas personales pendientes. No lee aún almacén DCP, mercado ni Galería, ni acredita IDs EA o identidad universal. Chrome personal no respondió a dos intentos de control. El informe antiguo Analizar mi club aún requiere inicio manual; invalidar la vista Análisis no lo recalcula.",
       "acceptance": [
         "Tras configuración inicial, abrir la app actualiza desde una fuente contrastada sin captura, copiar texto ni revisar cada carta; sesión caducada pide acceso al propietario y conserva fecha real de la lectura anterior.",
         "Dos aperturas reales recorren varias páginas sin intervención y conservan IDs; veinte es la muestra inicial, no el límite de producto. Detectar repeticiones y variantes/copias ambiguas sin fusionarlas. Estado y cobertura por dominio, sin declarar inventario completo por terminar una búsqueda.",
@@ -86,7 +86,7 @@
       "depends_on": [
         "AUTO-1"
       ],
-      "gap": "Veinte cartas reales asistidas previas conservadas. Backend paginado en implementación: hasta 1000 filas publicadas atómicamente, ambigüedades entre lotes excluidas también de plantilla y sin borrar ausentes. No acredita aún lectura personal automática ni club completo.",
+      "gap": "Veinte cartas reales asistidas previas conservadas. Backend admite hasta 1000 filas atómicamente, excluye ambigüedades entre lotes también de plantilla y conserva ausentes. Veinte EN/ES y 65 en cuatro páginas pasan dos reaperturas sintéticas. Lectura automática personal y club completo aún pendientes.",
       "acceptance": [
         "Login/MFA por el usuario; lectura automática contrastada sin revisión por carta. Captura/texto siguen siendo alternativas optativas con sus revisiones, no aceptación del recorrido automático.",
         "20 cartas reales sincronizadas en dos aperturas sin intervención rutinaria; correcciones se detectan y concilian. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.",

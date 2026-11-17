@@ -1,8 +1,8 @@
 # Actualización automática del club · decisión de producto
 
-Revisión: **17-nov-2026**. Estado: **puente WXT 0.6.0 implementado; aceptación personal pendiente**. El código incorpora apertura automática, lectura DOM EN/ES, conciliación parcial y protección por puestos. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
+Revisión: **17-nov-2026**. Estado: **puente WXT 0.7.0 implementado y app desplegada; instalación/aceptación personal pendientes**. El código incorpora apertura automática, lectura DOM EN/ES, conciliación parcial y protección por puestos. La instalación y la prueba personal se acreditan por separado en [NEXT_SESSION](NEXT_SESSION.md) y [TESTING](TESTING.md); no confundirlas con fixtures.
 
-## Incremento en verificación: segundo plano y páginas · WXT 0.7
+## Segundo plano y páginas · WXT 0.7
 
 El recorrido solicitado usa directamente la Web App oficial de EA. Se elimina el tope de veinte: plantilla por puestos primero, después las páginas de jugadores mediante Previous/Next o Anterior/Siguiente. Si falta pestaña, se abre inactiva; no cambia el foco. La interfaz informa fase, páginas y cartas sin pedir transcripciones. Terminar una búsqueda no prueba cobertura del almacén DCP, transferibles, Galería o del club completo.
 

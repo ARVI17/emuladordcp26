@@ -1,5 +1,15 @@
 # Cambios detallados
 
+## 17 de noviembre de 2026 · WXT 0.7, páginas y segundo plano
+
+**abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.
+
+Integral de aplicación **9aab1129ae** / abb7e6e: 374 Pytest, 43 Vitest, 41 Playwright y 18 WXT; un canvas móvil omitido. Lector final **6fbee4d** probado aparte en **7675740d85**, 18 WXT aprobados, con temporizador de recuperación entre órdenes. El pase anterior d9c02129fd aprobó 18 antes de ese refuerzo. [CI del lector](https://github.com/ARVI17/emuladordcp26/actions/runs/44177795552): a6c4d1115d sobre merge 7728783 de 819f8bc, 18 aprobados. Cada caso EN/ES de veinte ejecuta carga y dos reaperturas; el caso de 65 recorre cuatro páginas y prueba suspensión del worker. IDs y dieciocho candados conservados. Son datos sintéticos, no aceptación personal. [Fallos y resultados](TESTING.md).
+
+[CI final de 6fbee4d](https://github.com/ARVI17/emuladordcp26/actions/runs/44181922329): backend, frontend, extensión y continuidad aprobados, con la prueba reforzada que aísla la recuperación por alarma.
+
+Respaldo restaurado y comprobado con **47 tablas/152 registros**, esquema 0023 sin nueva migración. Se desplegaron imágenes exactas probadas y configuración Nginx con DNS dinámico; database/Ollama y volúmenes intactos. Extensión final **6fbee4d**, aplicación **abb7e6e**: los cambios posteriores al integral solo afectan lector/pruebas/memoria; backend/frontend/Nginx idénticos. **Instalación WXT y aceptación personal pendientes**: no hay recibos automáticos ni principal personal protegida acreditados. [Continuación](NEXT_SESSION.md).
+
 ## 17 de noviembre de 2026 · WXT 0.6.0 y actualización al abrir
 
 La app **988bbbd/0023** despliega el puente local solicitado: consentimiento inicial por contexto, inicio por apertura, lectura DOM EN/ES parcial de veinte y plantilla, conciliación conservadora y protección por puestos. Credencial local temporal fuera de la página; sin cookies/credenciales EA, API privada ni operaciones económicas. El usuario ve estado, última lectura y cancelación. Identidad visual limitada y procedencia explícita, sin promoverla a proveedor oficial. [Contrato](AUTOMATIC_CLUB_SYNC.md).
