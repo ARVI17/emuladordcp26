@@ -1,6 +1,6 @@
 # Contrato de lecturas autorizadas
 
-Producción conserva **cero adaptadores registrados**. La [documentación oficial EA](https://help.ea.com/en/articles/ea-sports-fc/community-api/) se volvió a comprobar el 11-oct-2026: solo identifica FUTBIN, FUT.GG y FUTWIZ como socios. No documenta una concesión, scopes ni protocolo para esta aplicación. Autorizar EA sigue devolviendo «Integración pendiente» y no solicita credenciales.
+Producción conserva **cero adaptadores registrados**. La [documentación oficial EA](https://help.ea.com/en/articles/ea-sports-fc/community-api/) se volvió a comprobar el **17-nov-2026**: solo identifica FUTBIN, FUT.GG y FUTWIZ como socios. El [anuncio oficial](https://www.ea.com/games/ea-sports-fc/news/pitch-notes-fc26-community-api-update) indica que no se aceptan nuevas solicitudes actualmente. No hay concesión, scopes ni protocolo documentados para esta aplicación. Autorizar EA sigue devolviendo «Integración pendiente» y no solicita credenciales. [Prioridad automática y opciones verificadas](AUTOMATIC_CLUB_SYNC.md).
 
 `services/providers.py` define `ReadAdapter`, `ClubIdentity` y el ejecutor. Incorporar un adaptador exige evidencia de aprobación para esta aplicación, URL de documentación, permisos exactos documentados, cobertura y límite de tiempo. El registro es código revisado; no existe endpoint de registro, proveedor demo, URL arbitraria ni importación pública de lecturas verificadas. Los adaptadores sintéticos se inyectan solo en pruebas.
 

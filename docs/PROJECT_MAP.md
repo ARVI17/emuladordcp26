@@ -1,5 +1,7 @@
 # Mapa técnico · Club Lab FC27
 
+Prioridad de producto corregida (17-nov): [AUTOMATIC_CLUB_SYNC](AUTOMATIC_CLUB_SYNC.md) documenta la conexión oficial restringida, lectura real comprobada, limitación de identidad y aceptación exigida al abrir la app sin pasos manuales rutinarios. **AUTO-1 pendiente**; no se ha implementado ese puente. Las veinte cartas por texto son un resultado parcial.
+
 Texto visible bilingüe (17-nov): `services/browser_text.py`, rutas/contratos `assisted`, `BrowserTextReader` y `VisualReview` añaden vista previa y revisión explícita de transcripciones EN/ES, sin migración. Procedencia `user_reviewed_text`, correspondencia de copias y bloqueo de retiradas/ambiguas. `import_export.py` normaliza las quince posiciones inglesas también para OCR. Pruebas `test_browser_text.py` y `e2e/browser-text.spec.ts`. [Contrato y límites](ASSISTED_READING.md), [resultados](TESTING.md).
 
 WXT 0.5.1 (16-nov): `extension/entrypoints/sidepanel/main.ts` corrige la lectura del resultado de plantillas y conserva el panel con módulos pendientes. `extension/tests/first20.spec.ts` verifica veinte copias sintéticas, dos lecturas nuevas idempotentes y protección explícita de once más siete suplentes. No incorpora selectores EA ni habilita navegación remota. [Acceso y aceptación real](REAL_CLUB_FIRST_LOAD.md), [resultados](TESTING.md).

@@ -2,11 +2,11 @@
 
 <!-- Generado por scripts/project_status.py --render-plan; editar PROJECT_STATE.json. -->
 
-Revisión humana: **2026-11-17**. Sprint: Lector bilingüe y veinte cartas reales revisadas con dos relecturas sin duplicados.
+Revisión humana: **2026-11-17**. Sprint: Corregir la prioridad del producto: sincronización y análisis automáticos; acceso e identidad aún pendientes.
 
-Construir una plantilla competitiva con las cartas reales del propietario y un presupuesto sostenible. Lectura del club, DCP, ventas propuestas, fichajes, Galería y Evoluciones sirven a esa prioridad; ninguna recomendación garantiza victorias ni ejecuta operaciones en EA.
+Abrir Club Lab y obtener el club real FC27/PS5 actualizado automáticamente, con once y siete suplentes protegidos, alternativas competitivas, DCP posibles y propuestas de venta/compra basadas en ofertas actuales del juego. Sin capturas, transcripciones ni revisión por carta como rutina. Ninguna recomendación garantiza victorias ni ejecuta por sí sola operaciones irreversibles en EA.
 
-**Siguiente paso:** Conservar el contexto asistido actual y observar la plantilla activa en EA: identificar once y siete suplentes por sus puestos, vincular las copias ya cargadas y registrar su protección local. La entrada de texto actual solo admite inventario; la principal requiere una lectura de ámbito plantilla con puestos revisados. Después completar los metadatos necesarios y comparar tres alternativas. Ver docs/NEXT_SESSION.md.
+**Siguiente paso:** Resolver AUTO-1 antes de ampliar formularios manuales: contrastar acceso del puente WXT, identidad de copias y recorrido de listas/detalles. La API oficial no está abierta a Club Lab; verificar cualquier alternativa documentada de socios sin heredar sus permisos. Después probar dos aperturas reales con actualización sin transcripciones, cero duplicados y protección de once más siete. Conservar las veinte cartas actuales y su procedencia parcial. Ver docs/AUTOMATIC_CLUB_SYNC.md y docs/NEXT_SESSION.md.
 
 Disponible significa código existente; la validación con el club real se registra por separado. Estos estados no se convierten en completos por pasar pruebas sintéticas.
 
@@ -14,14 +14,15 @@ Disponible significa código existente; la validación con el club real se regis
 | --- | --- | --- | --- |
 | MEM-1 · Memoria y continuidad | Disponible | No aplica | Revisar criterios y siguiente acción en cada sprint; el diagnóstico no decide que el producto esté terminado. |
 | KNOW-1 · Vigencia de formaciones y contenido | Disponible | Contrastado | Fuentes contrastadas el 16-nov y desplegadas en 96a8d21/0022: 11 identificadores de formación, 20 variantes y 27 referencias documentadas. Cinco variantes pendientes, incluidas R33/R49 por presentación holográfica. Revisión hasta 16-dic 22:10:56 UTC; sin renovación automática. Pases corregidos focalizado/integral y CI aprobados; no acreditan el club real. |
-| DATA-1 · Club real revisado | Parcial | Pendiente | 20 cartas reales cargadas desde texto visible de Chrome, revisadas en la UI; dos lecturas nuevas conservan exactamente los mismos 20 IDs. Seis atributos por carta, posiciones EN/ES normalizadas y 132 históricos intactos. Cobertura parcial y propiedad declarada, sin identidad EA autenticada. La aceptación del OCR gráfico real y de otros grupos/copias legítimas sigue pendiente; no confundirla con esta entrada de texto ni con los ensayos sintéticos. |
+| AUTO-1 · Actualización y análisis automáticos al abrir | Pendiente | Pendiente | No hay adaptador EA ni lector WXT real automático. La API oficial solo admite FUT.GG/FUTBIN/FUTWIZ y no acepta solicitudes nuevas. Chrome permite leer lista/ficha, pero las veinte filas y una ficha inspeccionadas no exponen identificadores estables de copia en los atributos comprobados. Faltan identidad, navegación, permisos, disparador al abrir y conciliación; no sustituirlos por más importación manual. |
+| DATA-1 · Club real revisado | Parcial | Pendiente | 20 cartas reales cargadas desde texto visible de Chrome, revisadas en la UI; dos lecturas nuevas conservan exactamente los mismos 20 IDs. Seis atributos por carta, posiciones EN/ES normalizadas y 132 históricos intactos. Cobertura parcial y propiedad declarada, sin identidad EA autenticada. Falta actualización automática de esas copias y contraste de otros grupos/copias legítimas. OCR real permanece sin aceptación, pero es una alternativa optativa, no la prioridad del producto. |
 | DATA-2 · Identidad de variantes y copias | Parcial | Pendiente | Dos relecturas reales de las primeras veinte filas conservan sus IDs con correspondencia explícita, sin duplicados. No hay ID canónico EA ni contraste de variantes, cesiones, Evos o transferibilidad; los campos no visibles permanecen desconocidos. Filas indistinguibles se bloquean y requieren revisión individual, sin fusionar copias legítimas automáticamente. |
-| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Ya hay veinte cartas personales con posición y seis atributos visibles. La principal real todavía no se observó ni protegió; no se infiere del orden de la lista. Siguiente paso: puestos explícitos del once y siete suplentes, formación y correspondencia de copias; luego completar metadatos y comparar tres alternativas. Las protecciones de 18 copias pasan en pruebas sintéticas. |
-| DCP-1 · DCP activos útiles para el equipo | Parcial | Pendiente | Solver local y lectura manual existen; faltan un tradicional y un simplificado reales, vigencia y compras integradas. |
-| PRICE-1 · Precios y presupuesto trazables | Parcial | Pendiente | Cotizaciones manuales existen; importación/conciliación pendientes. Mercado y fichajes están bloqueados en contexto visual por require_module. |
-| TRADE-1 · Excedentes y compras para mejorar | Parcial | Pendiente | Comparador por puesto, planes y reservas existen; falta selección transversal de ventas y compras con impacto en el once completo. |
+| TEAM-1 · Principal competitiva y alternativas | Parcial | Pendiente | Veinte cartas personales parciales; principal y siete suplentes sin identificar/proteger. Se deben obtener por puestos mediante el conector contrastado, conservando selección explícita de principal, no ampliando la transcripción manual. Faltan metadatos y tres alternativas recalculadas al sincronizar. Las protecciones de 18 copias solo pasan en pruebas sintéticas. |
+| DCP-1 · DCP activos útiles para el equipo | Parcial | Pendiente | Solver local y lectura manual existen; faltan obtención automática de DCP activos, un tradicional y un simplificado reales, vigencia y compras integradas. El propietario pide opciones calculadas al actualizar el club, no formularios de reglas como rutina. |
+| PRICE-1 · Precios y presupuesto trazables | Parcial | Pendiente | Cotizaciones manuales existen; falta consulta automática de ofertas actuales dentro del mercado del juego correspondiente a FC27/PS5. El control Compare Price está visible, pero no se consultaron ofertas en esta revisión. Mercado/fichajes siguen bloqueados en contexto visual por require_module; no quitar esa guarda. |
+| TRADE-1 · Excedentes y compras para mejorar | Parcial | Pendiente | Comparador por puesto, planes y reservas existen; falta selección automática de excedentes transferibles y compras con impacto en el equipo, precios actuales del juego y exclusión de once/siete suplentes. Ninguna publicación de venta EA implementada. |
 | GALLERY-1 · Galería y Evoluciones | Parcial | Pendiente | Historial, escenarios y rutas locales existen; falta un conjunto real con variantes, reglas, premios reclamados y coste contrastados. |
-| ACCEPT-1 · Recorrido personal completo | Pendiente | Pendiente | Falta demostrar el recorrido con el propietario; el pase técnico sintético no lo acredita. |
+| ACCEPT-1 · Recorrido personal completo | Pendiente | Pendiente | El propietario rechaza la experiencia manual como producto. Las veinte cartas y sus dos relecturas son aceptación técnica parcial; faltan sincronización al abrir y recomendaciones automáticas reales. |
 
 ## Criterios para cerrar cada hito
 
@@ -45,12 +46,24 @@ Dependencias: ninguna.
 
 Código/evidencia: [backend/app/services/squad_analysis.py](../backend/app/services/squad_analysis.py), [backend/app/services/content.py](../backend/app/services/content.py), [backend/app/api/knowledge.py](../backend/app/api/knowledge.py), [backend/tests/test_content_boundary.py](../backend/tests/test_content_boundary.py), [docs/AUDIT_20261116.md](../docs/AUDIT_20261116.md), [backend/app/data/fc27_formations.json](../backend/app/data/fc27_formations.json), [backend/alembic/versions/0022_catalog_review.py](../backend/alembic/versions/0022_catalog_review.py), [backend/tests/test_public_review.py](../backend/tests/test_public_review.py), [docs/SOURCE_REVIEW_20261116.md](../docs/SOURCE_REVIEW_20261116.md).
 
-### DATA-1 · Club real revisado
+### AUTO-1 · Actualización y análisis automáticos al abrir
 
 Dependencias: ninguna.
 
-- Login por el usuario y captura por gesto; pausa, cancelación y salida terminan el flujo sin persistir imágenes o credenciales.
-- 20 cartas reales revisadas, dos correcciones y reescaneo idempotente. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.
+- Tras configuración inicial, abrir la app actualiza desde una fuente contrastada sin captura, copiar texto ni revisar cada carta; sesión caducada pide acceso al propietario y conserva fecha real de la lectura anterior.
+- Dos aperturas reales concilian veinte copias con IDs conservados; distinguir variantes y copias legítimas, reordenación y páginas solapadas. No resolver ambigüedad por nombre/media/posición ni ordinal.
+- Contexto/plataforma/edición, permisos, cancelación, reinicio y cobertura se validan antes de publicar. No retirar por ausencia parcial ni revivir consumidas.
+- Los análisis se recalculan tras datos nuevos; mostrar qué falta por dominio sin aparentar actualización EA al refrescar datos locales antiguos. Proteger principal y siete suplentes antes de propuestas consumptivas.
+- La implementación distingue puente de navegador y conexión oficial; no promete servicio de fondo con Chrome cerrado ni reutiliza permisos de socios.
+
+Código/evidencia: [docs/AUTOMATIC_CLUB_SYNC.md](../docs/AUTOMATIC_CLUB_SYNC.md), [extension/wxt.config.ts](../extension/wxt.config.ts), [extension/entrypoints/background.ts](../extension/entrypoints/background.ts), [extension/lib/contracts.ts](../extension/lib/contracts.ts), [backend/app/services/providers.py](../backend/app/services/providers.py).
+
+### DATA-1 · Club real revisado
+
+Dependencias: AUTO-1.
+
+- Login/MFA por el usuario; lectura automática contrastada sin revisión por carta. Captura/texto siguen siendo alternativas optativas con sus revisiones, no aceptación del recorrido automático.
+- 20 cartas reales sincronizadas en dos aperturas sin intervención rutinaria; correcciones se detectan y concilian. 8+8 con cuatro repetidas produce 12; copias legítimas siguen separadas.
 - Cobertura parcial no elimina cartas ausentes ni revive consumidas; cuenta/contexto y procedencia se conservan.
 
 Código/evidencia: [backend/app/services/visual_scan.py](../backend/app/services/visual_scan.py), [backend/app/services/scan_ocr.py](../backend/app/services/scan_ocr.py), [frontend/src/components/VisualScanner.tsx](../frontend/src/components/VisualScanner.tsx), [backend/tests/test_visual_scan.py](../backend/tests/test_visual_scan.py), [docs/REAL_CLUB_FIRST_LOAD.md](../docs/REAL_CLUB_FIRST_LOAD.md), [extension/entrypoints/sidepanel/main.ts](../extension/entrypoints/sidepanel/main.ts), [extension/tests/first20.spec.ts](../extension/tests/first20.spec.ts), [backend/app/services/browser_text.py](../backend/app/services/browser_text.py), [backend/tests/test_browser_text.py](../backend/tests/test_browser_text.py), [frontend/src/components/BrowserTextReader.tsx](../frontend/src/components/BrowserTextReader.tsx), [frontend/e2e/browser-text.spec.ts](../frontend/e2e/browser-text.spec.ts).
@@ -80,7 +93,7 @@ Código/evidencia: [backend/app/services/squad_analysis.py](../backend/app/servi
 
 Dependencias: TEAM-1.
 
-- Requisitos, recompensa, vencimiento y progreso con fuente/fecha. No declarar lista completa sin cobertura.
+- Obtener automáticamente requisitos, recompensa, vencimiento y progreso con fuente/fecha. Clasificar posibles con el club, posibles comprando y datos insuficientes; no declarar lista completa sin cobertura.
 - Un tradicional y un Streamlined contrastados por solver y validador independiente; casos viable, imposible y datos insuficientes.
 - Separar gasto nuevo, valor sacrificado y exceso de Item Score. No llamar gratis a sacrificar cartas valiosas.
 - Proteger principal y compromisos; no gastar una copia en dos segmentos. Simular no cambia inventario ni entrega en EA.
@@ -91,7 +104,7 @@ Código/evidencia: [backend/app/optimizers/sbc.py](../backend/app/optimizers/sbc
 
 Dependencias: DATA-2.
 
-- Variante exacta, mercado, moneda, tipo, fuente, fechas y caducidad por cotización; separar PC y PlayStation.
+- Consulta automática de ofertas del juego por variante exacta y mercado correspondiente a PS5, moneda, tipo, fuente, fechas y caducidad; separar PC y precios públicos externos. Identificar plataforma, no suponerla por preferencia del usuario.
 - Desconocido no es cero; histórico no es oferta. Modo local funciona con fuentes caídas y precios manuales/importados permitidos.
 - Habilitar planificación visual mediante un contrato explícito de evidencia y presupuesto, sin quitar las protecciones de require_module.
 - Saldo observado y presupuesto elegido separados; venta propuesta nunca financia una compra. Ningún adaptador sin autorización aplicable.
@@ -125,10 +138,10 @@ Código/evidencia: [backend/app/services/gallery_v2.py](../backend/app/services/
 
 Dependencias: DCP-1, TRADE-1, GALLERY-1.
 
-- Club revisado → principal protegida → alternativas → DCP/venta/Galería → presupuesto y compras verificables.
+- Abrir app → actualizar club automáticamente → principal y siete suplentes protegidos → alternativas/DCP/ventas/Galería → presupuesto y compras verificables, sin captura ni transcripción habitual.
 - Pruebas aisladas, móvil/escritorio, proveedor caído y cancelación; simulaciones dejan inventario y principal intactos.
 - Despliegue con destino acreditado, copia restaurada, recuperación preparada y SHA servido identificado.
-- El usuario entiende qué tiene, qué falta, qué conservar y qué hacer ahora; Ollama e integración EA no son requisitos del modo asistido.
+- El usuario encuentra opciones y sus motivos en una pantalla simple. El modo asistido puede conservarse, pero no sustituye la aceptación automática; Ollama sigue siendo opcional.
 
 Código/evidencia: [docs/MASTER_PROMPT.md](../docs/MASTER_PROMPT.md), [docs/IMPLEMENTATION_STATUS.md](../docs/IMPLEMENTATION_STATUS.md), [scripts/verify_docker.py](../scripts/verify_docker.py).
 

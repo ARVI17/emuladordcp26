@@ -1,5 +1,7 @@
 # Guía de trabajo · Club Lab FC27
 
+Prioridad corregida 17-nov-2026 por el propietario: **actualización y análisis automáticos al abrir la aplicación**, sin captura, texto copiado ni revisión por carta como recorrido habitual. Las veinte cartas asistidas no acreditan ese objetivo. Siguiente hito **AUTO-1**, con el [contraste de conexión y aceptación automática](docs/AUTOMATIC_CLUB_SYNC.md); no ampliar formularios manuales antes de resolverlo. API EA reservada a socios aprobados; puente WXT real aún pendiente. Se mantienen identidad, procedencia, protecciones y confirmación de acciones irreversibles.
+
 Cierre 17-nov-2026: **c9d7a78 / 0022 servido en 8090**, cinco servicios saludables. Veinte cartas reales revisadas desde texto visible de Chrome, seis atributos por carta y dos relecturas con los mismos IDs; 132 históricos intactos. Principal real y siete suplentes todavía pendientes de identificación/protección. Dos pases Docker corregidos (focalizado/integral). [Continuidad vigente](docs/NEXT_SESSION.md), [resultados y fallos](docs/TESTING.md). Los cortes inferiores son históricos.
 
 Cierre de revalidación 16-nov-2026: **96a8d21 / 0022 servido en 8090**, cinco servicios saludables, 132 históricos retirados y cero FC27 activos. Fuentes contrastadas en [SOURCE_REVIEW_20261116](docs/SOURCE_REVIEW_20261116.md): 11 identificadores de formación, 20 variantes y cinco pendientes; R33/R49 requieren contraste holográfico. Pases focalizado/integral y CI del código aprobados. [Resultados](docs/TESTING.md), [siguiente carga real](docs/REAL_CLUB_FIRST_LOAD.md), [recuperación y continuidad](docs/NEXT_SESSION.md). Los cortes inferiores son históricos.
@@ -9,13 +11,13 @@ Lee [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md) y el código/pruebas de la capa a
 
 ## Memoria y prioridad del producto
 
-La prioridad es una **plantilla competitiva con el club real**; DCP, ventas propuestas, compras, Galería y Evos la apoyan. Al iniciar lee [estado y criterios](docs/PROJECT_STATUS.md), [prompt maestro](docs/MASTER_PROMPT.md) y [siguiente sesión](docs/NEXT_SESSION.md), y ejecuta `python scripts/project_status.py`. No confundir pruebas sintéticas con aceptación personal ni HEAD con SHA servido.
+La prioridad es una **plantilla competitiva con el club real actualizado automáticamente**; DCP, ventas propuestas con ofertas del mercado PS5, compras, Galería y Evos la apoyan. Al iniciar lee [estado y criterios](docs/PROJECT_STATUS.md), [prompt maestro](docs/MASTER_PROMPT.md) y [siguiente sesión](docs/NEXT_SESSION.md), y ejecuta `python scripts/project_status.py`. No confundir pruebas sintéticas o cargas asistidas con aceptación automática ni HEAD con SHA servido.
 
 Al cerrar cada sprint, actualiza los hitos afectados y `reviewed_on` en `docs/PROJECT_STATE.json`, regenera `python scripts/project_status.py --render-plan`, ejecuta `--check` y actualiza NEXT_SESSION/TESTING con hechos, fallos, alcance y siguiente acción. No edites a mano PROJECT_STATUS.md. El diagnóstico privado `state/continuity/latest.*` se actualiza con `fc27.ps1 Inicio|Estado|Parada|Memoria` y al terminar el verificador; no hay agente de fondo ni actualización automática del juicio funcional. No guardar secretos o inventarios en esta memoria.
 
 Corte 16-nov-2026: [auditoría](docs/AUDIT_20261116.md). Se arrancaron los cinco contenedores existentes, saludables en 8090, **8a80860/0021**. Cero cartas FC27 activas; 132 registros históricos retirados preservados. Sprint de continuidad sin cambios de aplicación ni migración. Los cortes inferiores son antecedentes; comprobar siempre el estado efectivo.
 
-Bloqueo actual: formaciones (`verified_formations`) y 29 referencias documentadas vencieron el **10-nov-2026**. La suite actual falla por dependencias de esa vigencia; no presentar el pase histórico como actual. Priorizar KNOW-1: recontrastar fuentes/posiciones y separar reloj de fixtures históricos de pruebas de caducidad. No renovar fechas a ciegas ni quitar la guarda. El diagnóstico cuenta contenido vigente/vencido, sin modificarlo.
+Antecedente anterior a la revalidación del 16-nov: formaciones (`verified_formations`) y 29 referencias vencieron el **10-nov-2026**, causando fallos por vigencia. El cierre superior y SOURCE_REVIEW_20261116 documentan la corrección; comprobar siempre la vigencia efectiva al retomar. No renovar fechas a ciegas ni quitar la guarda. La prioridad funcional del 17-nov es AUTO-1.
 
 ## Estado y alcance
 

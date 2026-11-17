@@ -1,5 +1,9 @@
 # Cambios detallados
 
+## 17 de noviembre de 2026 · Prioridad automática y acceso contrastado
+
+Se establece AUTO-1 como requisito del recorrido personal: abrir la app, actualizar club/once/banquillo y calcular opciones de DCP, ventas y compras con datos actuales del juego. Se abandona la ampliación de formularios manuales como siguiente incremento. La carga bilingüe previa de veinte cartas se conserva como evidencia parcial. Revisión oficial de la API restringida, alternativas de socios y lectura puntual de lista/ficha en Chrome; identidad estable y puente WXT pendientes. [Decisión](AUTOMATIC_CLUB_SYNC.md), [verificación](TESTING.md). Solo memoria/documentación; sin cambios de aplicación, migración, permisos o despliegue.
+
 ## 16 de noviembre de 2026 · WXT 0.5.1 y primeras veinte copias
 
 El panel del lector podía lanzar una excepción por `resultú.groups` cuando existía un informe. Se corrige la clave y el acceso opcional a resultados pendientes. Nueva regresión compilada con Chromium/PostgreSQL aislados: veinte copias, dos relecturas sin multiplicarlas y protección explícita de once más siete, sin inferir principal del orden de una lista. No cambia API, migración, permisos ni selectores EA. [Resultados](TESTING.md).

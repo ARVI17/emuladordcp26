@@ -1,5 +1,7 @@
 # Primera carga del club real
 
+**Prioridad posterior del propietario (17-nov):** este recorrido asistido no satisface el producto solicitado. Debe sustituirse como camino habitual por actualización y análisis automáticos al abrir la app. [AUTO-1: conexión, límites y prueba exigida](AUTOMATIC_CLUB_SYNC.md). Las instrucciones siguientes describen la alternativa manual existente, no la siguiente fase de desarrollo.
+
 **Corte 17-nov-2026: primera carga realizada.** Veinte cartas reales revisadas desde Chrome y dos lecturas nuevas con los mismos IDs, sin duplicados. Seis atributos por carta; posiciones EN/ES normalizadas. La UI muestra las 20 copias. El once y los siete suplentes reales todavía no se han identificado ni protegido. [Continuidad y recuperación](NEXT_SESSION.md).
 
 ## Vía sencilla disponible
@@ -8,7 +10,7 @@ En el contexto asistido existente, abre **Mi cuenta → Leer cartas desde texto 
 
 Repetir la misma página reutiliza el recibo. Para una observación nueva, cambia su etiqueta de página y selecciona explícitamente cada copia local que corresponda. Una coincidencia de nombre no acredita por sí sola identidad. Las filas ambiguas o retiradas se bloquean, sin fusionarlas ni reactivarlas. Esta vía declara `user_reviewed_text`, nunca identidad EA verificada; su cobertura sigue siendo parcial. [Contrato y límites](ASSISTED_READING.md).
 
-**Siguiente paso:** observar la plantilla activa en EA, revisar los once puestos y siete suplentes y registrar su protección. El lector de texto actual solo admite inventario; una principal necesita ámbito plantilla y puestos explícitos. No inferirla del orden de las 20 cartas. No hace falta instalar otra extensión para conservar esta carga.
+**Pendiente tras resolver AUTO-1:** obtener la plantilla activa por puestos y proteger once/siete suplentes mediante la lectura contrastada. El lector de texto actual solo admite inventario; no inferir la principal del orden de las veinte cartas ni ampliar la transcripción de plantilla como solución principal. La carga actual se conserva.
 
 Las rutas y los rechazos OCR descritos a continuación corresponden al **16-nov**, antes de esta carga. No representan el estado de inventario actual.
 

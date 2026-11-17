@@ -1,5 +1,7 @@
 # Cuenta FC27 y versión servida
 
+Actualización **17-nov-2026**: el propietario exige sincronización automática al abrir, sin captura/texto como rutina. No existe aún ese conector. La revisión oficial confirma tres socios y que EA no acepta nuevas solicitudes; [decisión y siguientes criterios](AUTOMATIC_CLUB_SYNC.md). Aplicación servida **c9d7a78/0022 en 8090**; los puertos/versiones inferiores son antecedentes. Las veinte cartas actuales son texto revisado, no conexión oficial ni actualización automática.
+
 La entrada **Mi cuenta** abre la Web App oficial en otra pestaña y presenta el estado del planificador por separado. Una sesión local, una API saludable o abrir EA no vinculan la cuenta.
 
 ## Bloqueo externo (revisado el 12 de octubre de 2026)

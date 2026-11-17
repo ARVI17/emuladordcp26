@@ -1,5 +1,14 @@
 # Pruebas del planificador FC27
 
+## Corrección de objetivo automático · 17-nov-2026
+
+Cambios exclusivamente de memoria/documentación sobre **fee28c0**; aplicación servida **c9d7a78/0022**, cinco servicios saludables. El objetivo de producto automático **NO ESTÁ VALIDADO**. Las veinte cartas y sus dos relecturas anteriores conservan su alcance asistido. No hubo una nueva carga, consulta de precios, automatización instalada, migración ni despliegue.
+
+- **PASA:** `project_status.py --render-plan` y `--check`; estados/dependencias/evidencias y vista generada coherentes. `python -m unittest discover -s scripts/tests -v`: **23 pruebas**. Diff sin errores de espacios; revisión de cambios limitada a documentación, sin inventario ni secretos.
+- **OBSERVADO:** Chrome con veinte filas visibles y ficha Player Bio accesible. Inspección DOM acotada sin claves estables en los atributos comprobados; campos adicionales legibles y retorno a la lista. No acredita que no exista otra identidad accesible. Una primera expresión de inspección tuvo error de sintaxis antes de ejecutarse; corregida, la lectura posterior terminó.
+- **CONTRASTADO:** fuentes oficiales de EA, GG Club, FUTWIZ, WXT y Playwright enlazadas en [AUTOMATIC_CLUB_SYNC](AUTOMATIC_CLUB_SYNC.md). Búsqueda del conector en el directorio disponible sin coincidencias.
+- **NO EJECUTADO en esta revisión:** Docker/Pytest/Vitest/Playwright de aplicación, por no cambiar código; lectura automática al abrir, paginación, ofertas PS5, DCP real, protección del once personal y dos ciclos automáticos completos. No trasladar los pases históricos a estos objetivos pendientes.
+
 ## Texto bilingüe y carga personal · 17-nov-2026
 
 Código **c9d7a7859ca329e57df82ec02c0394439ee0eff7**, limpio, probado y servido en 8090/0022. Sin migración ni dependencias nuevas. Se normalizan las quince posiciones EN/ES en OCR y texto; `text-preview` prepara candidatas y la revisión exige propiedad/correspondencia explícitas. Se distingue `user_reviewed_text` de OCR, DOM autenticado y proveedor. También se corrige `PlayerCard`, que ocultaba las copias `visual_reviewed` aunque el backend las admitiera, y su edición conserva el formulario de preferencias.

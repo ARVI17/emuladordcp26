@@ -1,6 +1,6 @@
 # Prompt maestro · Club Lab FC27
 
-Versión 4.0 · 16 de noviembre de 2026. Sustituye la prioridad del prompt 3.1: **primero una plantilla competitiva con el club real; DCP, mercado y Galería ayudan a mejorarla**. Es una especificación de trabajo, no una afirmación de que esas funciones estén terminadas.
+Versión 4.1 · 17 de noviembre de 2026. Corrección expresa del propietario: **abrir la aplicación y recibir el club actualizado y análisis automáticos, orientados a una plantilla competitiva**. DCP, mercado PS5 y Galería ayudan a mejorarla. La carga asistida de veinte cartas no satisface esa experiencia. Es una especificación de trabajo, no una afirmación de que esas funciones estén terminadas. [Viabilidad, fuentes y aceptación](AUTOMATIC_CLUB_SYNC.md).
 
 ## Misión y resultado esperado
 
@@ -8,7 +8,7 @@ Actúa como responsable de ingeniería, producto y verificación del proyecto ex
 
 El propietario quiere iniciar sesión por su cuenta en FC27, incorporar lo que realmente tiene y recibir decisiones útiles para jugar mejor: qué once y banquillo usar, qué alternativas probar, qué cartas conservar, qué DCP conviene hacer, qué excedentes podría vender, qué mejora comprar y qué ruta de Galería o Evo aporta valor. Ganar más partidos es el objetivo del usuario, no una garantía que pueda emitir el algoritmo.
 
-Para cada decisión mostrar: **qué se sabe, de qué lectura procede, qué falta, qué propone el cálculo, qué cuesta, qué se sacrifica y qué acción manual sigue**. Una respuesta sin datos debe indicar el dato concreto necesario y cómo aportarlo. No rellenar huecos con inventario demo, precios inventados o afirmaciones de un LLM.
+Para cada decisión mostrar: **qué propone el cálculo, por qué, cuánto cuesta, qué se sacrifica y qué decisión necesita el propietario**. La app obtiene y actualiza los datos automáticamente cuando dispone de una conexión contrastada. Mostrar fecha, cobertura y limitaciones sin convertir la rutina en formularios técnicos. Si falla la conexión, conservar el último estado con su antigüedad; no rellenar huecos con inventario demo, precios inventados o afirmaciones de un LLM.
 
 ## Memoria que debes leer y mantener
 
@@ -21,13 +21,13 @@ Para cada decisión mostrar: **qué se sabe, de qué lectura procede, qué falta
 
 ## Recorrido de producto
 
-### 1. Entrar y observar el club
+### 1. Abrir y actualizar el club automáticamente
 
 La app enlaza a la Web App oficial. El usuario inicia sesión y completa MFA allí. Club Lab no pide ni maneja contraseña, cookies, tokens o códigos de EA; abrir un enlace no conecta la cuenta. No fabricar OAuth ni usar protocolos privados.
 
-Con gesto y consentimiento, el usuario comparte solo una pestaña/ventana del club. Navega manualmente por jugadores, principal, banquillo, reservas, duplicados y transferibles. El navegador captura; Docker procesa fotogramas limitados en memoria. Pausa, parada, cancelación y salida liberan stream, cola, solicitudes y buffers. No activar otra captura automáticamente.
+Tras una configuración y autorización iniciales, abrir Club Lab debe iniciar la lectura permitida del club, principal y banquillo; después consulta los dominios de DCP y mercado que estén contrastados. Sin copiar texto, compartir pantalla, iniciar OCR ni navegar manualmente por listas en cada uso. La sesión EA puede caducar y requerir al propietario. No prometer conexión directa de backend ni funcionamiento con Chrome cerrado si se utiliza un puente de navegador.
 
-Mantener máscaras antes de transmitir, regiones, estabilidad, límites, detección conservadora de vistas sensibles y descarte. Esa detección es una mitigación heurística, no garantía absoluta: la persona debe seleccionar contenido de juego y ocultar información personal. Alternativas legítimas: imagen suministrada o archivo propio con vista previa y confirmación.
+El candidato local es la extensión WXT existente, con lectura y navegación acotadas por controles contrastados; Playwright verifica el recorrido. No hay todavía extractor EA ni permiso de host persistente implementados. Resolver identidad de copias y cobertura antes de admitir automáticamente. Un socio oficial solo puede alimentar Club Lab mediante una integración/exportación documentada aplicable: sus permisos no se heredan. OCR, texto y archivos conservan sus revisiones como alternativas optativas, no como siguiente objetivo. No iniciar captura de pantalla en segundo plano.
 
 Mostrar páginas observadas, candidatas, posibles repeticiones, pendientes, fecha y cobertura desconocida/parcial. El final de una lista filtrada no acredita todo el club. No borrar cartas por ausencia en una lectura parcial.
 
@@ -35,7 +35,7 @@ Mostrar páginas observadas, candidatas, posibles repeticiones, pendientes, fech
 
 Separar atleta, variante de carta y copia poseída. Nombre/media/posición son pistas; no bastan para distinguir todas las variantes o copias. OCR por línea mide reconocimiento textual, no certeza de identidad. Comparar liga, nación, club, posiciones, rareza, versión, holografía y evidencia disponible; desconocidos permanecen nulos.
 
-Dos cartas similares en páginas distintas requieren evidencia de si son la misma copia. No resolverlo mediante un contador inventado. Presentar candidatos y discrepancias; confirmar explícitamente antes de admitir. Conservar procedencia, contexto y observación. Catálogo público no acredita posesión. Una lectura antigua no revive una carta consumida.
+Dos cartas similares en páginas distintas requieren evidencia de si son la misma copia. No resolverlo mediante un contador inventado. La sincronización debe admitir automáticamente solo lo que el contrato contrastado permita y aislar las discrepancias excepcionales. Hasta disponer de ese contrato, las transcripciones mantienen su revisión explícita. Conservar procedencia, contexto y observación. Catálogo público no acredita posesión. Una lectura antigua no revive una carta consumida.
 
 Guardar una transacción idempotente con snapshot y diferencias, bajo bloqueo y revalidación. Mantener copias legítimas y cartas no vistas. Usar la infraestructura actual de captura/admisión; introducir una migración nueva solo si el modelo lo exige.
 
@@ -63,7 +63,7 @@ Cada regla nueva vive en solver y validador independiente, con casos viable/impo
 
 Normalizar cada cotización por variante exacta, mercado/plataforma, moneda, tipo, importe, fuente, fecha observada, fecha consultada y vencimiento. No usar PC como PlayStation, precio desconocido como cero, rango/puja como precio de compra ni histórico como oferta vigente. Discrepancias muestran rango, antigüedad y motivos; no elegir automáticamente la cifra menor.
 
-El proyecto debe funcionar con precios manuales o importaciones permitidas. Una integración externa exige permiso/documentación aplicables al proyecto y un contrato probado; la autorización de otro sitio no se hereda. No instalar proveedores indiscriminadamente. Mantener reintentos y caché limitados, cancelación, ausencia de proveedor y presupuesto de consultas.
+El recorrido habitual debe consultar automáticamente ofertas observadas en el mercado del juego correspondiente a **FC27/PS5**, con variante, fecha y límites de cobertura. Un precio público externo se identifica como tal y no sustituye silenciosamente una oferta del juego. Precios manuales/importados siguen siendo alternativas optativas. Una integración externa exige permiso/documentación aplicables al proyecto y un contrato probado; la autorización de otro sitio no se hereda. Mantener reintentos y caché limitados, cancelación y presupuesto de consultas.
 
 En contexto visual, diseñar evidencia específica y presupuesto declarado para simulaciones. El mercado/fichajes actual está restringido por `require_module`: no quitar esa guarda para conseguir resultados. Separar siempre presupuesto elegido, saldo observado, reserva de seguridad, compromisos y posibles ingresos.
 
@@ -109,6 +109,6 @@ Al cerrar cada sprint informar: resultado útil, URL, cambios/migraciones, PASA/
 
 **KNOW-1 es previo a la recomendación competitiva:** comprobar la vigencia efectiva en PROJECT_STATUS y el diagnóstico, y leer la última revisión de fuentes enlazada en NEXT_SESSION. Mantener el rechazo de revisiones futuras, vencidas o revocadas. Cuando caduquen, contrastar nuevamente fuentes/posiciones y repetir las regresiones; nunca cambiar fechas sin evidencia ni confundir salud de contenedores con disponibilidad funcional. Las pruebas backend de flujo usan ventanas temporales explícitas; las pruebas de límites conservan los archivos versionados y el navegador comprueba la vigencia efectiva. La captura revisada puede validarse por separado.
 
-Tomar DATA-1/DATA-2/TEAM-1 como secuencia prioritaria. Contrastar 20 cartas reales compartidas por el usuario, corregir dos, comprobar copias/variantes, reescanear y proteger once más siete suplentes. Si aún no hay una vista permitida disponible, avanzar en pruebas sintéticas de segmentación/reconciliación y señalar que la aceptación real sigue pendiente. No abrir ni capturar una sesión EA sin el gesto del propietario.
+Priorizar **AUTO-1 → DATA-1/DATA-2 → TEAM-1**. No ampliar la importación manual como solución a la petición automática. La siguiente prueba debe resolver acceso, identidad de copia y paginación con evidencia real; después dos aperturas de la app deben actualizar veinte cartas sin transcripción/revisión repetida y preservar once más siete suplentes. Los datos ambiguos se aíslan; no se inventa una clave EA ni se aflojan guardas. Registrar los fallos reales y detener la promoción a producción si no puede acreditarse la conciliación. El agente del chat no es un servicio que quede sincronizando después de cerrar la sesión.
 
 Después construir el contrato de precios/presupuesto para contexto visual y resolver un DCP tradicional y uno simplificado comprobables. Los criterios y dependencias exactos viven en `PROJECT_STATE.json`, no en porcentajes subjetivos de avance.

@@ -1,5 +1,9 @@
 # Estado verificable
 
+## Actualización automática exigida · 17-nov-2026
+
+El propietario rechaza la carga manual como recorrido habitual. Se incorpora **AUTO-1 pendiente** y se corrigen prompt maestro, criterios y relevo. [Fuentes y diseño por contrastar](AUTOMATIC_CLUB_SYNC.md). No se implementó ni desplegó un sincronizador durante esta revisión: los cambios son documentales. La aplicación conserva **c9d7a78/0022**, veinte cartas de texto revisado y principal personal sin proteger. Las dos relecturas anteriores no acreditan actualización automática.
+
 ## Revalidación documental · 16-nov-2026
 
 Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).
