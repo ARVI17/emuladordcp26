@@ -108,8 +108,9 @@ export default defineUnlistedScript(()=>{
   if(first){
    await labelled('nav button',['Club'])
    await labelled('h1,h2,button',['Players','Jugadores'])
-   if(byLabel('button',['Reset','Restablecer','Reiniciar']).length===1)await labelled('button',['Reset','Restablecer','Reiniciar'])
-   if(byLabel('button',['Search','Buscar']).length===1)await labelled('button',['Search','Buscar'])
+   const reset=byLabel('button',['Reset','Restablecer','Reiniciar']).length===1
+   if(reset)await labelled('button',['Reset','Restablecer','Reiniciar'])
+   if(byLabel('button',['Search','Buscar']).length===1&&(reset||inventoryRows().length===0))await labelled('button',['Search','Buscar'])
    await wait(()=>inventoryRows().length>0?true:undefined)
    // Do not silently start in the middle of a previous search.
    for(let n=0;n<50;n++){
