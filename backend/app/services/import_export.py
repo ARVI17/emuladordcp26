@@ -330,24 +330,29 @@ def find_accessibility_inventory_action(content: bytes | str, label: str) -> tup
         if match: matches.append(tuple(int(value) for value in match.groups()))
     return matches[0] if len(matches) == 1 else None
 
+POSITION_ALIASES = {**{p: p for p in PLAYER_POSITIONS}, **dict(zip(
+    'GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST'.split(),
+    'POR LD DFC LI CAD CAI MCD MC MCO MD MI ED EI SD DC'.split()))}
+
+
 def extract_inventory_candidates(text: str, page: int = 1) -> list[dict]:
     lines = [re.sub(r"\s+", " ", line).strip(" -|:") for line in text.splitlines() if len(line.strip()) > 1]
     candidates: list[dict] = []
-    inline = re.compile(r"^(?P<rating>[4-9][0-9])\s+(?P<position>POR|LD|DFC|LI|CAD|CAI|MCD|MC|MCO|MD|MI|ED|EI|SD|DC)\s+(?P<name>.+)$", re.IGNORECASE)
+    inline = re.compile(r"^(?P<rating>[4-9][0-9])\s+(?P<position>" + '|'.join(POSITION_ALIASES) + r")\s+(?P<name>.+)$", re.IGNORECASE)
     index = 0
     while index < len(lines) and len(candidates) < 30:
         match = inline.fullmatch(lines[index])
         if match:
             name = match.group("name").strip()
             if re.search(r"[A-Za-zÀ-ÿ]", name):
-                candidates.append(_candidate(name, int(match.group("rating")), match.group("position").upper(), page, 0.72))
+                candidates.append(_candidate(name, int(match.group("rating")), POSITION_ALIASES[match.group("position").upper()], page, 0.72))
             index += 1
             continue
-        if index + 2 < len(lines) and re.fullmatch(r"[4-9][0-9]", lines[index]) and lines[index + 1].upper() in PLAYER_POSITIONS:
+        if index + 2 < len(lines) and re.fullmatch(r"[4-9][0-9]", lines[index]) and lines[index + 1].upper() in POSITION_ALIASES:
             name = lines[index + 2].strip()
             plain = _plain(name)
             if re.search(r"[A-Za-zÀ-ÿ]", name) and not PLAYER_STAT.fullmatch(name) and not any(word == plain or plain.startswith(f"{word} ") for word in OCR_UI_WORDS):
-                candidates.append(_candidate(name, int(lines[index]), lines[index + 1].upper(), page, 0.72))
+                candidates.append(_candidate(name, int(lines[index]), POSITION_ALIASES[lines[index + 1].upper()], page, 0.72))
                 index += 3
                 continue
         index += 1

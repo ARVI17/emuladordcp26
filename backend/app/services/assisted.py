@@ -6,7 +6,7 @@ import re
 from copy import deepcopy
 from datetime import timedelta
 from fastapi import HTTPException
-from sqlalchemy import and_, exists, select
+from sqlalchemy import and_, or_, exists, select
 from app.models.assisted import CaptureSession, VisualReading, VisualCopy
 from app.models.entities import Player, Objective, now
 from app.services.contexts import utc
@@ -41,6 +41,10 @@ def visual_copy_clause():
             VisualCopy.id == evidence['visual_copy_id'].as_integer(), VisualCopy.player_id == Player.id,
             VisualCopy.club_context_id == Player.club_context_id, VisualReading.club_context_id == Player.club_context_id,
             VisualReading.status == 'reviewed', VisualReading.reviewed['edition'].as_string() == 'FC27',
+            or_(evidence['source_kind'].as_string().is_distinct_from('browser_text'),
+                and_(VisualReading.original['source_kind'].as_string() == 'browser_text',
+                     VisualReading.reviewed['ownership_confirmed'].as_boolean().is_(True),
+                     VisualReading.reviewed['source'].as_string() == 'user_reviewed_text')),
             VisualCopy.state.in_(['reviewed', 'ambiguous']),
             *(getattr(Player, key) == (VisualCopy.facts[key].as_integer() if key == 'rating' else VisualCopy.facts[key].as_string()) for key in IDENTITY))))
 
@@ -89,7 +93,7 @@ def parse_screen(text, scope):
     plain = _plain(text)
     if re.search(r'\bfc\s*2[0-689]\b', plain):
         return None
-    recognizable = re.search(r'\bfc\s*27\b|ultimate team|futb[.]? de mi club|\b(?:mi club|plantilla|objetivos|squad battles|rivals|monedas|sin asignar|dcp)\b', plain)
+    recognizable = re.search(r'\bfc\s*27\b|ultimate team|futb[.]? de mi club|\b(?:my club players|jugadores de mi club|mi club|plantilla|objetivos|squad battles|rivals|monedas|sin asignar|dcp)\b', plain)
     if not recognizable:
         return None
     # OCR often confuses capital I and lowercase l. Keep the original and require review.
@@ -208,7 +212,10 @@ def read_frame(db, session, content, scope, page, filters, region=None):
     return dict(**reading_data(row), repeated=False)
 
 
-def save_reading(db, row, payload, *, capture_required=True):
+def save_reading(db, row, payload, *, capture_required=True, text_ownership_confirmed=False):
+    text_source = row.original.get('source_kind') == 'browser_text'
+    if text_source and not text_ownership_confirmed:
+        raise HTTPException(422, 'Revisa la propiedad y la correspondencia de las copias antes de guardar el texto.')
     if row.status == 'reviewed':
         if row.reviewed.get('request_hash') != fingerprint(payload.model_dump(mode='json')):
             raise HTTPException(409, 'La lectura ya fue revisada. Crea otra observación para registrar cambios.')
@@ -223,7 +230,7 @@ def save_reading(db, row, payload, *, capture_required=True):
     original = row.original
     original_cards = {c['ordinal']: c for c in original.get('cards', [])}
     if any(c.ordinal not in original_cards for c in payload.cards):
-        raise HTTPException(422, 'Solo se revisan candidatas extraídas de esta imagen; lee una región más clara.')
+        raise HTTPException(422, 'Solo se revisan candidatas de esta lectura; prepara otra observación.')
     if payload.objective and (row.scope != 'objective' or not original.get('objective_text')):
         raise HTTPException(422, 'Se necesita una lectura de objetivo para revisar sus reglas.')
     if payload.dcp and (row.scope != 'dcp' or not original.get('objective_text')):
@@ -234,6 +241,8 @@ def save_reading(db, row, payload, *, capture_required=True):
         raise HTTPException(409, 'Cambió el nombre del club observado. Abre otro contexto antes de guardar; no se mezclaron datos.')
     reviewed = payload.model_dump(mode='json')
     reviewed.update(request_hash=fingerprint(reviewed), copy_ids=[], objective_id=None, source='user_reviewed_visual', provider_verified=False)
+    if text_source:
+        reviewed.update(source='user_reviewed_text', ownership_confirmed=True)
     row.status, row.reviewed_at, row.reviewed = 'reviewed', now(), deepcopy(reviewed)
     if row.scope == 'result':
         # Result checks compare evidence. They do not replace inventory or infer consumption.
@@ -242,6 +251,16 @@ def save_reading(db, row, payload, *, capture_required=True):
     for card in payload.cards:
         facts = {key: getattr(card, key) for key in FACTS}
         key = ambiguity_key(facts)
+        if text_source:
+            # A name/position match proposes correspondence; it never proves copy identity.
+            # Include retired/quarantined copies so a transcription cannot revive them.
+            matches = list(db.scalars(select(VisualCopy).where(VisualCopy.identity_key == key)))
+            if not card.existing_player_id and matches:
+                raise HTTPException(409, 'Ya hay una observación de esta carta. Revisa su correspondencia; no se creó otra copia.')
+            if sum(ambiguity_key(c.model_dump()) == key for c in payload.cards) != 1:
+                raise HTTPException(409, 'El texto contiene cartas indistinguibles. Revisa cada copia por separado.')
+            if card.existing_player_id and sum(c.existing_player_id == card.existing_player_id for c in payload.cards) != 1:
+                raise HTTPException(409, 'Una copia local no puede ocupar dos filas de la lectura.')
         if card.existing_player_id:
             p = db.scalar(select(Player).where(Player.id == card.existing_player_id).execution_options(include_quarantine=True))
             if not p or p.deleted or p.validation_evidence.get('kind') != 'visual_copy' or ambiguity_key(p.validation_evidence['identity']) != key:
@@ -268,6 +287,8 @@ def save_reading(db, row, payload, *, capture_required=True):
             session_id=row.session_id, observed_at=utc(row.observed_at).isoformat(), reviewed_at=now().isoformat(),
             identity={k: getattr(p, k) for k in IDENTITY}, observed_fields=[k for k,v in facts.items() if v is not None],
             location=card.location, ea_copy_id=None, provider_verified=False)
+        if text_source:
+            p.validation_evidence = {**p.validation_evidence, 'source_kind': 'browser_text', 'ownership_confirmed': True}
         reviewed['copy_ids'].append(p.id)
         others = list(db.scalars(select(VisualCopy).where(VisualCopy.identity_key == key, VisualCopy.player_id != p.id, VisualCopy.state != 'merged')))
         if others:

@@ -1,0 +1,50 @@
+// Disposable synthetic inventory. This does not prove a personal EA import.
+import {test,expect} from '@playwright/test'
+
+test('twenty bilingual text cards: review, correction and two fresh reads keep IDs',async({page},info)=>{
+ test.skip(process.env.PLAYWRIGHT_DISPOSABLE_DB!=='1','Requires a disposable database.')
+ test.setTimeout(180000)
+ page.setDefaultTimeout(15000)
+ await page.goto('/#/cuenta')
+ await page.getByLabel('Nombre para un nuevo contexto de lectura').fill(`Texto sintético ${Date.now()}`)
+ await page.getByRole('button',{name:'Iniciar lectura asistida en otro contexto'}).click()
+ await expect(page.getByRole('heading',{name:'Leer cartas desde texto visible'})).toBeVisible()
+ let ids:number[]=[]
+ for(let pass=0;pass<3;pass++){
+  await page.getByLabel('Página del texto',{exact:true}).fill(`Lectura sintética ${pass}`)
+  await page.getByLabel('Texto visible de las cartas',{exact:true}).fill(Array.from({length:20},(_,i)=>`85 ${pass===2?'DFC':'CB'} ${i===0&&pass>0?'Nombre corregido':`Futbolista ${i}`}`).join('\n'))
+  const pending=page.waitForResponse(r=>r.url().endsWith('/assisted/text-preview'))
+  await page.getByRole('button',{name:'Preparar revisión del texto'}).click()
+  const response=await pending;expect(response.ok()).toBeTruthy();const reading=await response.json()
+  expect(reading.original.cards).toHaveLength(20)
+  await expect(page.getByRole('button',{name:'Guardar observación',exact:true})).toBeDisabled()
+  await page.getByLabel('Revisé que corresponde a FC27 y a este contexto de club').check()
+  await page.getByLabel('Revisé que estas cartas están en mi club y la correspondencia con las copias locales').check()
+  if(!pass)await page.getByLabel('Nombre visible 1',{exact:true}).fill('Nombre corregido')
+  for(let i=0;i<20;i++){
+   await expect(page.getByRole('combobox',{name:`Posición ${i+1}`,exact:true})).toHaveValue('DFC')
+   if(pass)await page.getByRole('combobox',{name:`Correspondencia con copia local ${i+1}`,exact:true}).selectOption(String(ids[i]))
+  }
+  await page.getByLabel('Escribe GUARDAR OBSERVACION',{exact:true}).fill('GUARDAR OBSERVACION')
+  const saved=page.waitForResponse(r=>r.url().endsWith(`/assisted/text-readings/${reading.id}/review`))
+  await page.getByRole('button',{name:'Guardar observación',exact:true}).click()
+  const result=await saved;expect(result.ok()).toBeTruthy();const reviewed=await result.json()
+  if(!pass)ids=reviewed.reviewed.copy_ids
+  else expect(reviewed.reviewed.copy_ids).toEqual(ids)
+  expect(new Set(ids).size).toBe(20)
+ }
+ await page.getByLabel('Texto visible de las cartas',{exact:true}).fill(Array.from({length:20},(_,i)=>`85 CB ${i===0?'Nombre corregido':`Futbolista ${i}`}`).join('\n'))
+ const repeated=page.waitForResponse(r=>r.url().endsWith('/assisted/text-preview'))
+ await page.getByRole('button',{name:'Preparar revisión del texto'}).click()
+ const repeat=await (await repeated).json();expect(repeat.repeated).toBe(true);expect(repeat.reviewed.copy_ids).toEqual(ids)
+ await expect(page.getByText('Texto ya observado: no se duplicaron cartas ni se renovó la fecha.')).toBeVisible()
+ const menu=page.getByRole('button',{name:'Abrir menú',exact:true})
+ if(await menu.isVisible())await menu.click()
+ await page.getByRole('button',{name:'Mi club',exact:true}).click()
+ await expect(page.getByText('20 cartas registradas · FC27',{exact:true})).toBeVisible()
+ await expect(page.locator('article.player-card')).toHaveCount(20)
+ await expect(page.getByRole('heading',{name:'Nombre corregido',exact:true})).toBeVisible()
+ await expect(page.getByText(/^Texto visible revisado ·/)).toHaveCount(20)
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBeTruthy()
+ await page.screenshot({path:info.outputPath('browser-text-synthetic.png'),fullPage:true})
+})
