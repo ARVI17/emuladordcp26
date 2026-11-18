@@ -4,24 +4,62 @@ import path from 'node:path'
 import fs from 'node:fs'
 
 // Synthetic UI only, intercepted in a disposable browser; no real EA request.
-function fixture(spanish:boolean,total=20){return `<!doctype html><html><head><meta charset="utf-8"><title>FC Ultimate Team</title><style>.ut-squad-slot-view .name{display:none}</style></head><body>
+function fixture(spanish:boolean,total=20){return `<!doctype html><html><head><meta charset="utf-8"><title>FC Ultimate Team</title><style>
+.ut-squad-slot-view .name,.ut-squad-slot-view .player-stats-data-component{display:none}
+.ut-draggable{position:relative;height:290px;overflow:hidden}
+.ut-squad-pitch-view,.ut-squad-slot-dock-view{display:flex;gap:4px;flex-wrap:wrap}
+.ut-squad-slot-view{width:54px;height:66px}
+.test-card-face{min-height:100%}
+.test-docks{position:absolute;top:100%;left:0;right:0;background:white}
+.ut-draggable.open .test-docks{top:40px}
+.test-dock-controls{position:absolute;bottom:4px;z-index:2}
+.ut-navigation-button-control::before{content:'\uE09B'}
+.test-transition{position:fixed;inset:0;z-index:100;background:white}
+</style></head><body>
 <span class="view-navbar-clubinfo-name">${total>20?'':'Club automático SINTÉTICO'}</span><main id="view"></main><div id="detail"></div>
 <nav><button onclick="show('club')">Club</button><button onclick="show('squads')">${spanish?'Plantillas':'Squads'}</button></nav>
 <script>
 const es=${spanish},positions=es?['POR','LD','DFC','DFC','LI','MC','MC','MC','ED','DC','EI']:['GK','RB','CB','CB','LB','CM','CM','CM','RW','ST','LW'];
 const total=${total};let selected=0,kind='inventory',reverse=false,pageIndex=0;
-if(total>20)setTimeout(()=>document.querySelector('.view-navbar-clubinfo-name').textContent='Club automático SINTÉTICO',1000);
+if(total>20){
+ const boot=document.createElement('button');boot.textContent='Login';
+ boot.onclick=()=>{document.documentElement.dataset.testLoginClick='yes'};document.body.append(boot);
+ setTimeout(()=>{boot.remove();document.querySelector('.view-navbar-clubinfo-name').textContent='Club automático SINTÉTICO'},1000);
+}
 const stats=()=>'<ul class="player-stats-data-component">'+(es?['RIT','TIR','PAS','REG','DEF','FIS']:['PAC','SHO','PAS','DRI','DEF','PHY']).map(s=>'<li>'+s+' 80</li>').join('')+'</ul>';
 const card=i=>'<div class="name">Auto visible '+i+'</div><div class="rating">88</div><div class="position">'+positions[i%11]+'</div>'+stats();
-function choose(i){selected=i;document.getElementById('detail').innerHTML=(kind==='squad'?'<h1>'+(es?'Detalles del jugador':'Player Details')+'</h1><button onclick="closeDetails()">\uE09B</button>':'')+'<button onclick="bio()">'+(es?'Datos del jugador':'Player Bio')+'</button>'}
+function navbar(title,back){return '<header class="ut-navigation-bar-view navbar-style-secondary"><button class="ut-navigation-button-control" onclick="'+back+'"></button><h1>'+title+'</h1></header>'}
+function choose(i){selected=i;document.getElementById('detail').innerHTML=(kind==='squad'?navbar(es?'Detalles del jugador':'Player Details','closeDetails()'):'')+'<button onclick="bio()">'+(es?'Datos del jugador':'Player Bio')+'</button>'}
 function closeDetails(){document.getElementById('detail').innerHTML=''}
-function bio(){document.getElementById('detail').innerHTML='<button onclick="choose(selected)">\uE09B</button><article class="ut-player-bio-view">'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p><p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p></article>'}
+function bio(){document.getElementById('detail').innerHTML=navbar(es?'Datos del jugador':'Player Bio','choose(selected)')+'<article class="ut-player-bio-view">'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p><p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p></article>'}
+let holdTransition=false,overlayClicks=0,drawerOpens=0;
+function transition(){
+ const mask=document.createElement('div');mask.className='test-transition';mask.textContent='Loading…';
+ mask.addEventListener('mousedown',()=>overlayClicks++);document.body.append(mask);
+ if(!holdTransition)setTimeout(()=>mask.remove(),700);
+}
+function renderDocks(){
+ const pitch=document.querySelector('.ut-squad-pitch-view'),bench=document.querySelector('.ut-squad-slot-dock-view');
+ const frame=document.createElement('div');frame.className='ut-draggable';pitch.replaceWith(frame);frame.append(pitch);
+ const docks=document.createElement('div');docks.className='test-docks';frame.append(docks);docks.append(bench);
+ if(total>20){
+  const reserves=document.createElement('div');reserves.className='ut-squad-slot-dock-view';
+  reserves.innerHTML=Array.from({length:5},(_,j)=>'<div class="ut-squad-slot-view" onclick="choose('+(18+j)+')">'+card(18+j)+'</div>').join('')+'<p>Drag any player to and from the pitch to swap reserves</p>';docks.append(reserves);
+ }
+ const controls=document.createElement('div');controls.className='test-dock-controls';frame.append(controls);
+ for(const label of (es?['Suplentes','Reservas']:['Subs','Res'])){
+  const toggle=document.createElement('button');toggle.className='dockTab';toggle.textContent=label;controls.append(toggle);
+  toggle.addEventListener('click',()=>{const open=frame.classList.toggle('open');controls.querySelectorAll('.dockTab').forEach(b=>b.classList.remove('ui-direction-down'));if(open){toggle.classList.add('ui-direction-down');drawerOpens++}});
+ }
+}
 function show(next){if(next==='club')pageIndex=0;kind=next;document.getElementById('detail').innerHTML='';let html='';
 if(next==='club')html='<h1 onclick="show(&quot;inventory&quot;)">'+(es?'Jugadores':'Players')+'</h1>';
 if(next==='squads')html='<h1 onclick="show(&quot;squad&quot;)">'+(es?'Plantilla activa':'Active Squad')+'</h1>';
 if(next==='inventory'){let order=Array.from({length:total},(_,i)=>i);if(reverse)order.reverse();order=order.slice(pageIndex*20,(pageIndex+1)*20);html='<h1>'+(es?'Jugadores de mi club':'My Club Players')+'</h1><button onclick="show(&quot;club&quot;)">'+(es?'Buscar':'Search')+'</button><ul>'+order.map(i=>'<li class="listFUTItem" onclick="choose('+i+')">'+card(i)+'</li>').join('')+'</ul><button '+(pageIndex===0?'disabled':'')+' onclick="pageIndex--;show(&quot;inventory&quot;)">'+(es?'Anterior':'Previous')+'</button><button '+((pageIndex+1)*20>=total?'disabled':'')+' onclick="pageIndex++;show(&quot;inventory&quot;)">'+(es?'Siguiente':'Next')+'</button>'}
 if(next==='squad')html='<div>4-3-3</div><div class="ut-squad-pitch-view">'+Array.from({length:11},(_,i)=>'<div class="ut-squad-slot-view" onclick="choose('+i+')"><div class="ut-squad-slot-pedestal-view"><span class="label">'+positions[i]+'</span><span>++</span></div>'+card(i)+'</div>').join('')+'</div><div class="ut-squad-slot-dock-view">'+Array.from({length:7},(_,n)=>'<div class="ut-squad-slot-view" onclick="choose('+(n+11)+')">'+card(n+11)+'</div>').join('')+'<p>'+(es?'Arrastra jugadores para cambiar suplentes':'Drag any player to and from the pitch to swap subs')+'</p></div>';
-document.getElementById('view').innerHTML=html}
+document.getElementById('view').innerHTML=html;
+if(next==='squad')renderDocks();
+if(next==='squads'||next==='squad')transition()}
 // English requires a press/release gesture. Ordinary click alone has no effect;
 // this models the real navigation failure that click-only fixtures concealed.
 function wireGestures(){if(es)return;document.querySelectorAll('[onclick]').forEach(e=>{if(total>20&&e.disabled&&e.textContent==='Next'){e.remove();return}const action=e.onclick;e.removeAttribute('onclick');let target=e;if(e.matches('.ut-squad-slot-view,.listFUTItem')){target=document.createElement('div');target.className='test-card-face';while(e.firstChild)target.append(e.firstChild);e.append(target)}let pressed=false;target.onmousedown=()=>{pressed=true};target.onmouseup=event=>{if(!pressed)return;pressed=false;action.call(e,event)}})}
@@ -53,6 +91,7 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
  await new Promise<void>(resolve=>server.listen(0,'0.0.0.0',resolve))
  base='http://localhost:'+(server.address() as import('node:net').AddressInfo).port
  const extension=path.resolve('.output/chrome-mv3'),manifest=JSON.parse(fs.readFileSync(path.join(extension,'manifest.json'),'utf8'))
+ const expectedProtected=total>20?23:18
  expect(manifest.permissions).not.toContain('cookies');expect(manifest.permissions).not.toContain('debugger')
  expect(manifest.host_permissions).toEqual(['http://localhost/*','http://127.0.0.1/*','https://www.ea.com/*'])
  const context=await chromium.launchPersistentContext('',{channel:'chromium',headless:true,args:[`--disable-extensions-except=${extension}`,`--load-extension=${extension}`,'--host-resolver-rules=MAP www.ea.com ~NOTFOUND']})
@@ -150,7 +189,9 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   await refreshHeaders()
   const first=await request('/players?limit=100'),ids=first.items.map((c:any)=>c.id).sort((a:number,b:number)=>a-b)
   expect(first.total).toBe(total)
-  const main=await request('/squads/main');expect(main.complete).toBe(true);expect(main.protected_copy_ids).toHaveLength(18)
+  const main=await request('/squads/main');expect(main.complete).toBe(true);expect(main.protected_copy_ids).toHaveLength(expectedProtected)
+  expect(main.snapshot.members.filter((m:any)=>m.slot.startsWith('BENCH-'))).toHaveLength(7)
+  expect(main.snapshot.members.filter((m:any)=>m.slot.startsWith('RESERVE-'))).toHaveLength(expectedProtected-18)
   let receipt=(await request('/browser-auto/status')).result.request_id
   for(let pass=0;pass<2;pass++){
    stage('reopen_'+(pass+1))
@@ -176,7 +217,16 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   await refreshHeaders()
   expect((await request('/players')).total).toBe(total)
   expect((await request('/squads/main')).protected_copy_ids).toEqual(main.protected_copy_ids)
-  console.log('AUTO_SYNTHETIC '+JSON.stringify({language:spanish?'es':'en',cards:total,reopens:2,protected:18,real_club:false}))
+  expect(await ea.evaluate('drawerOpens')).toBeGreaterThanOrEqual(3)
+  expect(await ea.locator('html').getAttribute('data-test-login-click')).toBeNull()
+  if(!spanish&&total===20){
+   await ea.evaluate('holdTransition=true')
+   await page.getByRole('button',{name:'Actualizar ahora',exact:true}).click()
+   await expect(panel).toContainText('La vista cambió',{timeout:25000})
+   expect((await request('/browser-auto/status')).result.request_id).toBe(receipt)
+  }
+  expect(await ea.evaluate('overlayClicks')).toBe(0)
+  console.log('AUTO_SYNTHETIC '+JSON.stringify({language:spanish?'es':'en',cards:total,reopens:2,protected:expectedProtected,real_club:false}))
  }catch(error){for(const tab of context.pages())if(tab.url().startsWith('https://www.ea.com/'))console.log('AUTO_SYNTHETIC_LAST_VIEW '+(await tab.locator('body').innerText({timeout:1000}).catch(()=>'(unavailable)')).slice(0,600));throw error}
  finally{await context.close();await new Promise<void>(resolve=>server.close(()=>resolve()))}
 })
