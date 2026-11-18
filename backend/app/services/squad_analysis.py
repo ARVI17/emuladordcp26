@@ -96,6 +96,20 @@ def formation_slots(formation: str) -> list[dict]:
     return result
 
 
+def browser_formation(label: str | None, starter_slots: set[str]) -> str | None:
+    """Resolve a Web App label against the observed positions without reinterpreting saved squads."""
+    if not label:
+        return None
+    reviews = read_public_data('fc27_formations.json')['items']
+    candidates = [key for key, row in reviews.items() if row.get('browser_label') == label]
+    if not candidates:
+        return label
+    current = verified_formations()
+    matches = [key for key in candidates if key in current
+               and {item['slot'] for item in formation_slots(key)} == starter_slots]
+    return matches[0] if len(matches) == 1 else label
+
+
 def formations_data() -> dict:
     reviews = read_public_data('fc27_formations.json')['items']
     return {"game_version": "FC27", "items": [{"id": key, "name": key, "slots": formation_slots(key),

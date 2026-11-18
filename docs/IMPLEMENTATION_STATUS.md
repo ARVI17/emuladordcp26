@@ -1,5 +1,9 @@
 # Estado verificable
 
+## Lector de plantilla 0.7.4 · 17-nov-2026
+
+El lector detectado 0.7.3 avanzó por el once y los siete suplentes pero se detuvo en la primera reserva. La versión 0.7.4 gestiona el cambio de panel, cuenta exclusivamente las filas de resultados y verifica que se cerró la biografía. Se contrastaron los 23 puestos y las veinte primeras cartas en la interfaz inglesa. Chrome confirmó 0.7.4 pero EA mostró Cannot Authenticate y pidió salir. La variante abierta del rombo se comprobó por los puestos MD y MI. Las publicaciones y candados personales tienen comprobación independiente en el contexto local. La app sigue en abb7e6e/0023. [Aceptación y siguiente paso](NEXT_SESSION.md), [pruebas](TESTING.md).
+
 ## Correcciones tras instalar el lector · 17-nov-2026
 
 Lector detectado y actualización activada. 0.7.0 falló en navegación; 0.7.1 avanzó a la plantilla y falló en la selección interna. Ambos intentos reales conservaron los veinte IDs, sin publicación. **0.7.2 / 9c93268** añade selección del elemento visible, gestos y final de lista sin Next; **18 WXT aprobados en 88e09c4eea**. Las 32 fuentes dentro de la imagen probada coinciden con el commit; nueve archivos actualizados en la carpeta instalada, con copia anterior. Recarga del lector y aceptación real pendientes; la app permanece abb7e6e/0023. Diagnóstico visible: veinte páginas/398 cartas, sin importarlas. [Fallos y pruebas](TESTING.md), [siguiente acción](NEXT_SESSION.md).

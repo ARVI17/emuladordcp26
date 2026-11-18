@@ -49,6 +49,36 @@ def post(client, headers, data):
     return response.json()
 
 
+def test_wide_diamond_visible_slots_keep_main_and_ids_on_reopen(client, monkeypatch):
+    setup(client, monkeypatch)
+    wide = ['POR-1','LD-1','DFC-1','DFC-2','LI-1','MCD-1','MD-1','MI-1','MCO-1','DC-1','DC-2']
+    first = None
+    for _ in range(2):
+        ticket, headers = start(client)
+        data = snapshot(ticket)
+        data['formation'] = '4-1-2-1-2'
+        for i, slot in enumerate(wide):
+            position = slot.split('-')[0]
+            data['squad'][i].update(slot=slot, position=position)
+            data['inventory'][i]['position'] = position
+        result = post(client, headers, data)
+        assert result['status'] == 'updated' and not result['result']['pending']
+        main = client.get('/squads/main').json()
+        assert main['complete'] and main['snapshot']['formation'] == '4-1-2-1-2 abierta'
+        assert len(main['protected_copy_ids']) == 18
+        current = (main['squad_id'], main['protected_copy_ids'], result['result']['inventory_ids'])
+        if first is None:
+            first = current
+        assert current == first
+
+    ticket, headers = start(client)
+    data.update(request_id=ticket['request_id'], observed_at=now().isoformat())
+    data['squad'][6]['slot'] = 'MC-1'  # A mixed shape matches neither diamond.
+    assert client.post('/browser-auto/publish', headers=headers, json=data).status_code == 422
+    assert client.get('/squads/main').json()['protected_copy_ids'] == first[1]
+    assert client.get('/players').json()['total'] == 20
+
+
 def test_two_reopens_twenty_ids_and_eighteen_protections(client, monkeypatch):
     entry = setup(client, monkeypatch)
     first_ids = None

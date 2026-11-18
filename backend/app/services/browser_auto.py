@@ -10,6 +10,7 @@ from app.schemas.assisted import ReadingReview, ReviewedCard
 from app.services.assisted import ambiguity_key, save_reading, safe_text, FACTS
 from app.services.contexts import utc
 from app.services.main_squad import fingerprint, main_status, select_main, state_row
+from app.services.squad_analysis import browser_formation
 
 MESSAGES = {
     'disabled': 'Actualización automática desactivada.',
@@ -63,6 +64,9 @@ def publish(db, link, payload):
     if link.club_fingerprint and link.club_fingerprint != payload.club_fingerprint:
         raise HTTPException(409, 'Cambió el club en EA. No se mezclaron cuentas; utiliza otro contexto.')
     safe_text(str(payload.model_dump()))
+    starter_slots = {card.slot for card in payload.squad
+                     if card.slot and not card.slot.startswith(('BENCH-', 'RESERVE-'))}
+    formation = browser_formation(payload.formation, starter_slots)
     existing = defaultdict(list)
     for player in db.scalars(select(Player).execution_options(include_quarantine=True)):
         existing[ambiguity_key(dict(name=player.name, rating=player.rating, position=player.position))].append(player)
@@ -107,12 +111,13 @@ def publish(db, link, payload):
         reading = VisualReading(session_id=session.id, frame_hash=fingerprint([str(payload.request_id),scope,batch_index]),
             scope=scope, page=f'browser-auto-{scope}-{batch_index}', filters='Lectura paginada; cobertura parcial',
             original=dict(cards=[c.model_dump() for c in accepted], source_kind='browser_auto',
-                reader_version=payload.reader_version, request_id=str(payload.request_id), automatic_consent=True),
+                reader_version=payload.reader_version, request_id=str(payload.request_id), automatic_consent=True,
+                **({'formation_label': payload.formation} if scope == 'squad' else {})),
             observed_at=payload.observed_at)
         db.add(reading)
         db.flush()
         save_reading(db, reading, ReadingReview(phrase='GUARDAR OBSERVACION', edition='FC27', cards=accepted,
-            club_name=payload.club_name, formation=payload.formation if scope == 'squad' else None))
+            club_name=payload.club_name, formation=formation if scope == 'squad' else None))
         reading.reviewed = {**reading.reviewed, 'source':'user_authorized_browser', 'ownership_confirmed':True}
         readings.append(reading.id)
         ids_by_scope.setdefault(scope, []).extend(reading.reviewed['copy_ids'])
@@ -131,9 +136,9 @@ def publish(db, link, payload):
     starters = [m for m in members if not m['slot'].startswith(('BENCH-','RESERVE-'))]
     bench = [m for m in members if m['slot'].startswith('BENCH-')]
     if link.protect_main and payload.active_squad_observed and len(starters)==11 and len(bench)==7 and not any(p['scope']=='squad' for p in pending):
-        same = main['snapshot'] and main['snapshot']['formation']==payload.formation and sorted(main['snapshot']['members'],key=lambda m:m['slot'])==sorted(members,key=lambda m:m['slot'])
+        same = main['snapshot'] and main['snapshot']['formation']==formation and sorted(main['snapshot']['members'],key=lambda m:m['slot'])==sorted(members,key=lambda m:m['slot'])
         if not same:
-            squad = Squad(name='Principal observada en Chrome', formation=payload.formation, game_version='FC27', origin='manual')
+            squad = Squad(name='Principal observada en Chrome', formation=formation, game_version='FC27', origin='manual')
             db.add(squad)
             db.flush()
             for member in members: db.add(SquadPlayer(squad_id=squad.id, **member))
