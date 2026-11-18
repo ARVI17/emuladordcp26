@@ -10,9 +10,12 @@ function fixture(spanish:boolean,total=20){return `<!doctype html><html><head><m
 .ut-squad-pitch-view,.ut-squad-slot-dock-view{display:flex;gap:4px;flex-wrap:wrap}
 .ut-squad-slot-view{width:54px;height:66px}
 .test-card-face{min-height:100%}
-.test-docks{position:absolute;top:100%;left:0;right:0;background:white}
-.ut-draggable.open .test-docks{top:40px}
-.test-dock-controls{position:absolute;bottom:4px;z-index:2}
+.test-docks{position:absolute;inset:0;pointer-events:none}
+.test-docks .ut-squad-slot-dock-view{position:absolute;top:100%;left:0;right:0;min-height:140px;background:white;pointer-events:auto}
+.ut-draggable.bench-open .test-docks .bench,.ut-draggable.reserve-open .test-docks .reserve{top:40px}
+.test-dock-controls{position:absolute;left:0;right:0;bottom:4px;display:flex;justify-content:space-between}
+.ut-draggable.bench-open .test-docks .bench{top:40px;bottom:0;z-index:2}
+.test-dock-controls .ui-direction-down{z-index:3}
 .ut-navigation-button-control::before{content:'\uE09B'}
 .test-transition{position:fixed;inset:0;z-index:100;background:white}
 </style></head><body>
@@ -31,8 +34,13 @@ const card=i=>'<div class="name">Auto visible '+i+'</div><div class="rating">88<
 function navbar(title,back){return '<header class="ut-navigation-bar-view navbar-style-secondary"><button class="ut-navigation-button-control" onclick="'+back+'"></button><h1>'+title+'</h1></header>'}
 function choose(i){selected=i;document.getElementById('detail').innerHTML=(kind==='squad'?navbar(es?'Detalles del jugador':'Player Details','closeDetails()'):'')+'<button onclick="bio()">'+(es?'Datos del jugador':'Player Bio')+'</button>'}
 function closeDetails(){document.getElementById('detail').innerHTML=''}
-function bio(){document.getElementById('detail').innerHTML=navbar(es?'Datos del jugador':'Player Bio','choose(selected)')+'<article class="ut-player-bio-view">'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p><p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p></article>'}
-let holdTransition=false,overlayClicks=0,drawerOpens=0;
+let missedReturns=0,ignoreOneReturn=false;
+function returnFromBio(){
+ if(ignoreOneReturn){ignoreOneReturn=false;missedReturns++;return}
+ choose(selected);
+}
+function bio(){ignoreOneReturn=kind==='inventory'&&selected===0;document.getElementById('detail').innerHTML=navbar(es?'Datos del jugador':'Player Bio','returnFromBio()')+'<article class="ut-player-bio-view"><ul><li class="listFUTItem"></li></ul>'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p><p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p></article>'}
+let holdTransition=false,overlayClicks=0,drawerOpens=0,reserveOpens=0;
 function transition(){
  const mask=document.createElement('div');mask.className='test-transition';mask.textContent='Loading…';
  mask.addEventListener('mousedown',()=>overlayClicks++);document.body.append(mask);
@@ -41,21 +49,25 @@ function transition(){
 function renderDocks(){
  const pitch=document.querySelector('.ut-squad-pitch-view'),bench=document.querySelector('.ut-squad-slot-dock-view');
  const frame=document.createElement('div');frame.className='ut-draggable';pitch.replaceWith(frame);frame.append(pitch);
- const docks=document.createElement('div');docks.className='test-docks';frame.append(docks);docks.append(bench);
+ const docks=document.createElement('div');docks.className='test-docks';frame.append(docks);bench.classList.add('bench');docks.append(bench);
  if(total>20){
-  const reserves=document.createElement('div');reserves.className='ut-squad-slot-dock-view';
+  const reserves=document.createElement('div');reserves.className='ut-squad-slot-dock-view reserve';
   reserves.innerHTML=Array.from({length:5},(_,j)=>'<div class="ut-squad-slot-view" onclick="choose('+(18+j)+')">'+card(18+j)+'</div>').join('')+'<p>Drag any player to and from the pitch to swap reserves</p>';docks.append(reserves);
  }
  const controls=document.createElement('div');controls.className='test-dock-controls';frame.append(controls);
  for(const label of (es?['Suplentes','Reservas']:['Subs','Res'])){
   const toggle=document.createElement('button');toggle.className='dockTab';toggle.textContent=label;controls.append(toggle);
-  toggle.addEventListener('click',()=>{const open=frame.classList.toggle('open');controls.querySelectorAll('.dockTab').forEach(b=>b.classList.remove('ui-direction-down'));if(open){toggle.classList.add('ui-direction-down');drawerOpens++}});
+  const mode=label==='Subs'||label==='Suplentes'?'bench-open':'reserve-open';
+  toggle.addEventListener('click',()=>{
+   const open=frame.classList.toggle(mode);toggle.classList.toggle('ui-direction-down',open);
+   if(open){drawerOpens++;if(mode==='reserve-open')reserveOpens++}
+  });
  }
 }
 function show(next){if(next==='club')pageIndex=0;kind=next;document.getElementById('detail').innerHTML='';let html='';
 if(next==='club')html='<h1 onclick="show(&quot;inventory&quot;)">'+(es?'Jugadores':'Players')+'</h1>';
 if(next==='squads')html='<h1 onclick="show(&quot;squad&quot;)">'+(es?'Plantilla activa':'Active Squad')+'</h1>';
-if(next==='inventory'){let order=Array.from({length:total},(_,i)=>i);if(reverse)order.reverse();order=order.slice(pageIndex*20,(pageIndex+1)*20);html='<h1>'+(es?'Jugadores de mi club':'My Club Players')+'</h1><button onclick="show(&quot;club&quot;)">'+(es?'Buscar':'Search')+'</button><ul>'+order.map(i=>'<li class="listFUTItem" onclick="choose('+i+')">'+card(i)+'</li>').join('')+'</ul><button '+(pageIndex===0?'disabled':'')+' onclick="pageIndex--;show(&quot;inventory&quot;)">'+(es?'Anterior':'Previous')+'</button><button '+((pageIndex+1)*20>=total?'disabled':'')+' onclick="pageIndex++;show(&quot;inventory&quot;)">'+(es?'Siguiente':'Next')+'</button>'}
+if(next==='inventory'){let order=Array.from({length:total},(_,i)=>i);if(reverse)order.reverse();order=order.slice(pageIndex*20,(pageIndex+1)*20);html='<h1>'+(es?'Jugadores de mi club':'My Club Players')+'</h1><button onclick="show(&quot;club&quot;)">'+(es?'Buscar':'Search')+'</button><div class="ut-club-search-results-view"><ul class="paginated">'+order.map(i=>'<li class="listFUTItem" onclick="choose('+i+')">'+card(i)+'</li>').join('')+'</ul></div><button '+(pageIndex===0?'disabled':'')+' onclick="pageIndex--;show(&quot;inventory&quot;)">'+(es?'Anterior':'Previous')+'</button><button '+((pageIndex+1)*20>=total?'disabled':'')+' onclick="pageIndex++;show(&quot;inventory&quot;)">'+(es?'Siguiente':'Next')+'</button>'}
 if(next==='squad')html='<div>4-3-3</div><div class="ut-squad-pitch-view">'+Array.from({length:11},(_,i)=>'<div class="ut-squad-slot-view" onclick="choose('+i+')"><div class="ut-squad-slot-pedestal-view"><span class="label">'+positions[i]+'</span><span>++</span></div>'+card(i)+'</div>').join('')+'</div><div class="ut-squad-slot-dock-view">'+Array.from({length:7},(_,n)=>'<div class="ut-squad-slot-view" onclick="choose('+(n+11)+')">'+card(n+11)+'</div>').join('')+'<p>'+(es?'Arrastra jugadores para cambiar suplentes':'Drag any player to and from the pitch to swap subs')+'</p></div>';
 document.getElementById('view').innerHTML=html;
 if(next==='squad')renderDocks();
@@ -218,6 +230,8 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   expect((await request('/players')).total).toBe(total)
   expect((await request('/squads/main')).protected_copy_ids).toEqual(main.protected_copy_ids)
   expect(await ea.evaluate('drawerOpens')).toBeGreaterThanOrEqual(3)
+  expect(await ea.evaluate('missedReturns')).toBeGreaterThanOrEqual(3)
+  if(total>20)expect(await ea.evaluate('reserveOpens')).toBeGreaterThanOrEqual(3)
   expect(await ea.locator('html').getAttribute('data-test-login-click')).toBeNull()
   if(!spanish&&total===20){
    await ea.evaluate('holdTransition=true')
