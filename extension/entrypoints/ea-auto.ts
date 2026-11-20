@@ -1,3 +1,4 @@
+import {visibleSession} from '../lib/visible-session'
 // Runs in the isolated extension world, on the official Web App only.
 // Only rendered DOM and navigation controls: no page JS objects, network hooks,
 // cookies, EA credentials, screenshots, trade actions or final submissions.
@@ -5,7 +6,7 @@ export default defineUnlistedScript(()=>{
  const world=globalThis as typeof globalThis&{clubLabAutoInstalled?:boolean}
  if(world.clubLabAutoInstalled)return
  world.clubLabAutoInstalled=true
- console.info('Club Lab visible reader: 0.7.4')
+ console.info('Club Lab visible reader: '+chrome.runtime.getManifest().version)
  let cancelled=false,running=false,deadline=0,phase='idle',activeStep=''
  let currentOrdinal:number|undefined
  let lastResult:Record<string,unknown>|undefined
@@ -23,9 +24,7 @@ export default defineUnlistedScript(()=>{
  const pos=(s:string)=>{const p=positions[s]||s;if(!validPositions.has(p))throw Error('page_changed');return p}
  const buttons=()=>all('button')
  const byLabel=(selector:string,labels:string[])=>all(selector).filter(e=>labels.some(label=>norm(e.textContent||'')===norm(label)))
- const loginVisible=()=>all('input[type=password]').length>0||
-  byLabel('button',['Login','Log in','Sign in','Iniciar sesión']).length>0||
-  byLabel('h1,h2',['Cannot Authenticate','No se puede autenticar']).length>0
+ const loginVisible=()=>visibleSession()==='login'
  const check=(requireSession=true)=>{
   if(cancelled)throw Error('cancelled')
   if(Date.now()>deadline)throw Error('timeout')
@@ -149,13 +148,19 @@ export default defineUnlistedScript(()=>{
   phase=location+'.open_bio'
   await labelled('button',bioTitles)
   phase=location+'.read_bio'
+  let detailsSince:number|undefined
   const {bio,bioCard,facts}=await wait(()=>{
    const bio=unique(all('article.ut-player-bio-view'))
    if(!bio)return
    const bioCard=loadedCard(bio)
    if(!bioCard||(before.name&&before.name!==bioCard.name)||before.rating!==bioCard.rating||before.position!==bioCard.position)return
    const facts=bioFields(bio)
-   if(facts.card_type)return {bio,bioCard,facts}
+   if(!facts.card_type)return
+   detailsSince??=Date.now()
+   // EA may render rarity before the remaining identity fields and stats.
+   // A genuinely absent field still reaches reconciliation as unknown.
+   if(facts.league&&facts.club&&facts.nationality&&(bioCard.attributes||before.attributes)||
+      Date.now()-detailsSince>=2500)return {bio,bioCard,facts}
   })
   const alternatives=all('.alternate-positions .position,.alternative-positions .position',bio).map(e=>pos(clean(e.textContent)))
   const record={...bioCard,...facts,attributes:bioCard.attributes||before.attributes,ordinal,location,slot,
@@ -230,6 +235,14 @@ export default defineUnlistedScript(()=>{
  }
  const squadSlots=()=>all('.ut-squad-slot-view').filter(e=>all('div.rating',e).length>0)
  const isOpenDock=(toggle:HTMLElement)=>toggle.classList.contains('ui-direction-down')||toggle.getAttribute('aria-expanded')==='true'
+ const setDock=async(toggle:HTMLElement,open:boolean)=>{
+  const reached=()=>isOpenDock(toggle)===open
+  await click(toggle,reached)
+  const retryAt=Date.now()+1500
+  if(await wait(()=>reached()?true:Date.now()>=retryAt?false:undefined))return
+  await click(toggle,reached)
+  await wait(()=>reached()?true:undefined)
+ }
  const showSlot=async(root:HTMLElement,slot:string)=>{
   if(surface(root))return
   const toggles=all('button.dockTab')
@@ -237,7 +250,7 @@ export default defineUnlistedScript(()=>{
   if(!toggles.length)return
   if(!dock){
    const open=unique(toggles.filter(isOpenDock))
-   if(open)await click(open)
+   if(open)await setDock(open,false)
    return
   }
   const labels=slot.startsWith('BENCH-')?['subs','suplentes']:['res','reserves','reservas']
@@ -246,11 +259,8 @@ export default defineUnlistedScript(()=>{
   // EA can cover the reserves button with the open substitutes drawer.
   // Collapse the currently open drawer before selecting the other one.
   const other=unique(toggles.filter(e=>e!==toggle&&isOpenDock(e)))
-  if(other){
-   await click(other)
-   await wait(()=>!isOpenDock(other)?true:undefined)
-  }
-  await click(toggle)
+  if(other)await setDock(other,false)
+  await setDock(toggle,true)
  }
  const readSquad=async()=>{
   phase='squad.navigation.squads'

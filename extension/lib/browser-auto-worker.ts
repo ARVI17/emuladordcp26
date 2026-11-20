@@ -1,8 +1,31 @@
 import {z} from 'zod'
 import {eaDiagnostic,endpoint} from './contracts'
+import {visibleSession} from './visible-session'
 const ticketSchema=z.object({request_id:z.uuid(),pairing_id:z.uuid(),code:z.string().regex(/^\d{6}$/),extension_id:z.string().regex(/^[a-p]{32}$/),context_id:z.number().int().positive()}).strict()
 const official='https://www.ea.com/ea-sports-fc/ultimate-team/web-app/'
-type Job={base:string;credential:string;requestId:string;tabId:number;started:number;step:string;phase:string;inventory:any[];squad:any[];pages:number;signatures:string[];identity?:{club_fingerprint:string;club_name:string};formation?:string;publication?:Record<string,unknown>}
+async function selectOfficialTab(tabs: chrome.tabs.Tab[], preferredId?: number) {
+ if(tabs.length<=1)return tabs[0]
+ const deadline=Date.now()+3500
+ while(true){
+  const observed=await Promise.all(tabs.map(async tab=>{
+   if(!tab.id||tab.discarded)return {tab,state:'unavailable' as const}
+   const frames=await chrome.scripting.executeScript({target:{tabId:tab.id},func:visibleSession}).catch(()=>[])
+   return {tab,state:frames[0]?.result||'unknown'}
+  }))
+  const signedIn=observed.filter(item=>item.state==='club')
+  const preferred=signedIn.find(item=>item.tab.id===preferredId)
+  if(preferred)return preferred.tab
+  const unresolved=observed.some(item=>item.state==='unknown')
+  if(!unresolved&&signedIn.length===1)return signedIn[0]!.tab
+  if(signedIn.length>1)throw Error('page_changed')
+  if(Date.now()>=deadline){
+   if(observed.every(item=>item.state==='login'))throw Error('login_required')
+   throw Error('page_changed')
+  }
+  await new Promise(resolve=>setTimeout(resolve,300))
+ }
+}
+type Job={base:string;credential:string;requestId:string;tabId:number;ownerDocument?:string;started:number;step:string;phase:string;inventory:any[];squad:any[];pages:number;signatures:string[];identity?:{club_fingerprint:string;club_name:string};formation?:string;publication?:Record<string,unknown>}
 export function installBrowserAuto(){
  // Each page returns as a new event. Private session state survives worker suspension.
  let serial=Promise.resolve()
@@ -98,17 +121,20 @@ export function installBrowserAuto(){
    }
    const url=new URL(sender.url),base=endpoint(url.origin)
    if(url.pathname!=='/'||url.search)throw Error('origin')
-   if(jobs[base])await stop(jobs[base])
-   if(message.kind==='browser-auto-cancel')return {ok:true}
+   if(message.kind==='browser-auto-cancel'){
+    if(jobs[base]?.ownerDocument===sender.documentId&&jobs[base])await stop(jobs[base])
+    return {ok:true}
+   }
    const ticket=ticketSchema.parse(message.ticket)
    if(ticket.extension_id!==chrome.runtime.id)throw Error('extension')
-   const job:Job={base,credential:'',requestId:ticket.request_id,tabId:0,started:Date.now(),step:'',phase:'squad',inventory:[],squad:[],pages:0,signatures:[]}
+   if(jobs[base]?.requestId===ticket.request_id)return {ok:true}
+   const job:Job={base,credential:'',requestId:ticket.request_id,tabId:0,ownerDocument:sender.documentId,started:Date.now(),step:'',phase:'squad',inventory:[],squad:[],pages:0,signatures:[]}
    try{
     const grant=await request(job,'reader/claim',{pairing_id:ticket.pairing_id,code:ticket.code});job.credential=grant.credential
+    if(jobs[base])await stop(jobs[base])
     const tabs=(await chrome.tabs.query({url:'https://www.ea.com/*'})).filter(t=>t.url&&eaDiagnostic(t.url))
     const {officialTab}=await chrome.storage.session.get('officialTab')
-    let selected=tabs.find(t=>t.id===officialTab)||(tabs.length===1?tabs[0]:undefined)
-    if(tabs.length&&!selected)throw Error('page_changed')
+    let selected=await selectOfficialTab(tabs,officialTab)
     const created=!selected
     // Keep the tab identity before navigating: failures/closure can now be attributed
     // to this job even while the official page is still loading.

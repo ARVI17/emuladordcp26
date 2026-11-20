@@ -39,7 +39,10 @@ function returnFromBio(){
  if(ignoreOneReturn){ignoreOneReturn=false;missedReturns++;return}
  choose(selected);
 }
-function bio(){ignoreOneReturn=kind==='inventory'&&selected===0;document.getElementById('detail').innerHTML=navbar(es?'Datos del jugador':'Player Bio','returnFromBio()')+'<article class="ut-player-bio-view"><ul><li class="listFUTItem"></li></ul>'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p><p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p></article>'}
+function bio(){ignoreOneReturn=kind==='inventory'&&selected===0;document.getElementById('detail').innerHTML=navbar(es?'Datos del jugador':'Player Bio','returnFromBio()')+'<article class="ut-player-bio-view"><ul><li class="listFUTItem"></li></ul>'+card(selected)+'<p>'+(es?'Rareza':'Rarity')+'</p><p>Oro</p></article>';
+ const bio=document.querySelector('article.ut-player-bio-view');
+ const finish=()=>bio.insertAdjacentHTML('beforeend','<p>'+(es?'Liga':'League')+'</p><p>Liga prueba</p><p>Club</p><p>Club prueba</p><p>'+(es?'País/región':'Country/Region')+'</p><p>País prueba</p>');
+ if(selected===5)setTimeout(finish,650);else finish()}
 let holdTransition=false,overlayClicks=0,drawerOpens=0,reserveOpens=0;
 function transition(){
  const mask=document.createElement('div');mask.className='test-transition';mask.textContent='Loading…';
@@ -55,10 +58,12 @@ function renderDocks(){
   reserves.innerHTML=Array.from({length:5},(_,j)=>'<div class="ut-squad-slot-view" onclick="choose('+(18+j)+')">'+card(18+j)+'</div>').join('')+'<p>Drag any player to and from the pitch to swap reserves</p>';docks.append(reserves);
  }
  const controls=document.createElement('div');controls.className='test-dock-controls';frame.append(controls);
+ let reserveStillSliding=true;
  for(const label of (es?['Suplentes','Reservas']:['Subs','Res'])){
   const toggle=document.createElement('button');toggle.className='dockTab';toggle.textContent=label;controls.append(toggle);
   const mode=label==='Subs'||label==='Suplentes'?'bench-open':'reserve-open';
   toggle.addEventListener('click',()=>{
+   if(mode==='reserve-open'&&reserveStillSliding){reserveStillSliding=false;return}
    const open=frame.classList.toggle(mode);toggle.classList.toggle('ui-direction-down',open);
    if(open){drawerOpens++;if(mode==='reserve-open')reserveOpens++}
   });
@@ -115,7 +120,9 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
  }
  const stage=(name:string)=>console.log('AUTO_SYNTHETIC_STAGE '+JSON.stringify({language:spanish?'es':'en',cards:total,stage:name,real_club:false}))
  try{
-  await context.route('https://www.ea.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',body:fixture(spanish,total)}))
+  const loggedOutUrl='https://www.ea.com/es-es/ea-sports-fc/ultimate-team/web-app/'
+  await context.route('https://www.ea.com/**',route=>route.fulfill({contentType:'text/html; charset=utf-8',
+   body:route.request().url()===loggedOutUrl?'<h1>Signed Into Another Device</h1><button>Login</button>':fixture(spanish,total)}))
   let ea=await context.newPage()
   ea.on('pageerror',error=>console.log('AUTO_FIXTURE_ERROR '+error.message))
   ea.on('console',message=>{if(message.text().startsWith('Club Lab reader stopped:'))console.log(message.text())})
@@ -151,6 +158,15 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   await page.goto(base+'/#/conexiones')
   const activate=page.getByRole('button',{name:'Activar actualización automática y proteger mi equipo'})
   await expect(activate).toBeEnabled({timeout:15000})
+  const loggedOut=!spanish&&total===20?await context.newPage():undefined
+  if(loggedOut){
+   await loggedOut.goto(loggedOutUrl)
+   const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
+   await worker.evaluate(async url=>{
+    const [old]=await chrome.tabs.query({url})
+    await chrome.storage.session.set({officialTab:old!.id})
+   },loggedOutUrl)
+  }
   if(total>20){
    stage('creating_inactive_tab')
    await ea.close()
@@ -207,6 +223,10 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   let receipt=(await request('/browser-auto/status')).result.request_id
   for(let pass=0;pass<2;pass++){
    stage('reopen_'+(pass+1))
+   if(loggedOut&&pass===0){
+    const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
+    await worker.evaluate(()=>chrome.storage.session.remove('officialTab'))
+   }
    await ea.evaluate('reverse = !reverse')
    await page.reload()
    await waitUpdated(receipt)
@@ -234,6 +254,15 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   if(total>20)expect(await ea.evaluate('reserveOpens')).toBeGreaterThanOrEqual(3)
   expect(await ea.locator('html').getAttribute('data-test-login-click')).toBeNull()
   if(!spanish&&total===20){
+   await expect(loggedOut!.getByRole('heading',{name:'Signed Into Another Device'})).toBeVisible()
+   // A second signed-in club with no explicit selection must never be read or published.
+   await loggedOut!.goto('https://www.ea.com/en-us/ea-sports-fc/ultimate-team/web-app/')
+   await loggedOut!.locator('.view-navbar-clubinfo-name').evaluate(e=>{e.textContent='Otro club SINTÉTICO'})
+   await page.getByRole('button',{name:'Actualizar ahora',exact:true}).click()
+   await expect(panel).toContainText('La vista cambió',{timeout:25000})
+   expect((await request('/browser-auto/status')).result.request_id).toBe(receipt)
+   await expect(loggedOut!.getByRole('heading',{name:'My Club Players'})).toBeVisible()
+   await loggedOut!.close()
    await ea.evaluate('holdTransition=true')
    await page.getByRole('button',{name:'Actualizar ahora',exact:true}).click()
    await expect(panel).toContainText('La vista cambió',{timeout:25000})

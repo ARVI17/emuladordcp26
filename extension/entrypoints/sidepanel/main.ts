@@ -19,6 +19,8 @@ function profileState(){
 }
 async function refresh(){
  const r=await chrome.runtime.sendMessage({kind:'status'})
+ el('auto-reader-version').textContent='Lector local '+r.version
+ ;(el('open-personal-app') as HTMLAnchorElement).href=endpoint(r.base)+'/#/cuenta'
  const workflow=r.workflow,report=workflow?.report
  el('workflow-next').textContent=workflow?.status==='paused'||workflow?.status==='cancelled'?'Recorrido detenido; historial y cola conservados.':report?.next_action||r.message||'Autoriza la pestaña desde el icono y empareja el lector una vez.'
  const stages=el('workflow-stages');stages.replaceChildren()

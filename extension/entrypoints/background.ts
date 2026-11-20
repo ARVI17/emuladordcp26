@@ -13,6 +13,25 @@ type State={base:string;credential?:string;binding?:string;pending:Record<string
 const initial=():State=>({base:'http://localhost:8090',pending:[],sequence:0,stream:crypto.randomUUID()})
 export default defineBackground(()=>{
   installBrowserAuto()
+  // Static content scripts attach on navigation. An install, update or site
+  // permission change must also reach a Club Lab document that is already open.
+  const attachClubApp=async(tab:chrome.tabs.Tab)=>{
+    if(!tab.id||!tab.url||tab.discarded||!tab.title?.includes('Club Lab FC27'))return
+    const url=new URL(tab.url)
+    if(url.protocol!=='http:'||!['localhost','127.0.0.1'].includes(url.hostname)||
+       url.pathname!=='/'||url.search||url.username||url.password)return
+    const reply=await chrome.tabs.sendMessage(tab.id,{kind:'club-app-bridge-ping'},{frameId:0}).catch(()=>null)
+    if(!reply?.ready)await chrome.scripting.executeScript({target:{tabId:tab.id,frameIds:[0]},files:['content-scripts/club-app.js']})
+  }
+  const attachOpenClubApps=async()=>{
+    const tabs=await chrome.tabs.query({url:['http://localhost/*','http://127.0.0.1/*']})
+    await Promise.allSettled(tabs.map(attachClubApp))
+  }
+  void attachOpenClubApps().catch(()=>{})
+  chrome.runtime.onInstalled.addListener(()=>void attachOpenClubApps().catch(()=>{}))
+  chrome.runtime.onStartup.addListener(()=>void attachOpenClubApps().catch(()=>{}))
+  chrome.permissions.onAdded.addListener(()=>void attachOpenClubApps().catch(()=>{}))
+  chrome.tabs.onActivated.addListener(({tabId})=>void chrome.tabs.get(tabId).then(attachClubApp).catch(()=>{}))
   // Private to extension contexts. No credentials ever go to the content script.
   const ready=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})])
   let serial=Promise.resolve()
