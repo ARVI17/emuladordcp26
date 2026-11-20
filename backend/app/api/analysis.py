@@ -46,6 +46,21 @@ def club_analysis(db: Annotated[Session, Depends(get_db)]):
     return {**analyze_club(db), "binding": require_module(db, "analysis")}
 
 
+@router.get("/club/match-plan")
+def home_match_plan(db: Annotated[Session, Depends(get_db)], style: Literal["balanced", "defensive", "wide"] = "balanced"):
+    from app.services.club_advisor import match_plan
+    return match_plan(db, style)
+
+
+@router.get("/club/opportunities")
+def home_opportunities(db: Annotated[Session, Depends(get_db)]):
+    from app.services.club_advisor import opportunities
+    from app.services.locks import resource_locks
+    with resource_locks(db, 'inventory'):
+        db.expire_all()
+        return opportunities(db)
+
+
 class ProfilesRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     disjoint: bool = False

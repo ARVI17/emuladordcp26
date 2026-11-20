@@ -6,6 +6,8 @@ from app.core.config import settings
 UNAVAILABLE = "El asistente conversacional local no está disponible. Las funciones de inventario, DCP, objetivos y optimización continúan funcionando normalmente."
 POLICY = 'fc27_grounded_v1'
 FOCUSES = {'inventory': 'Resumen de mi club FC27', 'dcp': 'Revisar DCP FC27', 'protection': 'Revisar protecciones FC27'}
+SQUAD_INTENT = 'Explicar mi equipo propuesto'
+PLANNING_INTENTS = {'dcp':'Revisar DCP FC27', 'market':'Revisar anuncios de consola', 'gallery':'Revisar mi Galería'}
 
 
 def question_focus(message):
@@ -13,7 +15,17 @@ def question_focus(message):
     if any(edition not in {'27', '2027'} for edition in editions):
         raise ValueError('Solo se admiten consultas FC27')
     lower = message.casefold()
-    return 'protection' if any(word in lower for word in ('prote', 'titular')) else 'dcp' if any(word in lower for word in ('dcp', 'sbc', 'desafío')) else 'inventory'
+    if re.search(r'\b(?:prote\w*|candados?)\b', lower):
+        return 'protection'
+    if re.search(r'\b(?:dcps?|sbcs?|desaf[ií]os?)\b', lower):
+        return 'dcp'
+    if re.search(r'\b(?:galer[ií]a|gallery)\b', lower):
+        return 'gallery'
+    if re.search(r'\b(?:mercado|vender|ventas?|precio de|cotizaci[oó]n)\b', lower):
+        return 'market'
+    if re.search(r'\b(?:plantillas?|alineaci[oó]n|formaci[oó]n|equipos?|banquillo|suplentes?|once)\b', lower):
+        return 'squad'
+    return 'protection' if re.search(r'\btitular(?:es)?\b', lower) else 'inventory'
 
 
 def grounded_answer(result, counts, focus):
@@ -28,6 +40,24 @@ def grounded_answer(result, counts, focus):
         answer = UNAVAILABLE + '\n' + answer
     return {'available': available, 'answer': answer, 'sections': {'source': 'Resumen local FC27 validado', 'policy': POLICY}, 'game_version': 'FC27'}
 
+def explain_squad(result, plan):
+    squad = plan['squad']
+    if not squad or not squad['lineup']:
+        answer = 'Aún faltan cartas admitidas con puestos cubiertos en una formación vigente.'
+    else:
+        lineup = squad['lineup']
+        best = max(lineup, key=lambda p: p['fit'])
+        lines = dict(
+            coverage=f"Quedan por cubrir {', '.join(p['position'] for p in squad['gaps'])}." if squad['gaps'] else 'Hay una carta elegible en cada puesto.',
+            fit=f"{best['name']} tiene el mayor encaje calculado en este once como {best['position']} ({best['fit']:.1f}/100). {best['reason'].replace('; ', ' · ')}.",
+            bench=f"El banquillo cubre {len(squad['bench'])} de 7 plazas con futbolistas distintos.")
+        preferred = result.get('focus')
+        first = preferred if isinstance(preferred, str) and preferred in lines else ('coverage' if squad['gaps'] else 'fit')
+        answer = f"Con {plan['reviewed']} cartas revisadas, la {squad['formation']} cubre {len(lineup)} de 11 puestos sin compras. " + ' '.join([lines[first], *(v for k, v in lines.items() if k != first)])
+    return dict(available=result.get('available') is True, answer=answer,
+                sections=dict(source='Simulación local por puesto', policy=POLICY), game_version='FC27')
+
+
 async def status() -> dict:
     try:
         async with httpx.AsyncClient(timeout=1.5) as client:
@@ -38,7 +68,8 @@ async def status() -> dict:
 
 async def chat(message: str, context: str) -> dict:
     if not (await status())["available"]: return {"available": False}
-    prompt = 'Elige un enfoque FC27: inventory, dcp o protection. Devuelve solo JSON con focus.\n' + context + '\nIntención: ' + message
+    choices = ['coverage', 'fit', 'bench'] if message == 'squad' else list(FOCUSES)
+    prompt = 'Elige el aspecto más útil para explicar al técnico entre ' + ', '.join(choices) + '. Devuelve solo JSON con focus.\n' + context + '\nIntención: ' + message
     try:
         async with httpx.AsyncClient(timeout=45) as client:
             response = await client.post(
@@ -48,7 +79,7 @@ async def chat(message: str, context: str) -> dict:
                     "prompt": prompt,
                     "stream": False,
                     "keep_alive": settings.ollama_keep_alive,
-                    "format": {"type": "object", "properties": {"focus": {"type": "string", "enum": list(FOCUSES)}}, "required": ["focus"], "additionalProperties": False},
+                    "format": {"type": "object", "properties": {"focus": {"type": "string", "enum": choices}}, "required": ["focus"], "additionalProperties": False},
                 },
             )
             response.raise_for_status()

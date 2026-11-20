@@ -1,5 +1,35 @@
 # Cambios detallados
 
+## 17 de noviembre de 2026 · gestos y elementos reales de EA
+
+Tras instalar/activar el lector se contrastaron dos fallos reales: navegación con clic simple y selección sobre el contenedor del puesto. 0.7.1 corrigió el primero; **0.7.2 / 9c93268** dirige el gesto al elemento visible dentro del control y reconoce el final de lista sin Next. **88e09c4eea: 18 WXT aprobados**, incluidas carga/dos reaperturas EN/ES de veinte y 65 con cuatro páginas. Paquete probado actualizado en la misma carpeta tras comparar las 32 fuentes de imagen y commit; copia anterior conservada. Recarga y aceptación personal pendientes. App abb7e6e/0023 intacta; veinte IDs personales conservados tras los fallos. Diagnóstico de veinte páginas/398 filas no equivale a importación. [Continuidad](NEXT_SESSION.md), [resultados](TESTING.md).
+
+## 17 de noviembre de 2026 · WXT 0.7, páginas y segundo plano
+
+**abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.
+
+Integral de aplicación **9aab1129ae** / abb7e6e: 374 Pytest, 43 Vitest, 41 Playwright y 18 WXT; un canvas móvil omitido. Lector final **6fbee4d** probado aparte en **7675740d85**, 18 WXT aprobados, con temporizador de recuperación entre órdenes. El pase anterior d9c02129fd aprobó 18 antes de ese refuerzo. [CI del lector](https://github.com/ARVI17/emuladordcp26/actions/runs/44177795552): a6c4d1115d sobre merge 7728783 de 819f8bc, 18 aprobados. Cada caso EN/ES de veinte ejecuta carga y dos reaperturas; el caso de 65 recorre cuatro páginas y prueba suspensión del worker. IDs y dieciocho candados conservados. Son datos sintéticos, no aceptación personal. [Fallos y resultados](TESTING.md).
+
+[CI final de 6fbee4d](https://github.com/ARVI17/emuladordcp26/actions/runs/44181922329): backend, frontend, extensión y continuidad aprobados, con la prueba reforzada que aísla la recuperación por alarma.
+
+Respaldo restaurado y comprobado con **47 tablas/152 registros**, esquema 0023 sin nueva migración. Se desplegaron imágenes exactas probadas y configuración Nginx con DNS dinámico; database/Ollama y volúmenes intactos. Extensión final **6fbee4d**, aplicación **abb7e6e**: los cambios posteriores al integral solo afectan lector/pruebas/memoria; backend/frontend/Nginx idénticos. **Instalación WXT y aceptación personal pendientes**: no hay recibos automáticos ni principal personal protegida acreditados. [Continuación](NEXT_SESSION.md).
+
+## 17 de noviembre de 2026 · WXT 0.6.0 y actualización al abrir
+
+La app **988bbbd/0023** despliega el puente local solicitado: consentimiento inicial por contexto, inicio por apertura, lectura DOM EN/ES parcial de veinte y plantilla, conciliación conservadora y protección por puestos. Credencial local temporal fuera de la página; sin cookies/credenciales EA, API privada ni operaciones económicas. El usuario ve estado, última lectura y cancelación. Identidad visual limitada y procedencia explícita, sin promoverla a proveedor oficial. [Contrato](AUTOMATIC_CLUB_SYNC.md).
+
+Dos pases WXT e integral limpio aprobados; ensayo de migración en copia restaurada y 46 tablas previas conservadas. La instalación personal WXT queda pendiente en el administrador de Chrome protegido: el panel desplegado no detectó 0.6.0. Veinte copias previas preservadas, sin aceptación automática ni candados personales acreditados. Artefacto y helper de aceptación preparados; fallos/correcciones y siguiente acción en [TESTING](TESTING.md) y [NEXT_SESSION](NEXT_SESSION.md).
+
+## 17 de noviembre de 2026 · Prioridad automática y acceso contrastado
+
+Se establece AUTO-1 como requisito del recorrido personal: abrir la app, actualizar club/once/banquillo y calcular opciones de DCP, ventas y compras con datos actuales del juego. Se abandona la ampliación de formularios manuales como siguiente incremento. La carga bilingüe previa de veinte cartas se conserva como evidencia parcial. Revisión oficial de la API restringida, alternativas de socios y lectura puntual de lista/ficha en Chrome; identidad estable y puente WXT pendientes. [Decisión](AUTOMATIC_CLUB_SYNC.md), [verificación](TESTING.md). Solo memoria/documentación; sin cambios de aplicación, migración, permisos o despliegue.
+
+## 16 de noviembre de 2026 · WXT 0.5.1 y primeras veinte copias
+
+El panel del lector podía lanzar una excepción por `resultú.groups` cuando existía un informe. Se corrige la clave y el acceso opcional a resultados pendientes. Nueva regresión compilada con Chromium/PostgreSQL aislados: veinte copias, dos relecturas sin multiplicarlas y protección explícita de once más siete, sin inferir principal del orden de una lista. No cambia API, migración, permisos ni selectores EA. [Resultados](TESTING.md).
+
+La extensión oficial del chat quedó instalada y Chrome conectado tras autorización expresa. Se leyeron veinte filas reales mediante DOM; no se admitieron cartas. La actualización WXT está empaquetada, pero el control del navegador bloquea su administrador. Dos lecturas con captura nativa activa reprodujeron el rechazo OCR de la pantalla real y terminaron la captura. Se contrastan alternativas gratuitas y se prioriza simplificar la entrada, sin añadir dependencias ni inventar evidencia de propiedad. La aceptación del club real sigue abierta. [Guía y fuentes](REAL_CLUB_FIRST_LOAD.md), [continuidad](NEXT_SESSION.md).
+
 ## 16 de noviembre de 2026 · formaciones y catálogo revalidados
 
 Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).

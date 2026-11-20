@@ -1,5 +1,33 @@
 # Estado verificable
 
+## Lector de plantilla 0.7.4 · 17-nov-2026
+
+El lector detectado 0.7.3 avanzó por el once y los siete suplentes pero se detuvo en la primera reserva. La versión 0.7.4 gestiona el cambio de panel, cuenta exclusivamente las filas de resultados y verifica que se cerró la biografía. Se contrastaron los 23 puestos y las veinte primeras cartas en la interfaz inglesa. Chrome confirmó 0.7.4 pero EA mostró Cannot Authenticate y pidió salir. La variante abierta del rombo se comprobó por los puestos MD y MI. Las publicaciones y candados personales tienen comprobación independiente en el contexto local. La app sigue en abb7e6e/0023. [Aceptación y siguiente paso](NEXT_SESSION.md), [pruebas](TESTING.md).
+
+## Correcciones tras instalar el lector · 17-nov-2026
+
+Lector detectado y actualización activada. 0.7.0 falló en navegación; 0.7.1 avanzó a la plantilla y falló en la selección interna. Ambos intentos reales conservaron los veinte IDs, sin publicación. **0.7.2 / 9c93268** añade selección del elemento visible, gestos y final de lista sin Next; **18 WXT aprobados en 88e09c4eea**. Las 32 fuentes dentro de la imagen probada coinciden con el commit; nueve archivos actualizados en la carpeta instalada, con copia anterior. Recarga del lector y aceptación real pendientes; la app permanece abb7e6e/0023. Diagnóstico visible: veinte páginas/398 cartas, sin importarlas. [Fallos y pruebas](TESTING.md), [siguiente acción](NEXT_SESSION.md).
+
+## Segundo plano y páginas · WXT 0.7 · 17-nov-2026
+
+**abb7e6e/0023 servido en 8090**, cinco servicios saludables. WXT 0.7 recorre plantilla e inventario por páginas directamente en la Web App oficial, con pestaña inactiva, progreso, estado de sesión y temporizador de recuperación entre órdenes. Publicación atómica, conciliación conservadora y protección de once/siete suplentes/reservas. No solicita capturas ni transcripción como rutina. No cubre mercado, DCP ni Galería todavía.
+
+Integral de aplicación **9aab1129ae** / abb7e6e: 374 Pytest, 43 Vitest, 41 Playwright y 18 WXT; un canvas móvil omitido. Lector final **6fbee4d** probado aparte en **7675740d85**, 18 WXT aprobados, con temporizador de recuperación entre órdenes. El pase anterior d9c02129fd aprobó 18 antes de ese refuerzo. [CI del lector](https://github.com/ARVI17/emuladordcp26/actions/runs/44177795552): a6c4d1115d sobre merge 7728783 de 819f8bc, 18 aprobados. Cada caso EN/ES de veinte ejecuta carga y dos reaperturas; el caso de 65 recorre cuatro páginas y prueba suspensión del worker. IDs y dieciocho candados conservados. Son datos sintéticos, no aceptación personal. [Fallos y resultados](TESTING.md).
+
+[CI final de 6fbee4d](https://github.com/ARVI17/emuladordcp26/actions/runs/44181922329): backend, frontend, extensión y continuidad aprobados, con la prueba reforzada que aísla la recuperación por alarma.
+
+Respaldo restaurado y comprobado con **47 tablas/152 registros**, esquema 0023 sin nueva migración. Se desplegaron imágenes exactas probadas y configuración Nginx con DNS dinámico; database/Ollama y volúmenes intactos. Extensión final **6fbee4d**, aplicación **abb7e6e**: los cambios posteriores al integral solo afectan lector/pruebas/memoria; backend/frontend/Nginx idénticos. **Instalación WXT y aceptación personal pendientes**: no hay recibos automáticos ni principal personal protegida acreditados. [Continuación](NEXT_SESSION.md).
+
+## WXT automático implementado y desplegado · 17-nov-2026
+
+**988bbbd/0023 en 8090**, cinco servicios saludables. WXT 0.6.0 y el panel de cuenta añaden preferencia inicial, inicio por apertura, lector DOM EN/ES de primeras veinte/plantilla, publicación idempotente y candados por puestos. [Contrato y límites](AUTOMATIC_CLUB_SYNC.md). Dos pases WXT (17 cada uno) y el integral limpio (371 Pytest, 43 Vitest, 41 Playwright, 17 WXT; un móvil omitido) aprobados; CI del código aprobada. Migración ensayada en copia restaurada y datos previos conservados. [Resultados y fallos](TESTING.md).
+
+**Pendiente real:** Chrome no detectó 0.6.0; su instalación en el administrador protegido queda al propietario. El artefacto está preparado con hashes y guía. La app nueva se observó, pero no publicó recibos automáticos personales ni guardó la principal real. Veinte copias asistidas conservadas; once/siete suplentes/reservas observados puntualmente en EA, sin protección local acreditada. Mercado/DCP automáticos aún no implementados. [Continuidad exacta](NEXT_SESSION.md).
+
+## Antecedente: actualización automática exigida · 17-nov-2026
+
+El propietario rechaza la carga manual como recorrido habitual. Se incorpora **AUTO-1 pendiente** y se corrigen prompt maestro, criterios y relevo. [Fuentes y diseño por contrastar](AUTOMATIC_CLUB_SYNC.md). No se implementó ni desplegó un sincronizador durante esta revisión: los cambios son documentales. La aplicación conserva **c9d7a78/0022**, veinte cartas de texto revisado y principal personal sin proteger. Las dos relecturas anteriores no acreditan actualización automática.
+
 ## Revalidación documental · 16-nov-2026
 
 Cierre: **96a8d21/0022 en localhost:8090**, imágenes del integral limpio f98e7366f4; cinco servicios saludables. Dos pases corregidos (focalizado e integral), CI del código aprobada y copia restaurada/migrada con 44 tablas intactas. Solo catálogo/revisión cambian; 132 históricos y cero FC27 activos. [Pruebas y omisiones](TESTING.md), [siguiente paso real](REAL_CLUB_FIRST_LOAD.md).

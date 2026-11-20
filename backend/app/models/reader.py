@@ -1,6 +1,6 @@
 """Local extension grants and atomic observation receipts; never EA credentials."""
 from datetime import datetime
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 from app.models.entities import ClubScoped, now
@@ -61,3 +61,21 @@ class ReaderWorkflow(ClubScoped, Base):
     trusted_profiles: Mapped[dict] = mapped_column(JSON, default=dict)
     view_state: Mapped[dict] = mapped_column(JSON, default=dict)
     report: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class BrowserAutoLink(ClubScoped, Base):
+    """Opt-in for a local extension, not an EA account credential or provider."""
+    __tablename__ = 'browser_auto_links'
+    __table_args__ = (UniqueConstraint('club_context_id', name='uq_browser_auto_context'),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    club_context_id: Mapped[int] = mapped_column(ForeignKey('club_contexts.id'), index=True)
+    extension_id: Mapped[str] = mapped_column(String(32))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    protect_main: Mapped[bool] = mapped_column(Boolean, default=True)
+    club_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    request_id: Mapped[str | None] = mapped_column(String(36))
+    grant_id: Mapped[str | None] = mapped_column(ForeignKey('reader_grants.id'))
+    requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(30), default='disabled')
+    result: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

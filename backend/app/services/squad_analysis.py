@@ -52,6 +52,10 @@ def serialize_player(player: Player, protected_ids: set[int] | None = None) -> d
         result['ownership_source'] = 'user_reviewed_dom'
         result['source_kind'] = evidence.get('source_kind')
         result.update(evidence.get('additional_facts',{}))
+    if evidence.get('source_kind') == 'browser_text':
+        result.update(ownership_source='user_reviewed_text', source_kind='browser_text')
+    if evidence.get('source_kind') == 'browser_auto':
+        result.update(ownership_source='user_authorized_browser', source_kind='browser_auto')
     result['observed_at'] = evidence.get('observed_at') if evidence.get('kind') in {'observed_copy', 'visual_copy'} else None
     result['metadata_pending'] = [key for key in ('league', 'club', 'nationality', 'card_type', 'rare', 'special', 'chemistry', 'alternate_positions', 'attributes', 'playstyles', 'roles', 'is_loan', 'is_evolution', 'tradable', 'is_holographic') if not field_known(player, key)]
     for key in ('rare', 'special', 'chemistry', 'is_holographic', 'tradable', 'is_loan', 'is_evolution'):
@@ -90,6 +94,20 @@ def formation_slots(formation: str) -> list[dict]:
         counts[position] += 1
         result.append({"slot": f"{position}-{counts[position]}", "position": position})
     return result
+
+
+def browser_formation(label: str | None, starter_slots: set[str]) -> str | None:
+    """Resolve a Web App label against the observed positions without reinterpreting saved squads."""
+    if not label:
+        return None
+    reviews = read_public_data('fc27_formations.json')['items']
+    candidates = [key for key, row in reviews.items() if row.get('browser_label') == label]
+    if not candidates:
+        return label
+    current = verified_formations()
+    matches = [key for key in candidates if key in current
+               and {item['slot'] for item in formation_slots(key)} == starter_slots]
+    return matches[0] if len(matches) == 1 else label
 
 
 def formations_data() -> dict:
@@ -324,13 +342,28 @@ def _formation_coverage(players: list[Player], formation: str) -> int:
     return sum(assign(index, set()) for index in range(len(slots)))
 
 
+def best_owned_squad(players, version, protected, *, style="balanced", bench_size=0):
+    """Compare currently documented shapes on coverage first, then local positional fit."""
+    forms = verified_formations()
+    if style == "wide":
+        forms = {name: slots for name, slots in forms.items()
+                 if sum(slot in {"MD", "MI", "EI", "ED"} for slot in slots) >= 2}
+    choices = (recommend_owned_squad(players, game_version=version, formation=name, style=style,
+                                     bench_size=0, protected_ids=protected) for name in forms)
+    best = max(choices, key=lambda s: (len(s["lineup"]), sum(row["fit_score"] for row in s["lineup"])), default=None)
+    if best and bench_size:
+        return recommend_owned_squad(players, game_version=version, formation=best["formation"],
+                                     style=style, bench_size=bench_size, protected_ids=protected)
+    return best
+
+
 def analyze_club(db: Session) -> dict:
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
     protected = effective_protected_ids(db, version) & {p.id for p in players}
     reviewed = [p for p in players if p.data_reviewed or (p.validation_evidence or {}).get("kind") == "observed_copy"]
-    alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in verified_formations()]
-    recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])), default={"formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]})
+    recommendation = best_owned_squad(players, version, protected) or {
+        "formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]}
     recommended = recommendation["formation"]
     positions = []
     for position in ATTRIBUTE_WEIGHTS:

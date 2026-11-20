@@ -81,8 +81,10 @@ app.include_router(catalog_router)
 app.include_router(variants_router)
 
 from app.api.assisted import router as assisted_router
+from app.api.browser_auto import router as browser_auto_router
 from app.api.guided import router as guided_router
 app.include_router(assisted_router)
+app.include_router(browser_auto_router)
 app.include_router(guided_router)
 from app.api.reader import router as reader_router
 app.include_router(reader_router)

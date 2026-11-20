@@ -17,7 +17,8 @@ def account_summary(db):
             row = next((r for r in rows if r.reviewed.get(field) is not None), None)
             value = row.reviewed[field] if row else None
             values[key] = value
-            facts[key] = dict(value=value, status='user_reviewed_visual' if row else 'unknown', source='visual_assisted',
+            facts[key] = dict(value=value, status=row.reviewed.get('source','user_reviewed_visual') if row else 'unknown',
+                source=row.original.get('source_kind','visual_assisted') if row else 'visual_assisted',
                 reading_id=row.id if row else None, observed_at=utc(row.observed_at).isoformat() if row else None)
         return dict(**values, platform=None, fc_points=None, unassigned_count=None, identity_verified=False,
             provider=None, observation_mode='visual_assisted', observed_copies=db.scalar(select(func.count(Player.id)).where(Player.deleted.is_(False))),

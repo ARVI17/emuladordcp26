@@ -1,5 +1,17 @@
 # Lectura visual asistida de FC27
 
+## Texto visible bilingüe (17-nov-2026)
+
+En el contexto asistido existente, **Leer cartas desde texto visible** admite entre una y treinta líneas `MEDIA POSICIÓN NOMBRE`, con atributos opcionales tras `|`. Las quince posiciones inglesas se normalizan a las españolas también en el parser OCR. `My Club Players` y `Jugadores de mi club` son encabezados reconocibles; esto no acredita por sí mismo edición ni propiedad. No se retienen texto bruto, imágenes, cookies ni credenciales.
+
+`POST /assisted/text-preview` prepara candidatas; `POST /assisted/text-readings/{id}/review` exige revisión explícita de propiedad/correspondencia además de `GUARDAR OBSERVACION` y FC27. Reutiliza recibos, bloqueos y contexto de las observaciones, sin migración. La procedencia pública es **user_reviewed_text / browser_text**, con `provider_verified=false`; no representa un recibo DOM autenticado, OCR ni una cuenta EA conectada. La admisión exige la lectura revisada, la declaración de propiedad y los hechos de la copia vinculada; una etiqueta de origen no basta.
+
+La misma página y contenido normalizado reutilizan el recibo sin renovar fecha. Una lectura nueva de una carta ya observada exige seleccionar explícitamente la copia local. Una coincidencia de nombre/media/posición nunca demuestra identidad de copia. Filas indistinguibles se bloquean sin fusionarlas; para dos copias legítimas hace falta revisión visual individual y resolver la ambigüedad con la evidencia disponible. Las retiradas no se reactivan. Los datos desconocidos siguen desconocidos, y el orden de la lista no identifica la principal.
+
+Para trasladar la lista real se puede usar el Chrome conectado y leer únicamente sus elementos visibles mediante [Playwright](https://playwright.dev/python/docs/library), seguido de la revisión local. No se añadió otro navegador ni otra instalación. [Scrapy documenta la diferencia entre HTML descargado y contenido dinámico](https://docs.scrapy.org/en/latest/topics/dynamic-content.html); [Requests](https://requests.readthedocs.io/en/latest/) es un cliente HTTP y [Selenium](https://www.selenium.dev/documentation/webdriver/) sería otra vía de control del navegador. No se implementó acceso a API privada, replay de sesión, navegación autónoma de EA ni extracción de cookies. WXT permanece disponible como vía independiente; esta entrada no acredita su extractor EA.
+
+Código: `services/browser_text.py`, contratos/rutas `assisted`, `BrowserTextReader` y `VisualReview`. Pruebas: `test_browser_text.py` y `e2e/browser-text.spec.ts`; resultados y aceptación personal se mantienen separados en [TESTING](TESTING.md) y [NEXT_SESSION](NEXT_SESSION.md).
+
 La extensión **0.2.1** incorpora [reconocimiento guiado por regiones](VIEW_RECOGNITION.md), mapa privado revisable y comprobación de compatibilidad con `http://localhost:8090`. Funciona como inspector sin actualizar el backend personal; extraer/admitir cartas sigue siendo una capacidad separada.
 
 ## Lector estructurado, Galería y utilidades (18-oct-2026)

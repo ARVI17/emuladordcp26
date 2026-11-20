@@ -1,5 +1,9 @@
 # Revisión documental · 16 de noviembre de 2026
 
+## Ampliación del 17 de noviembre en Bogotá
+
+La Web App inglesa mostró **4-1-2-1-2** y los once puestos POR, LD, DFC, DFC, LI, MCD, MD, MI, MCO, DC y DC. FUTWIZ enumera esos mismos once puestos y FUT.GG identifica la variante abierta. Se añadió **4-1-2-1-2 abierta** con revisión individual a las 01:20:44 UTC del 18 de noviembre, vigente hasta el 18 de diciembre a la misma hora. El lector distingue la variante por los once puestos observados. El identificador local histórico conserva su significado para las plantillas guardadas. El catálogo admite ahora doce identificadores y once composiciones durante el solapamiento de vigencias. [FUTWIZ](https://www.futwiz.com/fc27/tactics/4-1-2-1-2) y [FUT.GG](https://www.fut.gg/tactics/4-1-2-1-2-wide/).
+
 Consulta pública realizada en esta sesión; corte registrado **2026-11-16 22:10:56 UTC**. Ventana local de revisión de 30 días, hasta **2026-12-16 22:10:56 UTC**, exclusiva. Esa fecha exige volver a contrastar: no es una fecha de expiración publicada por EA ni acredita desafíos activos. No hay renovación automática.
 
 ## Formaciones

@@ -35,7 +35,7 @@ def snapshot_player(player):
         values = serialize_player(player)
         return {key:values.get(key) for key in PlayerCreate.model_fields} | player.validation_evidence.get('additional_facts',{}) | {
             'validation_status':player.validation_status,'variant_evidence':player.validation_evidence,
-            'unknown_fields':player.unknown_fields,'ownership_source':'user_reviewed_visual'}
+            'unknown_fields':player.unknown_fields,'ownership_source':values['ownership_source']}
     return {key: getattr(player, key, None) for key in PlayerCreate.model_fields} | {'validation_status': player.validation_status, 'variant_evidence': player.validation_evidence}
 
 

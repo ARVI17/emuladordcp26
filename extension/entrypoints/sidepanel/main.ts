@@ -19,12 +19,14 @@ function profileState(){
 }
 async function refresh(){
  const r=await chrome.runtime.sendMessage({kind:'status'})
+ el('auto-reader-version').textContent='Lector local '+r.version
+ ;(el('open-personal-app') as HTMLAnchorElement).href=endpoint(r.base)+'/#/cuenta'
  const workflow=r.workflow,report=workflow?.report
  el('workflow-next').textContent=workflow?.status==='paused'||workflow?.status==='cancelled'?'Recorrido detenido; historial y cola conservados.':report?.next_action||r.message||'Autoriza la pestaña desde el icono y empareja el lector una vez.'
  const stages=el('workflow-stages');stages.replaceChildren()
  for(const stage of report?.stages||[]){const li=document.createElement('li');li.textContent=stage.label+' · '+({complete:'comprobado',partial:'parcial',pending:'pendiente',blocked:'requiere una acción'} as Record<string,string>)[stage.status]+' — '+stage.evidence;stages.append(li)}
  el('workflow-coverage').textContent=report?`${report.inventory_count} cartas admitidas; ${report.pending_observations} observaciones pendientes. Cobertura parcial. Siguiente sección: ${report.next_section}. ${report.main.unchanged?'Principal local sin cambios.':'La principal local cambió.'}`:''
- const groups=report?.modules?.squads?.resultú.groups||[]
+ const groups=report?.modules?.squads?.result?.groups||[]
  el('workflow-results').textContent=report?[(report.source_counts?.synthetic_dom?'Incluye MUESTRAS SINTÉTICAS; no acredita EA.':'Datos locales con procedencia; sin identidad EA verificada.'),...groups.map((g:any)=>g.profiles.join(' / ')+': '+g.squad.lineup.map((p:any)=>p.slot+' '+p.player.name).join(', ')),...Object.entries(report.modules).filter(([,v]:any)=>v.status==='pending').map(([k,v]:any)=>k+': '+v.reason)].join('\n\n'):''
  el('reader-metrics').textContent=r.readerMetrics?`${r.readerMetrics.reads} vistas nuevas; ${r.readerMetrics.repeated} repeticiones evitadas; última lectura ${r.readerMetrics.last_ms} ms. OCR/IA por carta: 0.`:''
  el('extension-id').textContent=r.extensionId||''

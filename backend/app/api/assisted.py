@@ -14,9 +14,37 @@ from app.services.assisted import (require_assisted, capture_row, read_frame, re
     save_reading, resolve_copies, safe_text, coverage, erase_draft)
 from app.services.audit import record
 from app.services.locks import resource_locks
+from app.schemas.assisted import BrowserTextInput, BrowserTextReview
+from app.services.browser_text import preview_text
 
 router = APIRouter(prefix='/assisted', tags=['Lectura visual asistida'])
 DB = Annotated[Session, Depends(get_db)]
+
+
+@router.post('/text-preview')
+def text_preview(payload: BrowserTextInput, db: DB):
+    require_assisted(db)
+    with resource_locks(db, 'visual:'+str(db.info['context'].id)):
+        db.expire_all()
+        result = preview_text(db, payload)
+        if not result['repeated']:
+            record(db, 'preview_browser_text', 'visual_reading', result['id'], {'provider_verified': False})
+        db.commit()
+        return result
+
+
+@router.post('/text-readings/{identifier}/review')
+def review_text(identifier: int, payload: BrowserTextReview, db: DB):
+    require_assisted(db)
+    with resource_locks(db, 'inventory', 'visual:'+str(db.info['context'].id)):
+        db.expire_all()
+        row = reading_row(db, identifier)
+        if row.original.get('source_kind') != 'browser_text':
+            raise HTTPException(422, 'Esta lectura no es una transcripción de cartas.')
+        result = save_reading(db, row, payload.review, text_ownership_confirmed=payload.ownership_confirmed)
+        record(db, 'review_browser_text', 'visual_reading', row.id, {'provider_verified': False, 'ownership_confirmed': True})
+        db.commit()
+        return result
 
 
 @router.post('/contexts', status_code=201)

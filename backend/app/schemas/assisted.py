@@ -18,6 +18,11 @@ class CaptureInput(InputModel):
     source: Literal['shared_tab', 'screenshot']
 
 
+class BrowserTextInput(InputModel):
+    text: str = Field(min_length=1, max_length=8000)
+    page: str = Field(min_length=1, max_length=80)
+
+
 class ReviewedCard(InputModel):
     ordinal: int = Field(ge=0, le=29)
     name: str = Field(min_length=1, max_length=100)
@@ -78,6 +83,11 @@ class ReadingReview(InputModel):
         if len({c.ordinal for c in self.cards}) != len(self.cards):
             raise ValueError('No repitas una candidata de la lectura')
         return self
+
+
+class BrowserTextReview(InputModel):
+    review: ReadingReview
+    ownership_confirmed: Literal[True]
 
 
 class CopyResolution(InputModel):

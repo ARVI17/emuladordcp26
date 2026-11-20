@@ -9,6 +9,7 @@ import type {Coverage,VisualReading} from '../types/assisted'
 import {VisualReview} from './VisualReview'
 import {GuidedPlans} from './GuidedPlans'
 import {ErrorBox} from './ui'
+import {BrowserTextReader} from './BrowserTextReader'
 import {VisualScanner} from './VisualScanner'
 
 export function AssistedWorkspace({visible}:{visible:boolean}){
@@ -34,6 +35,7 @@ export function AssistedWorkspace({visible}:{visible:boolean}){
  <VisualScanner visible={visible}/>
  <div className="capture-status" role="status"><strong>{sharing?(paused?'Captura pausada':'Pestaña compartida · captura activa'):'Lectura asistida · captura inactiva'}</strong><span>Sin audio · Solo se procesa al pulsar Leer pantalla</span>{!visible&&<button onClick={()=>navigate('conexiones')}>Abrir lectura y guía</button>}{sharing&&<><button onClick={()=>{setPaused(!paused);if(video.current){if(!paused)video.current.pause();else void video.current.play()}}}>{paused?'Reanudar vista':'Pausar captura'}</button><button onClick={stop}>Dejar de compartir</button></>}</div>
  <div hidden={!visible}>
+ <BrowserTextReader onPreview={r=>{setReading(r);setReviewing(r.status==='pending');setMessage(r.repeated?'Texto ya observado: no se duplicaron cartas ni se renovó la fecha.':'Texto preparado. Revisa las cartas y su correspondencia antes de guardar.');void readings.refetch()}}/>
  <section className="panel"><h2>Lectura visual asistida</h2><p>Comparte la pestaña de FC27 ya abierta por ti. Navega y actúa allí manualmente. Compartir la imagen no autentica tu cuenta ni permite controlar EA.</p><div className="button-row"><button className="primary" onClick={()=>void start()} disabled={busy||sharing}>Compartir pestaña de FC27</button><label>Adjuntar captura<input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy||sharing} onChange={e=>{const next=e.target.files?.[0];if(next&&next.size>10*1024*1024){setError(new Error('La captura supera 10 MB.'));return}setFile(next||null);setReading(undefined);setReviewing(false)}}/></label></div>
  <video className="capture-preview" ref={video} muted playsInline aria-label="Vista de la pestaña compartida" hidden={!sharing}/>{preview&&<img className="capture-preview" src={preview} alt="Captura privada pendiente de lectura"/>}
  <p>Lee vistas de lista o fichas ampliadas, una pantalla cada vez. No compartas pantallas de acceso ni credenciales. La detección automática puede fallar; revisa siempre la vista previa.</p>

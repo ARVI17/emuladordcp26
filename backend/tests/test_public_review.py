@@ -34,7 +34,11 @@ def test_actual_bundle_forms_practice_and_content_use_review_dates(monkeypatch, 
             return instant
     for module in (squad_analysis, practice, content):
         monkeypatch.setattr(module, 'datetime', Clock)
-    assert len(squad_analysis.verified_formations()) == (11 if phase == 'active' else 0)
+    verified = set(squad_analysis.verified_formations())
+    later = '4-1-2-1-2 abierta'
+    assert len(verified - {later}) == (11 if phase == 'active' else 0)
+    wide = read_public_data('fc27_formations.json')['items'][later]
+    assert (later in verified) == active_review(wide, instant)
     assert practice.catalog()['review_due'] is (phase != 'active')
     assert len(content.builtin_content('FC27')['articles']) == (2 if phase == 'active' else 0)
 

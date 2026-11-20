@@ -273,6 +273,7 @@ class ObjectiveUpdate(PartialInput):
 
 class ChatRequest(InputModel):
     message: str = Field(min_length=1, max_length=2000)
+    squad_style: Literal['balanced', 'defensive', 'wide'] = 'balanced'
 
 class EmulatorConnectRequest(BaseModel):
     address: str = Field(min_length=3, max_length=120, pattern=r"^[a-zA-Z0-9._-]+:[0-9]{2,5}$")

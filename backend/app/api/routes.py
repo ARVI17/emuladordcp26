@@ -799,7 +799,7 @@ async def ai_status():
 
 @router.post("/ai/chat")
 async def ai_chat(payload: ChatRequest, db: DB):
-    from app.services.ollama import POLICY, FOCUSES, question_focus, grounded_answer
+    from app.services.ollama import POLICY, FOCUSES, SQUAD_INTENT, PLANNING_INTENTS, question_focus, grounded_answer, explain_squad
     try:
         focus = question_focus(payload.message)
     except ValueError as exc:
@@ -812,9 +812,24 @@ async def ai_chat(payload: ChatRequest, db: DB):
     pending = db.scalar(select(func.count(Challenge.id)).where(Challenge.game_version == version, Challenge.completed.is_(False))) or 0
     counts = {'players': count, 'duplicates': duplicates_count, 'protected': protected_count, 'dcp': pending}
     context = f'DATOS FC27: {json.dumps(counts)}'
-    result = grounded_answer(await chat(focus, context), counts, focus)
+    if focus == 'squad':
+        from app.services.club_advisor import match_plan
+        plan = await run_in_threadpool(match_plan, db, payload.squad_style)
+        squad = plan['squad']
+        facts = dict(style=plan['style'], reviewed=plan['reviewed'], starters=len(squad['lineup']),
+                     vacancies=[g['position'] for g in squad['gaps']], bench=len(squad['bench'])) if squad else {}
+        result = explain_squad(await chat(focus, json.dumps(facts)) if facts else {}, plan)
+        intent = SQUAD_INTENT
+    elif focus in PLANNING_INTENTS:
+        from app.services.club_advisor import explain_opportunity
+        answer = await run_in_threadpool(explain_opportunity, db, focus)
+        result = dict(available=False, answer=answer, sections=dict(source='Cálculo local con evidencia', policy=POLICY), game_version=version)
+        intent = PLANNING_INTENTS[focus]
+    else:
+        result = grounded_answer(await chat(focus, context), counts, focus)
+        intent = FOCUSES[focus]
     # Retain the intent, never arbitrary text that may contain secrets or unverified facts.
-    db.add(ChatMessage(role="user", content=FOCUSES[focus], metadata_json={"source": "local", "game_version": version, "policy": POLICY}))
+    db.add(ChatMessage(role="user", content=intent, metadata_json={"source": "local", "game_version": version, "policy": POLICY}))
     db.add(ChatMessage(role="assistant", content=result["answer"], metadata_json={"available": result["available"], "model": settings.ollama_model, "game_version": version, "policy": POLICY}))
     record(db, "chat", "ai", details={"available": result["available"], "message_length": len(payload.message), "game_version": version})
     db.commit()

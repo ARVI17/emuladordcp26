@@ -1,5 +1,13 @@
 # Mapa técnico · Club Lab FC27
 
+Paginación 0.7 (17-nov): `ea-auto.ts` separa plantilla y páginas; `browser-auto-worker.ts` conserva etapas privadas en session storage y recibe eventos por etapa. `/browser-auto/progress` informa avance sin admitir cartas; `AutoSnapshot` v2 admite hasta 1000 con conciliación global y lotes internos de 30 en una transacción. Esquema 0023 sin cambios. `nginx.conf` resuelve cambios de IP internos. [Contrato](AUTOMATIC_CLUB_SYNC.md), [pruebas](TESTING.md).
+
+Puente automático (17-nov): **WXT 0.6.0 / 0023**, `entrypoints/club-app.content.ts`, `ea-auto.ts`, `lib/browser-auto-worker.ts`, `api/schemas/services/browser_auto.py`, `BrowserAutoLink` y `AutoClubSync`. Preferencia explícita, apertura por entrada, permiso local renovado, DOM EN/ES parcial, publicación idempotente y candados por puestos. Pruebas `test_browser_auto.py` y `extension/tests/automatic.spec.ts`. **AUTO-1 parcial, aceptación personal pendiente**; [contrato y límites](AUTOMATIC_CLUB_SYNC.md), [versión efectivamente instalada](NEXT_SESSION.md).
+
+Texto visible bilingüe (17-nov): `services/browser_text.py`, rutas/contratos `assisted`, `BrowserTextReader` y `VisualReview` añaden vista previa y revisión explícita de transcripciones EN/ES, sin migración. Procedencia `user_reviewed_text`, correspondencia de copias y bloqueo de retiradas/ambiguas. `import_export.py` normaliza las quince posiciones inglesas también para OCR. Pruebas `test_browser_text.py` y `e2e/browser-text.spec.ts`. [Contrato y límites](ASSISTED_READING.md), [resultados](TESTING.md).
+
+WXT 0.5.1 (16-nov): `extension/entrypoints/sidepanel/main.ts` corrige la lectura del resultado de plantillas y conserva el panel con módulos pendientes. `extension/tests/first20.spec.ts` verifica veinte copias sintéticas, dos lecturas nuevas idempotentes y protección explícita de once más siete suplentes. No incorpora selectores EA ni habilita navegación remota. [Acceso y aceptación real](REAL_CLUB_FIRST_LOAD.md), [resultados](TESTING.md).
+
 Revalidación 16-nov, servida **96a8d21/0022 en 8090**: `services/public_data.py` lee evidencia versionada, `data/fc27_formations.json` conserva fuentes y fechas individuales; prácticas usan R09/R16. La migración **0022** y su manifiesto congelado renuevan solo las filas exactas del catálogo antiguo, con recibo previo y sin tocar copias. Pruebas: `test_public_review.py`; ventanas temporales de prueba en `conftest.py`. [Fuentes](SOURCE_REVIEW_20261116.md), [primera carga real](REAL_CLUB_FIRST_LOAD.md), [versión servida](NEXT_SESSION.md).
 
 

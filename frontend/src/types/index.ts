@@ -3,7 +3,7 @@ export type PendingDefinition = {id:number;game_version:'FC27';validation_status
 export type PendingDefinitionsResponse = {game_version:'FC27';counts:Record<string,number>;validation_status:'pending_verification';message:string}
 export type AttributeKey = 'pace'|'shooting'|'passing'|'dribbling'|'defending'|'physical'|'diving'|'handling'|'kicking'|'reflexes'|'speed'|'positioning'
 export type Player = {
-  ownership_source?:'observed'|'manual'|'user_reviewed_visual'|'user_reviewed_dom';observed_at?:string|null;metadata_pending?:string[];
+  ownership_source?:'observed'|'manual'|'user_reviewed_visual'|'user_reviewed_dom'|'user_reviewed_text'|'user_authorized_browser';observed_at?:string|null;metadata_pending?:string[];
   source_kind?:string;first_owner?:boolean|null;holographic_level?:number|null;acquisition_origin?:string|null;variant_label?:string|null;
   validation_status?:string;variant_evidence?:Record<string,unknown>;
   id:number; name:string; rating:number; position:string; league:string; club:string; nationality:string;
