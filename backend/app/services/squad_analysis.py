@@ -342,13 +342,28 @@ def _formation_coverage(players: list[Player], formation: str) -> int:
     return sum(assign(index, set()) for index in range(len(slots)))
 
 
+def best_owned_squad(players, version, protected, *, style="balanced", bench_size=0):
+    """Compare currently documented shapes on coverage first, then local positional fit."""
+    forms = verified_formations()
+    if style == "wide":
+        forms = {name: slots for name, slots in forms.items()
+                 if sum(slot in {"MD", "MI", "EI", "ED"} for slot in slots) >= 2}
+    choices = (recommend_owned_squad(players, game_version=version, formation=name, style=style,
+                                     bench_size=0, protected_ids=protected) for name in forms)
+    best = max(choices, key=lambda s: (len(s["lineup"]), sum(row["fit_score"] for row in s["lineup"])), default=None)
+    if best and bench_size:
+        return recommend_owned_squad(players, game_version=version, formation=best["formation"],
+                                     style=style, bench_size=bench_size, protected_ids=protected)
+    return best
+
+
 def analyze_club(db: Session) -> dict:
     version = current_version(db)
     players = db.scalars(select(Player).where(Player.game_version == version, Player.deleted.is_(False), Player.availability == "available").order_by(Player.rating.desc(), Player.id)).all()
     protected = effective_protected_ids(db, version) & {p.id for p in players}
     reviewed = [p for p in players if p.data_reviewed or (p.validation_evidence or {}).get("kind") == "observed_copy"]
-    alternatives = [recommend_owned_squad(players, game_version=version, formation=formation, bench_size=0, protected_ids=protected) for formation in verified_formations()]
-    recommendation = max(alternatives, key=lambda result: (len(result["lineup"]), sum(row["fit_score"] for row in result["lineup"])), default={"formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]})
+    recommendation = best_owned_squad(players, version, protected) or {
+        "formation": None, "gaps": [], "warnings": ["Formaciones pendientes de una nueva revisión documental FC27"]}
     recommended = recommendation["formation"]
     positions = []
     for position in ATTRIBUTE_WEIGHTS:

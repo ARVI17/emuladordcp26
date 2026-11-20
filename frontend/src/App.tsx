@@ -1,5 +1,6 @@
 import {AssistedDcp} from './components/AssistedDcp'
 import {AutoClubSync} from './components/AutoClubSync'
+import type {AdvisorStyle} from './components/ClubAdvisor'
 import {AssistedWorkspace} from './components/AssistedWorkspace'
 import {ObjectiveSquadsPage} from './pages/ObjectiveSquadsPage'
 import {ContextHelpScope} from './components/ContextHelp'
@@ -37,6 +38,8 @@ function storedTheme(){try{return localStorage.getItem('theme')!=='light'}catch{
 export default function App(){
   const qc=useQueryClient()
   const [page,setPage]=useState<Page>(()=>currentPage()),[dark,setDark]=useState(storedTheme),[initialFormation,setInitialFormation]=useState('4-3-3')
+  const [initialStyle,setInitialStyle]=useState<AdvisorStyle>('balanced')
+  const openBuilder=(formation:string,style:AdvisorStyle='balanced')=>{setInitialFormation(formation);setInitialStyle(style);navigate('recomendadas')}
   const [entry,setEntry]=useState<EntryState>(),[entryError,setEntryError]=useState<unknown>(),[entering,setEntering]=useState(true)
   const entryGeneration=useRef(0),mode=useRef<'live'|'local'|'assisted'>('live')
   const enter=async(next?:'live'|'local'|'assisted',reason='open',contextId?:number)=>{const generation=++entryGeneration.current;setEntry(undefined);setEntering(true);setEntryError(undefined);await qc.cancelQueries();qc.clear();try{const result=await openEntry(next,reason,contextId);if(generation===entryGeneration.current){mode.current=result.mode;setEntry(result)}}catch(error){if(generation===entryGeneration.current)setEntryError(error)}finally{if(generation===entryGeneration.current)setEntering(false)}}
@@ -51,9 +54,9 @@ export default function App(){
   const pages:Record<Page,ReactNode>={
     fichajes:<TransfersPage entry={effectiveEntry}/>,planes:<PlannerPage/>,mercado:<MarketPage/>,referencias:<KnowledgePage/>,
     conexiones:<ConnectionsPage entry={entry} busy={entering} error={entryError} onEnter={next=>void enter(next,'retry')} onSelect={(id,next)=>void enter(next,'switch',id)}/>,
-    inicio:<HomePage/>,tienda:<StorePage/>,club:<ClubPage/>,practica:<><SectionTitle title="Práctica" subtitle="Rutinas y registros locales"/><PracticeAgenda/></>,
-    analisis:<AnalysisPage onBuild={formation=>{setInitialFormation(formation);navigate('recomendadas')}}/>,
-    plantillas:<SquadsPage view="principal"/>,recomendadas:<SquadsPage initialFormation={initialFormation}/>,
+    inicio:effectiveEntry && <HomePage entry={effectiveEntry} onBuild={openBuilder}/>,tienda:<StorePage/>,club:<ClubPage/>,practica:<><SectionTitle title="Práctica" subtitle="Rutinas y registros locales"/><PracticeAgenda/></>,
+    analisis:<AnalysisPage onBuild={openBuilder}/>,
+    plantillas:<SquadsPage view="principal"/>,recomendadas:<SquadsPage initialFormation={initialFormation} initialStyle={initialStyle}/>,
     'plantillas-objetivos':<ObjectiveSquadsPage generator assisted={entry?.mode==='assisted'}/>,dcp:entry?.mode==='assisted'?<AssistedDcp/>:<ChallengesPage/>,
     galeria:<GalleryPage/>,evoluciones:<EvolutionsPage/>,novedades:<UpdatesPage/>,
     objetivos:<ObjectiveSquadsPage/>,duplicados:<DuplicatesPage/>,ia:<AiPage/>,

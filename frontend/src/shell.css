@@ -1,4 +1,44 @@
 /* Own FC27 workspace: functional panels, no copied EA assets. */
+.club-advisor { margin-bottom: 1.5rem; }
+.advisor-heading, .advisor-scoreline, .advisor-shortcuts, .advisor-styles { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
+.advisor-heading, .advisor-scoreline { justify-content: space-between; }
+.advisor-heading h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0; }
+.advisor-styles { gap: .25rem; background: var(--panel); border: 1px solid var(--line); border-radius: .7rem; padding: .2rem; }
+.advisor-styles button { background: transparent; border: 0; min-height: 2.65rem; }
+.advisor-styles button[aria-pressed=true] { background: var(--accent-dark); color: var(--accent); }
+.advisor-source, .advisor-team-notes p, .advisor-domains p { color: var(--muted); line-height: 1.55; }
+.advisor-match { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(240px, .85fr); gap: 1.4rem; border: 1px solid var(--line); background: var(--panel); border-radius: .85rem; padding: clamp(.8rem, 2vw, 1.6rem); }
+.advisor-scoreline { margin-bottom: .8rem; }
+.advisor-scoreline h4 { font-size: 1.5rem; margin: 0; }
+.advisor-scoreline > span, .advisor-team-notes h4 span { color: var(--accent); font-variant-numeric: tabular-nums; }
+.advisor-field { position: relative; isolation: isolate; display: grid; gap: .7rem; align-content: space-around; min-height: 21rem; padding: .75rem .35rem; overflow: hidden; border: 1px solid #589b84; border-radius: .55rem; background: linear-gradient(to bottom,transparent 49.8%,#bfead04f 49.8%,#bfead04f 50.2%,transparent 50.2%),repeating-linear-gradient(0deg,#163f36 0 12.5%,#1b4c40 12.5% 25%); }
+.advisor-field::before { position: absolute; z-index: -1; content: ""; top: 50%; left: 50%; width: 5rem; height: 5rem; border: 1px solid #bfead063; border-radius: 50%; transform: translate(-50%,-50%); }
+.advisor-line { display: flex; justify-content: space-evenly; gap: .2rem; }
+.advisor-player, .advisor-vacancy { width: min(6.1rem, 22%); min-width: 0; min-height: 2.8rem; overflow-wrap: anywhere; text-align: center; padding: .25rem; border-radius: .4rem; line-height: 1.15; }
+.advisor-player { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; background: #10352d; color: #f1fff7; border: 1px solid #609b86; }
+.advisor-player:hover, .advisor-player[aria-pressed=true] { background: #255445; border-color: #a4f9d0; color: #fff; }
+.advisor-player span, .advisor-vacancy span { display: block; font-size: .69rem; color: #b7e9ce; }
+.advisor-player span b { color: #f8e5a4; }
+.advisor-player strong, .advisor-vacancy small { font-size: .76rem; display: block; margin-top: .15rem; }
+.advisor-vacancy { border: 1px dashed #90b7a5; color: #e3f1e9; background: #174337; }
+.advisor-bench { list-style: none; padding: 0; margin: .4rem 0 1.2rem; }
+.advisor-bench li { display: grid; grid-template-columns: 2.3rem 1fr auto; align-items: baseline; gap: .35rem; padding: .24rem 0; border-bottom: 1px solid var(--line); }
+.advisor-bench li b, .advisor-bench li strong { font-size: .75rem; color: var(--accent); }
+.advisor-team-notes h4 { margin: 0 0 .5rem; font-size: 1.05rem; }
+.advisor-coach { margin-top: .55rem; }
+.advisor-coach button { border-color: var(--accent); color: var(--accent); }
+.advisor-coach [role=status], .advisor-evidence { margin: .7rem 0 0; line-height: 1.5; }
+.advisor-opportunities { margin-top: 1.5rem; }
+.advisor-domains { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem; }
+.advisor-domains article { border: 1px solid var(--line); padding: 1rem; background: var(--panel); border-radius: .7rem; display: flex; flex-direction: column; align-items: start; }
+.advisor-domains h4 { margin: 0; font-size: 1.02rem; }
+.advisor-domains button { margin-top: auto; }
+.advisor-option { margin-bottom: .8rem; overflow-wrap: anywhere; }
+.advisor-shortcuts { margin: 1rem 0; }
+.skip-link:not(:focus) { clip-path: inset(50%); width: 1px; height: 1px; overflow: hidden; white-space: nowrap; }
+@media(max-width:800px) { .single-app > .mobile-menu { position: absolute; } }
+@media(max-width:960px) { .advisor-match { grid-template-columns: 1fr; } }
+@media(max-width:700px) { .advisor-heading { align-items: start; } .advisor-domains { grid-template-columns: 1fr; } .advisor-field { min-height: 19rem; } }
 :root{--accent:#50e5cc;--accent-dark:#092c2a;--cyan:#32c9c5}
 :root[data-theme="light"]{--accent:#087f75;--accent-dark:#e0f7f3}
 .single-app.app-shell{max-width:none;min-height:100dvh;margin:0;padding:0 0 0 220px;display:block}
