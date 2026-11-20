@@ -53,9 +53,11 @@ export function AutoClubSync({entry,settings=false,children}:{entry:EntryState;s
  useEffect(()=>{
   if(!busy&&status.data?.enabled&&matchingBridge&&!started.current){
    started.current=true
-   if(status.data.status!=='reading')void start()
+   // Opening the app can replace its previous entry and invalidate that grant.
+   // A new document claims its own run even when the last one ended mid-read.
+   void start()
   }
- },[matchingBridge,status.data?.enabled,status.data?.status,busy])
+ },[matchingBridge,status.data?.enabled,busy])
  useEffect(()=>{
   const id=status.data?.result.request_id
   if(id&&lastResult.current!==id){lastResult.current=id;void invalidateClub(qc)}

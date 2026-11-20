@@ -223,6 +223,11 @@ for(const [spanish,total] of [[false,20],[true,20],[false,65]] as const)test(`au
   let receipt=(await request('/browser-auto/status')).result.request_id
   for(let pass=0;pass<2;pass++){
    stage('reopen_'+(pass+1))
+   if(spanish&&pass===0){
+    // The preceding page closed after requesting a read but before delivering its ticket.
+    await request('/browser-auto/start',{})
+    expect((await request('/browser-auto/status')).status).toBe('reading')
+   }
    if(loggedOut&&pass===0){
     const worker=context.serviceWorkers()[0]||await context.waitForEvent('serviceworker')
     await worker.evaluate(()=>chrome.storage.session.remove('officialTab'))
